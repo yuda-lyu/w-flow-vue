@@ -1,0 +1,125 @@
+<template>
+    <div>
+
+        <div class="bkh">
+            <div style="font-size:1.5rem;">size</div>
+            <a href="//yuda-lyu.github.io/w-flow-vue/examples/ex-AppBasic.html" target="_blank" class="item-link">example</a>
+            <a href="//github.com/yuda-lyu/w-flow-vue/blob/master/docs/examples/ex-AppBasic.html" target="_blank" class="item-link">code</a>
+        </div>
+
+        <div class="bkp">
+
+            <div v-if="!loading">
+                <button style="margin:0px 3px 3px 0px;" @click="setWidth(800)">set width to 800</button>
+                <button style="margin:0px 3px 3px 0px;" @click="setWidth(300)">set width to 300</button>
+                <button style="margin:0px 3px 3px 0px;" @click="setHeight(600)">set height to 600</button>
+                <button style="margin:0px 3px 3px 0px;" @click="setHeight(300)">set height to 300</button>
+            </div>
+
+            <div style="display:flex; padding-bottom:40px; overflow-x:auto;">
+
+                <div style="position:relative; border:1px solid #ddd;">
+                    <WFlowVue
+                        :opt="opt"
+                        @init="loading=false"
+                    ></WFlowVue>
+                </div>
+
+                <div style="padding:0px 20px;">
+
+                    <div :style="`border:1px solid #ddd; width:590px; min-width:590px; height:${opt.height}px; overflow-y:auto;`">
+                        <div style="padding-left:5px;">
+                            <div id="optjson" style="font-size:10pt;"></div>
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+</template>
+
+<script>
+import WFlowVue from './components/WFlowVue.vue'
+import jv from 'w-jsonview-tree'
+
+export default {
+    components: {
+        WFlowVue,
+    },
+    data: function() {
+        return {
+            'loading': true,
+            'opt': {
+                width: 800,
+                height: 600,
+                nodes: [
+                    { id: '1', type: 'input', name: '資料來源', description: '從外部 API 取得原始資料', position: { x: 260, y: 0 }, edgeColor: '#0041d0', width: 100, height: 40 },
+                    { id: '2', type: 'basic', name: '資料驗證', description: '檢查資料格式與完整性', position: { x: 100, y: 120 }, width: 100, height: 40 },
+                    { id: '3', type: 'basic', name: '資料轉換', description: '將原始資料轉換為標準格式', position: { x: 400, y: 120 }, width: 100, height: 40 },
+                    { id: '8', type: 'basic', name: '條件判斷', description: '根據條件分流處理', position: { x: 100, y: 220 }, shape: 'diamond', width: 120, height: 80 },
+                    { id: '4', type: 'basic', name: '商業邏輯', description: '執行核心商業規則與計算', position: { x: 80, y: 380 }, shape: 'ellipse', width: 140, height: 60 },
+                    { id: '5', type: 'basic', name: '資料聚合', description: '合併多個來源的處理結果', position: { x: 280, y: 500 }, edgeColor: '#ffa500', edgeWidth: 2, width: 100, height: 40 },
+                    { id: '6', type: 'output', name: '輸出結果', description: '將最終結果寫入資料庫', position: { x: 160, y: 620 }, width: 100, height: 40 },
+                    { id: '7', type: 'output', name: '通知服務', description: '發送處理完成通知給相關人員', position: { x: 400, y: 620 }, edgeColor: '#ff69b4', width: 100, height: 40 },
+                    { id: '9', type: 'basic', name: '過濾器', description: '過濾不符合條件的資料', position: { x: 620, y: 80 }, shape: 'triangle', width: 100, height: 80 },
+                    { id: '10', type: 'basic', name: '路由分配', description: '根據規則分配至不同處理管道', position: { x: 620, y: 220 }, shape: 'triangle-right', width: 100, height: 80 },
+                    { id: '11', type: 'basic', name: '資料壓縮', description: '壓縮資料以減少儲存空間', position: { x: 620, y: 360 }, shape: 'triangle-down', width: 100, height: 80 },
+                    { id: '12', type: 'basic', name: '快取處理', description: '從快取中讀取或寫入資料', position: { x: 620, y: 500 }, shape: 'triangle-left', width: 100, height: 80 },
+                ],
+                conns: [
+                    { id: 'e1-2', from: '1', to: '2', type: 'bezier', animated: true, name: '原始資料', description: '未經處理的 API 回應' },
+                    { id: 'e1-3', from: '1', to: '3', type: 'bezier', name: '備份資料', description: '同步至轉換流程', markerEnd: 'arrowclosed' },
+                    { id: 'e2-8', from: '2', to: '8', type: 'smoothstep', name: '驗證通過', description: '通過格式檢查的資料' },
+                    { id: 'e8-4', from: '8', to: '4', type: 'bezier', name: '條件成立', description: '符合條件進入商業邏輯' },
+                    { id: 'e8-5', from: '8', to: '5', type: 'bezier', name: '條件不成立', description: '不符條件直接聚合' },
+                    { id: 'e3-5', from: '3', to: '5', type: 'step', name: '轉換完成', description: '標準化後的資料' },
+                    { id: 'e4-5', from: '4', to: '5', type: 'bezier', name: '處理結果', description: '商業邏輯計算結果' },
+                    { id: 'e5-6', from: '5', to: '6', type: 'smoothstep', name: '最終資料', description: '聚合後準備寫入的資料' },
+                    { id: 'e5-7', from: '5', to: '7', type: 'bezier', animated: true, name: '觸發通知', description: '處理完成的事件訊號' },
+                    { id: 'e3-9', from: '3', to: '9', type: 'step', name: '轉換副本', description: '備份至過濾流程' },
+                    { id: 'e9-10', from: '9', to: '10', type: 'smoothstep', name: '已過濾', description: '通過過濾條件的資料' },
+                    { id: 'e10-11', from: '10', to: '11', type: 'bezier', name: '管道A', description: '分配至壓縮管道' },
+                    { id: 'e11-12', from: '11', to: '12', type: 'step', name: '已壓縮', description: '壓縮完成的資料' },
+                    { id: 'e12-7', from: '12', to: '7', type: 'bezier', name: '快取完成', description: '快取處理後通知' },
+                ],
+            },
+            'action': [
+            ],
+        }
+    },
+    mounted: function() {
+        let vo = this
+        vo.showOptJson()
+    },
+    watch: {
+        opt: {
+            handler: function() {
+                let vo = this
+                vo.showOptJson()
+            },
+            deep: true,
+        },
+    },
+    methods: {
+        showOptJson: function() {
+            let vo = this
+            jv(vo.opt, document.querySelector('#optjson'), { expanded: true })
+        },
+        setWidth: function(r) {
+            let vo = this
+            vo.opt.width = r
+        },
+        setHeight: function(r) {
+            let vo = this
+            vo.opt.height = r
+        },
+    },
+}
+</script>
+
+<style>
+</style>

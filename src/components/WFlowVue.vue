@@ -1,0 +1,1142 @@
+<template>
+  <div :style="`width:${widthInp}px; height:${heightInp}px;`">
+  <FlowCanvas
+    v-if="inited"
+    ref="canvas"
+    @canvas-mousedown="onCanvasMouseDown"
+    @canvas-mousemove="onCanvasMouseMove"
+    @canvas-mouseup="onCanvasMouseUp"
+    @canvas-wheel="onCanvasWheel"
+    @canvas-dblclick="onCanvasDblClick"
+    @canvas-click="onCanvasClick"
+    @canvas-contextmenu="onCanvasContextMenu"
+  >
+    <BackgroundLayer
+      :variant="platformBackgroundPatternType"
+      :gap="platformBackgroundPatternGap"
+      :size="platformBackgroundPatternSize"
+      :pattern-color="platformBackgroundPatternColor"
+      :bg-color="platformBackgroundColor"
+      :viewport-x="viewport.x"
+      :viewport-y="viewport.y"
+      :viewport-zoom="viewport.zoom"
+    />
+
+    <ViewportTransform
+      :x="viewport.x"
+      :y="viewport.y"
+      :zoom="viewport.zoom"
+    >
+      <EdgeRenderer
+        :conns="conns"
+        :nodes="renderNodes"
+        :node-internals="nodeInternals"
+        :selected-conn-ids="selectedConns"
+        :interactive="elementsSelectable"
+        :locked="locked"
+        :settings-popup-background-color="settingsPopupBackgroundColor"
+        :settings-popup-text-color="settingsPopupTextColor"
+        :settings-popup-text-font-size="settingsPopupTextFontSize"
+        :infor-popup-background-color="inforPopupBackgroundColor"
+        :infor-popup-title-text-color="inforPopupTitleTextColor"
+        :infor-popup-title-text-font-size="inforPopupTitleTextFontSize"
+        :infor-popup-description-text-color="inforPopupDescriptionTextColor"
+        :infor-popup-description-text-font-size="inforPopupDescriptionTextFontSize"
+        @conn-click="onConnClick"
+        @conn-double-click="onConnDoubleClick"
+        @conn-context-menu="onConnContextMenu"
+        @conn-mouseenter="onConnMouseEnter"
+        @conn-mouseleave="onConnMouseLeave"
+        @conn-settings-click="onConnSettingsClick"
+        @conn-settings-update="onConnSettingsUpdate"
+        @conn-settings-delete="onConnSettingsDelete"
+      />
+
+      <NodeRenderer
+        :nodes="renderNodes"
+        :selected-node-ids="selectedNodes"
+        :nodes-draggable="nodesDraggable"
+        :nodes-connectable="nodesConnectable"
+        :locked="locked"
+        :nodes-resizable="nodesResizable"
+        :settings-popup-background-color="settingsPopupBackgroundColor"
+        :settings-popup-text-color="settingsPopupTextColor"
+        :settings-popup-text-font-size="settingsPopupTextFontSize"
+        :infor-popup-background-color="inforPopupBackgroundColor"
+        :infor-popup-title-text-color="inforPopupTitleTextColor"
+        :infor-popup-title-text-font-size="inforPopupTitleTextFontSize"
+        :infor-popup-description-text-color="inforPopupDescriptionTextColor"
+        :infor-popup-description-text-font-size="inforPopupDescriptionTextFontSize"
+        :snap-grid-size="snapToGrid ? snapGridSize : null"
+        @drag-start="onNodeDragStart"
+        @node-click="onNodeClick"
+        @node-double-click="onNodeDoubleClick"
+        @node-context-menu="onNodeContextMenu"
+        @node-settings-click="onNodeSettingsClick"
+        @node-settings-update="onNodeSettingsUpdate"
+        @node-settings-delete="onNodeSettingsDelete"
+        @node-mouseenter="onNodeMouseEnter"
+        @node-mouseleave="onNodeMouseLeave"
+        @connect-start="onConnectStart"
+        @dimensions="onNodeDimensions"
+        @node-resize="onNodeResize"
+        @node-resize-end="onNodeResizeEnd"
+      />
+
+      <ConnectionLine
+        :active="isConnecting"
+        :source-x="connLineFromX"
+        :source-y="connLineFromY"
+        :source-position="connLineFromPosition"
+        :target-x="connLineToX"
+        :target-y="connLineToY"
+        :type="defConnCreatingType"
+        :line-style="defConnCreatingStyle"
+      />
+
+      <slot name="viewport-overlay" />
+    </ViewportTransform>
+
+    <SelectionBox :box="selectionBox" />
+
+    <Controls
+      :locked="locked"
+      position="top-left"
+      @zoom-in="zoomIn"
+      @zoom-out="zoomOut"
+      @fit-view="fitView"
+      @toggle-interactive="toggleInteractive"
+    />
+
+  </FlowCanvas>
+  </div>
+</template>
+
+<script>
+import FlowCanvas from './canvas/FlowCanvas.vue'
+import ViewportTransform from './canvas/ViewportTransform.vue'
+import BackgroundLayer from './canvas/BackgroundLayer.vue'
+import SelectionBox from './canvas/SelectionBox.vue'
+import NodeRenderer from './nodes/NodeRenderer.vue'
+import EdgeRenderer from './edges/EdgeRenderer.vue'
+import ConnectionLine from './edges/ConnectionLine.vue'
+import Controls from './ui/Controls.vue'
+import { getHandlePosition, getOverlappingNodes, snapPosition, clampPosition } from '../js/geometry'
+import { clearStepCache } from '../js/edge-path'
+import { isValidConnection, generateId } from '../js/graph'
+import { NODE_DEFAULTS, CONN_DEFAULTS } from '../js/defaults'
+
+/**
+ * WFlowVue — Vue 2 flow/graph editor component.
+ *
+ * All configuration is passed via the `opt` prop object.
+ *
+ * @prop {Object} opt
+ *
+ * ─── Canvas ────────────────────────────────────────────────────────────
+ * @prop {number}   [opt.width=800]                       Canvas width (px)
+ * @prop {number}   [opt.height=600]                      Canvas height (px)
+ * @prop {Array}    [opt.nodes=[]]                        Node data array
+ * @prop {Array}    [opt.conns=[]]                        Connection data array
+ *
+ * ─── Interaction ───────────────────────────────────────────────────────
+ * @prop {boolean}  [opt.nodesDraggable=true]             Allow node dragging
+ * @prop {boolean}  [opt.nodesConnectable=true]           Allow creating connections
+ * @prop {boolean}  [opt.nodesResizable=true]            Allow resizing nodes (per-node override: node.resizable)
+ * @prop {boolean}  [opt.elementsSelectable=true]         Allow selecting nodes/conns
+ * @prop {boolean}  [opt.selectNodesOnDrag=true]          Select node when drag starts
+ * @prop {boolean}  [opt.deleteKeyEnabled=false]           Enable keyboard deletion of selected elements
+ * @prop {string}   [opt.deleteKeyCode='Backspace']       Key to delete selected elements (requires deleteKeyEnabled)
+ * @prop {boolean}  [opt.multiSelectEnabled=true]          Enable multi-selection (box select + Shift+Click)
+ * @prop {string}   [opt.boxSelectionKeyCode='Shift']     Key to hold for box selection (drag on canvas)
+ * @prop {string}   [opt.multiSelectionKeyCode='Shift']   Key to hold for Shift+Click add/remove selection
+ * @prop {boolean}  [opt.zoomOnScroll=true]               Zoom with mouse wheel
+ * @prop {number}   [opt.zoomMin=0.5]                     Minimum zoom level
+ * @prop {number}   [opt.zoomMax=2]                       Maximum zoom level
+ * @prop {boolean}  [opt.panOnDrag=true]                  Pan canvas by dragging background
+ * @prop {Array}    [opt.center=[0,0]]            Initial viewport center [x, y]
+ * @prop {number}   [opt.zoom=1]                  Initial viewport zoom level
+ * @prop {Array}    [opt.panLimits=null]                  Pan limits [[minX,minY],[maxX,maxY]]
+ * @prop {boolean}  [opt.snapToGrid=false]                Snap node positions to grid
+ * @prop {number}   [opt.snapGridSize=20]                  Grid cell size (px, used for both drag snap and resize snap)
+ *
+ * ─── Platform ────────────────────────────────────────────────────────
+ * @prop {string}   [opt.platformBackgroundPatternType='dots']        Background pattern: 'dots' | 'lines' | 'cross'
+ * @prop {number}   [opt.platformBackgroundPatternGap=20]                Pattern spacing (px)
+ * @prop {number}   [opt.platformBackgroundPatternSize=1]                Pattern element size
+ * @prop {string}   [opt.platformBackgroundPatternColor='#81818a'] Pattern color
+ * @prop {string}   [opt.platformBackgroundColor='#fff']          Canvas background color
+ *
+ * ─── Settings Popup ────────────────────────────────────────────────────
+ * @prop {string}   [opt.settingsPopupBackgroundColor='#fff'] Settings popup background
+ * @prop {string}   [opt.settingsPopupTextColor='#333']       Settings popup text color
+ * @prop {string}   [opt.settingsPopupTextFontSize='12px']    Settings popup font size
+ *
+ * ─── Infor Popup ────────────────────────────────────────────────────────
+ * @prop {string}   [opt.inforPopupBackgroundColor='#fff']              Info popup background
+ * @prop {string}   [opt.inforPopupTitleTextColor='#333']              Info popup title text color
+ * @prop {string}   [opt.inforPopupTitleTextFontSize='12px']           Info popup title font size
+ * @prop {string}   [opt.inforPopupDescriptionTextColor='#888']        Info popup description text color
+ * @prop {string}   [opt.inforPopupDescriptionTextFontSize='10px']     Info popup description font size
+ *
+ * ─── Default Node ──────────────────────────────────────────
+ * @prop {string}   [opt.defNodeType='basic']             Default node type: 'input' | 'basic' | 'output'
+ * @prop {string}   [opt.defNodeShape='rectangle']        Default shape: 'rectangle' | 'diamond' | 'ellipse' | 'triangle' | ...
+ * @prop {number}   [opt.defNodeWidth=100]                Default node width (px)
+ * @prop {number}   [opt.defNodeHeight=40]                Default node height (px)
+ * @prop {number}   [opt.defNodeFontSize=12]              Default node font size (px)
+ * @prop {number}   [opt.defNodeFontSizeMin=1]            Min font size in settings
+ * @prop {number}   [opt.defNodeFontSizeMax=72]           Max font size in settings
+ * @prop {string}   [opt.defNodeFontColor='#333333']      Default node text color
+ * @prop {string}   [opt.defNodeFaceColor='#ffffff']      Default node fill color
+ * @prop {string}   [opt.defNodeEdgeColor='#bbbbbb']      Default node border color
+ * @prop {number}   [opt.defNodeEdgeWidth=1]              Default node border width (px)
+ * @prop {string}   [opt.defNodeToPosition='bottom']      Default outgoing handle position: 'top' | 'bottom' | 'left' | 'right'
+ * @prop {string}   [opt.defNodeFromPosition='top']       Default incoming handle position
+ * @prop {string}   [opt.defNodePopupDirection='right']   Default settings popup direction
+ *
+ * ─── Default Creating Connection ────────────────────────────────────────────────────────
+ * @prop {string}   [opt.defConnCreatingType='bezier']     Drag-line type: 'bezier' | 'straight' | 'step' | 'smoothstep'
+ * @prop {string}   [opt.defConnCreatingEdgeColor='#b1b1b7']  Drag-line color
+ * @prop {number}   [opt.defConnCreatingEdgeWidth=1]          Drag-line width (px)
+ * @prop {string}   [opt.defConnCreatingEdgeDasharray='5 5'] Drag-line dash pattern ('' for solid)
+ * @prop {Function} [opt.funValidConnCreating=null]      Custom connection validator fn(connection) → boolean
+ *
+ * ─── Default Connection ────────────────────────────────────
+ * @prop {string}   [opt.defConnType='bezier']            Default conn type: 'bezier' | 'straight' | 'step' | 'smoothstep'
+ * @prop {number}   [opt.defConnFontSize=10]              Default conn label font size (px)
+ * @prop {number}   [opt.defConnFontSizeMin=1]            Min font size in settings
+ * @prop {number}   [opt.defConnFontSizeMax=72]           Max font size in settings
+ * @prop {string}   [opt.defConnFontColor='#333333']      Default conn label text color
+ * @prop {string}   [opt.defConnEdgeColor='#b1b1b7']      Default conn line color
+ * @prop {number}   [opt.defConnEdgeWidth=1]              Default conn line width (px)
+ * @prop {string}   [opt.defConnEdgeDasharray='']         Default conn dash pattern ('' for solid, '5 5' for dashed)
+ * @prop {string}   [opt.defConnMarkerEnd='']             Default arrow marker: '' | 'arrow' | 'arrowclosed'
+ * @prop {boolean}  [opt.defConnAnimated=false]           Default conn animation (dashed flow)
+ * @prop {number}   [opt.defOffset=24]                    Step/smoothstep routing buffer (px)
+ */
+export default {
+    components: {
+        FlowCanvas,
+        ViewportTransform,
+        BackgroundLayer,
+        SelectionBox,
+        NodeRenderer,
+        EdgeRenderer,
+        ConnectionLine,
+        Controls,
+    },
+    props: {
+        opt: {
+            type: Object,
+            default: () => ({}),
+        },
+    },
+    provide() {
+        return {
+            getDefNode: () => this.defNode,
+            getDefConn: () => this.defConn,
+        }
+    },
+    data() {
+        return {
+            inited: false,
+
+            // Viewport
+            viewport: { x: 0, y: 0, zoom: 1 },
+
+            // Selection
+            selectedNodes: [],
+            selectedConns: [],
+
+            // UI state
+            selectionBox: null,
+            nodeInternals: {},
+
+            // Interactive lock state
+            locked: false,
+
+            // Drag state
+            isDraggingNode: false,
+            draggingNodeId: null,
+            dragStartPos: null,
+            dragNodeStartPositions: null,
+            dragPositions: null,
+            resizeOverlay: null,
+
+            // Pan state
+            isPanning: false,
+            panStartPos: null,
+
+            // Connection state
+            isConnecting: false,
+            connectingFrom: null,
+            connLineFromX: 0,
+            connLineFromY: 0,
+            connLineFromPosition: 'bottom',
+            connLineToX: 0,
+            connLineToY: 0,
+
+            // Selection state
+            isSelecting: false,
+            selectionStartPos: null,
+
+            // Key state
+            keysPressed: {},
+
+        }
+    },
+    watch: {
+        opt: {
+            handler() {
+                if (!this.inited) {
+                    this.inited = true
+                    let vc = this.center
+                    if (vc) {
+                        this.viewport.x = vc[0] || 0
+                        this.viewport.y = vc[1] || 0
+                    }
+                    this.viewport.zoom = this.zoom
+                    this.$emit('init')
+                }
+            },
+            immediate: true,
+        },
+    },
+    mounted() {
+        document.addEventListener('keydown', this.onKeyDown)
+        document.addEventListener('keyup', this.onKeyUp)
+        document.addEventListener('mousemove', this.onDocMouseMove)
+        document.addEventListener('mouseup', this.onDocMouseUp)
+    },
+    beforeDestroy() {
+        document.removeEventListener('keydown', this.onKeyDown)
+        document.removeEventListener('keyup', this.onKeyUp)
+        document.removeEventListener('mousemove', this.onDocMouseMove)
+        document.removeEventListener('mouseup', this.onDocMouseUp)
+    },
+    computed: {
+        widthInp() {
+            return this.opt.width || 800
+        },
+        heightInp() {
+            return this.opt.height || 600
+        },
+        nodes() {
+            return this.opt.nodes || []
+        },
+        conns() {
+            return this.opt.conns || []
+        },
+
+        nodesDraggable() {
+            return this.opt.nodesDraggable !== undefined ? this.opt.nodesDraggable : true
+        },
+        nodesConnectable() {
+            return this.opt.nodesConnectable !== undefined ? this.opt.nodesConnectable : true
+        },
+        nodesResizable() {
+            return this.opt.nodesResizable !== undefined ? this.opt.nodesResizable : true
+        },
+        elementsSelectable() {
+            return this.opt.elementsSelectable !== undefined ? this.opt.elementsSelectable : true
+        },
+        selectNodesOnDrag() {
+            return this.opt.selectNodesOnDrag !== undefined ? this.opt.selectNodesOnDrag : true
+        },
+        deleteKeyEnabled() {
+            return this.opt.deleteKeyEnabled !== undefined ? this.opt.deleteKeyEnabled : false
+        },
+        deleteKeyCode() {
+            return this.opt.deleteKeyCode || 'Backspace'
+        },
+
+        defConnCreatingType() {
+            return this.opt.defConnCreatingType || 'bezier'
+        },
+        defConnCreatingEdgeColor() {
+            return this.opt.defConnCreatingEdgeColor || '#b1b1b7'
+        },
+        defConnCreatingEdgeWidth() {
+            return this.opt.defConnCreatingEdgeWidth !== undefined ? this.opt.defConnCreatingEdgeWidth : 1
+        },
+        defConnCreatingEdgeDasharray() {
+            return this.opt.defConnCreatingEdgeDasharray || '5 5'
+        },
+        defConnCreatingStyle() {
+            return {
+                stroke: this.defConnCreatingEdgeColor,
+                strokeWidth: this.defConnCreatingEdgeWidth,
+                strokeDasharray: this.defConnCreatingEdgeDasharray,
+            }
+        },
+        zoomOnScroll() {
+            return this.opt.zoomOnScroll !== undefined ? this.opt.zoomOnScroll : true
+        },
+        panOnDrag() {
+            return this.opt.panOnDrag !== undefined ? this.opt.panOnDrag : true
+        },
+        zoomMin() {
+            return this.opt.zoomMin !== undefined ? this.opt.zoomMin : 0.5
+        },
+        zoomMax() {
+            return this.opt.zoomMax !== undefined ? this.opt.zoomMax : 2
+        },
+        center() {
+            return this.opt.center || [0, 0]
+        },
+        zoom() {
+            return this.opt.zoom !== undefined ? this.opt.zoom : 1
+        },
+        panLimits() {
+            return this.opt.panLimits || null
+        },
+
+        multiSelectEnabled() {
+            return this.opt.multiSelectEnabled !== undefined ? this.opt.multiSelectEnabled : true
+        },
+        boxSelectionKeyCode() {
+            return this.opt.boxSelectionKeyCode || 'Shift'
+        },
+        multiSelectionKeyCode() {
+            return this.opt.multiSelectionKeyCode || 'Shift'
+        },
+
+        snapToGrid() {
+            return this.opt.snapToGrid !== undefined ? this.opt.snapToGrid : false
+        },
+        snapGridSize() {
+            return this.opt.snapGridSize || 20
+        },
+
+        platformBackgroundPatternType() {
+            return this.opt.platformBackgroundPatternType || 'dots'
+        },
+        platformBackgroundPatternGap() {
+            return this.opt.platformBackgroundPatternGap !== undefined ? this.opt.platformBackgroundPatternGap : 20
+        },
+        platformBackgroundPatternSize() {
+            return this.opt.platformBackgroundPatternSize !== undefined ? this.opt.platformBackgroundPatternSize : 1
+        },
+        platformBackgroundPatternColor() {
+            return this.opt.platformBackgroundPatternColor || '#81818a'
+        },
+        platformBackgroundColor() {
+            return this.opt.platformBackgroundColor || '#fff'
+        },
+
+        // --- Settings popup styling ---
+        settingsPopupBackgroundColor() {
+            return this.opt.settingsPopupBackgroundColor || '#fff'
+        },
+        settingsPopupTextColor() {
+            return this.opt.settingsPopupTextColor || '#333'
+        },
+        settingsPopupTextFontSize() {
+            return this.opt.settingsPopupTextFontSize || '12px'
+        },
+        inforPopupBackgroundColor() {
+            return this.opt.inforPopupBackgroundColor || '#fff'
+        },
+        inforPopupTitleTextColor() {
+            return this.opt.inforPopupTitleTextColor || '#333'
+        },
+        inforPopupTitleTextFontSize() {
+            return this.opt.inforPopupTitleTextFontSize || '12px'
+        },
+        inforPopupDescriptionTextColor() {
+            return this.opt.inforPopupDescriptionTextColor || '#888'
+        },
+        inforPopupDescriptionTextFontSize() {
+            return this.opt.inforPopupDescriptionTextFontSize || '10px'
+        },
+
+        funValidConnCreating() {
+            return this.opt.funValidConnCreating || null
+        },
+
+        defNode() {
+            let o = this.opt
+            let d = NODE_DEFAULTS
+            return {
+                type: o.defNodeType || d.type,
+                shape: o.defNodeShape || d.shape,
+                width: o.defNodeWidth || d.width,
+                height: o.defNodeHeight || d.height,
+                fontSize: o.defNodeFontSize || d.fontSize,
+                fontSizeMin: o.defNodeFontSizeMin || d.fontSizeMin,
+                fontSizeMax: o.defNodeFontSizeMax || d.fontSizeMax,
+                fontColor: o.defNodeFontColor || d.fontColor,
+                faceColor: o.defNodeFaceColor || d.faceColor,
+                edgeColor: o.defNodeEdgeColor || d.edgeColor,
+                edgeWidth: o.defNodeEdgeWidth !== undefined ? o.defNodeEdgeWidth : d.edgeWidth,
+                toPosition: o.defNodeToPosition || d.toPosition,
+                fromPosition: o.defNodeFromPosition || d.fromPosition,
+                popupDirection: o.defNodePopupDirection || d.popupDirection,
+            }
+        },
+        defConn() {
+            let o = this.opt
+            let d = CONN_DEFAULTS
+            return {
+                type: o.defConnType || d.type,
+                fontSize: o.defConnFontSize || d.fontSize,
+                fontSizeMin: o.defConnFontSizeMin || d.fontSizeMin,
+                fontSizeMax: o.defConnFontSizeMax || d.fontSizeMax,
+                fontColor: o.defConnFontColor || d.fontColor,
+                edgeColor: o.defConnEdgeColor || d.edgeColor,
+                edgeWidth: o.defConnEdgeWidth !== undefined ? o.defConnEdgeWidth : d.edgeWidth,
+                edgeDasharray: o.defConnEdgeDasharray || '',
+                markerEnd: o.defConnMarkerEnd || d.markerEnd,
+                animated: o.defConnAnimated !== undefined ? o.defConnAnimated : d.animated,
+                defOffset: o.defOffset != null ? o.defOffset : d.defOffset,
+            }
+        },
+
+        renderNodes() {
+            let dp = this.dragPositions
+            let ro = this.resizeOverlay
+            if (!dp && !ro) return this.nodes
+            return this.nodes.map(n => {
+                if (dp && dp[n.id]) return { ...n, position: dp[n.id] }
+                if (ro && ro.id === n.id) return { ...n, position: { x: ro.x, y: ro.y }, width: ro.width, height: ro.height }
+                return n
+            })
+        },
+        isBoxSelectPressed() {
+            return this.multiSelectEnabled && !!this.keysPressed[this.boxSelectionKeyCode]
+        },
+        isMultiSelectPressed() {
+            return this.multiSelectEnabled && !!this.keysPressed[this.multiSelectionKeyCode]
+        },
+    },
+    methods: {
+    // --- Helpers (replace store methods) ---
+        nodeById(id) {
+            return this.nodes.find(n => n.id === id) || null
+        },
+        connById(id) {
+            return this.conns.find(c => c.id === id) || null
+        },
+        setSelectedNodes(ids) {
+            this.selectedNodes.splice(0, this.selectedNodes.length, ...ids)
+        },
+        setSelectedConns(ids) {
+            this.selectedConns.splice(0, this.selectedConns.length, ...ids)
+        },
+        clearSelection() {
+            this.selectedNodes.splice(0, this.selectedNodes.length)
+            this.selectedConns.splice(0, this.selectedConns.length)
+        },
+        removeNode(id) {
+            let nodes = this.nodes
+            let idx = nodes.findIndex(n => n.id === id)
+            if (idx === -1) return
+            nodes.splice(idx, 1)
+            // Remove connected conns
+            let conns = this.conns
+            for (let i = conns.length - 1; i >= 0; i--) {
+                if (conns[i].from === id || conns[i].to === id) {
+                    conns.splice(i, 1)
+                }
+            }
+            let selIdx = this.selectedNodes.indexOf(id)
+            if (selIdx !== -1) this.selectedNodes.splice(selIdx, 1)
+        },
+        removeConn(id) {
+            let conns = this.conns
+            let idx = conns.findIndex(c => c.id === id)
+            if (idx === -1) return
+            conns.splice(idx, 1)
+            let selIdx = this.selectedConns.indexOf(id)
+            if (selIdx !== -1) this.selectedConns.splice(selIdx, 1)
+        },
+        addConn(conn) {
+            if (!conn.id || !conn.from || !conn.to) return
+            if (this.connById(conn.id)) return
+            if (!this.nodeById(conn.from) || !this.nodeById(conn.to)) return
+            this.conns.push(conn)
+        },
+        updateNodeInternals(id, internals) {
+            let existing = this.nodeInternals[id]
+            if (existing && existing.width === internals.width && existing.height === internals.height) return
+            this.$set(this.nodeInternals, id, internals)
+        },
+        setViewport({ x, y, zoom }) {
+            if (x !== undefined) this.viewport.x = x
+            if (y !== undefined) this.viewport.y = y
+            if (zoom !== undefined) this.viewport.zoom = zoom
+        },
+
+        // --- Key handling ---
+        onKeyDown(e) {
+            this.keysPressed = { ...this.keysPressed, [e.key]: true }
+            if (!this.locked && this.deleteKeyEnabled && (e.key === this.deleteKeyCode || e.key === 'Delete')) {
+                this.deleteSelectedElements()
+            }
+        },
+        onKeyUp(e) {
+            const copy = { ...this.keysPressed }
+            delete copy[e.key]
+            this.keysPressed = copy
+        },
+
+        // --- Canvas events ---
+        onCanvasClick(event) {
+            if (event.target.closest('.vue-flow__popup')) return
+            if (!event.target.closest('.vue-flow__node') && !event.target.closest('.vue-flow__edge')) {
+                this.clearSelection()
+                this.$emit('pane-click', event)
+            }
+        },
+        onCanvasContextMenu(event) {
+            this.$emit('pane-context-menu', event)
+        },
+        onCanvasDblClick(event) {
+            // Calculate flow-space position from the click
+            const rect = this.$refs.canvas.getContainerRect()
+            if (!rect) return
+            const vp = this.viewport
+            const flowX = (event.clientX - rect.left - vp.x) / vp.zoom
+            const flowY = (event.clientY - rect.top - vp.y) / vp.zoom
+
+            this.$emit('canvas-dblclick', {
+                event,
+                flowX,
+                flowY,
+                clientX: event.clientX,
+                clientY: event.clientY,
+            })
+        },
+        onCanvasMouseDown(event) {
+            if (event.target.closest && event.target.closest('.vue-flow__popup')) return
+            if (!this.locked && this.isBoxSelectPressed) {
+                this.startSelection(event)
+                return
+            }
+            if (this.panOnDrag && event.button === 0) {
+                const target = event.target
+                const isOnNode = target.closest && target.closest('.vue-flow__node')
+                const isOnHandle = target.closest && target.closest('.vue-flow__handle')
+                if (!isOnNode && !isOnHandle) {
+                    this.startPan(event)
+                }
+            }
+        },
+        onCanvasMouseMove(event) {
+            // Handled by document-level listener
+        },
+        onCanvasMouseUp(event) {
+            // Handled by document-level listener
+        },
+        onCanvasWheel(event) {
+            if (!this.zoomOnScroll) return
+            const delta = -event.deltaY * 0.001
+            const currentZoom = this.viewport.zoom
+            const newZoom = Math.max(this.zoomMin, Math.min(this.zoomMax, currentZoom + delta * currentZoom))
+
+            const rect = this.$refs.canvas.getContainerRect()
+            if (!rect) return
+            const mouseX = event.clientX - rect.left
+            const mouseY = event.clientY - rect.top
+
+            const vp = this.viewport
+            const scale = newZoom / currentZoom
+            const newX = mouseX - (mouseX - vp.x) * scale
+            const newY = mouseY - (mouseY - vp.y) * scale
+
+            this.setViewport({ x: newX, y: newY, zoom: newZoom })
+            this.emitViewportChange()
+        },
+
+        // --- Document-level mouse ---
+        onDocMouseMove(event) {
+            if (this.isPanning) {
+                this.doPan(event)
+            }
+            else if (this.isDraggingNode) {
+                this.doDrag(event)
+            }
+            else if (this.isConnecting) {
+                this.doConnect(event)
+            }
+            else if (this.isSelecting) {
+                this.doSelection(event)
+            }
+        },
+        onDocMouseUp(event) {
+            if (this.isPanning) {
+                this.endPan()
+            }
+            if (this.isDraggingNode) {
+                this.endDrag(event)
+            }
+            if (this.isConnecting) {
+                this.endConnect(event)
+            }
+            if (this.isSelecting) {
+                this.endSelection(event)
+            }
+        },
+
+        // --- Pan ---
+        startPan(event) {
+            this.isPanning = true
+            this.panStartPos = { x: event.clientX, y: event.clientY }
+        },
+        doPan(event) {
+            const dx = event.clientX - this.panStartPos.x
+            const dy = event.clientY - this.panStartPos.y
+            this.panStartPos = { x: event.clientX, y: event.clientY }
+
+            let x = this.viewport.x + dx
+            let y = this.viewport.y + dy
+
+            if (this.panLimits) {
+                const clamped = clampPosition({ x, y }, this.panLimits)
+                x = clamped.x
+                y = clamped.y
+            }
+
+            this.viewport.x = x
+            this.viewport.y = y
+        },
+        endPan() {
+            this.isPanning = false
+            this.panStartPos = null
+            this.emitViewportChange()
+        },
+
+        // --- Node drag ---
+        onNodeDragStart({ node, event }) {
+            if (this.locked || !this.nodesDraggable) return
+            this.isDraggingNode = true
+            this.draggingNodeId = node.id
+            this.dragStartPos = { x: event.clientX, y: event.clientY }
+
+            if (this.selectNodesOnDrag && !this.isMultiSelectPressed) {
+                this.setSelectedNodes([node.id])
+                this.setSelectedConns([])
+            }
+
+            // Cache start positions for drag
+            const starts = {}
+            this.selectedNodes.forEach(id => {
+                const n = this.nodeById(id)
+                if (n) starts[id] = { x: n.position.x, y: n.position.y }
+            })
+            if (!starts[node.id]) {
+                const n = this.nodeById(node.id)
+                if (n) starts[node.id] = { x: n.position.x, y: n.position.y }
+            }
+            this.dragNodeStartPositions = starts
+
+            this.$emit('node-drag-start', { node, event })
+        },
+        doDrag(event) {
+            const zoom = this.viewport.zoom
+            const dx = (event.clientX - this.dragStartPos.x) / zoom
+            const dy = (event.clientY - this.dragStartPos.y) / zoom
+            const snap = this.snapToGrid
+            const dp = {}
+
+            for (let id in this.dragNodeStartPositions) {
+                const start = this.dragNodeStartPositions[id]
+                let x = start.x + dx
+                let y = start.y + dy
+                if (snap) {
+                    const s = snapPosition({ x, y }, this.snapGridSize)
+                    x = s.x
+                    y = s.y
+                }
+                dp[id] = { x, y }
+            }
+            this.dragPositions = dp
+        },
+        endDrag(event) {
+            // Write final positions back to opt.nodes
+            if (this.dragPositions) {
+                for (let id in this.dragPositions) {
+                    let node = this.nodeById(id)
+                    if (node) {
+                        let pos = this.dragPositions[id]
+                        node.position.x = pos.x
+                        node.position.y = pos.y
+                    }
+                }
+            }
+            const dragNode = this.nodeById(this.draggingNodeId)
+            this.isDraggingNode = false
+            this.draggingNodeId = null
+            this.dragStartPos = null
+            this.dragNodeStartPositions = null
+            this.dragPositions = null
+            clearStepCache()
+            if (dragNode) {
+                this.$emit('node-drag-stop', { node: dragNode, event })
+            }
+            this.emitNodesUpdate()
+        },
+
+        // --- Connection ---
+        onConnectStart(payload) {
+            if (this.locked || !this.nodesConnectable) return
+            this.isConnecting = true
+            this.connectingFrom = payload
+            // Lock cursor to default during connecting, only handles show crosshair
+            this._connectCursorStyle = document.createElement('style')
+            this._connectCursorStyle.textContent = '* { cursor: default !important; } .vue-flow__handle { cursor: crosshair !important; } .vue-flow__node-settings, .vue-flow__edge-settings, .vue-flow__resize { opacity: 0 !important; pointer-events: none !important; }'
+            document.head.appendChild(this._connectCursorStyle)
+
+            const node = this.nodeById(payload.nodeId)
+            if (!node) return
+            const pos = getHandlePosition(
+                node, payload.handlePosition,
+                this.nodeInternals[payload.nodeId] || {}
+            )
+            this.connLineFromX = pos.x
+            this.connLineFromY = pos.y
+            this.connLineFromPosition = payload.handlePosition
+            this.connLineToX = pos.x
+            this.connLineToY = pos.y
+
+            this.$emit('connect-start', {
+                nodeId: payload.nodeId,
+                handleId: payload.handleId,
+                handleType: payload.handleType,
+            })
+        },
+        doConnect(event) {
+            const rect = this.$refs.canvas.getContainerRect()
+            if (!rect) return
+            const vp = this.viewport
+            this.connLineToX = (event.clientX - rect.left - vp.x) / vp.zoom
+            this.connLineToY = (event.clientY - rect.top - vp.y) / vp.zoom
+        },
+        endConnect(event) {
+            // Find handle element under cursor
+            const el = document.elementFromPoint(event.clientX, event.clientY)
+            const handleEl = el && el.closest && el.closest('.vue-flow__handle')
+
+            if (handleEl && this.connectingFrom) {
+                const toNodeEl = handleEl.closest('.vue-flow__node')
+                const toNodeId = toNodeEl ? toNodeEl.dataset.id : null
+
+                if (toNodeId) {
+                    const connection = {
+                        from: this.connectingFrom.nodeId,
+                        to: toNodeId,
+                    }
+
+                    const valid = isValidConnection(
+                        connection,
+                        this.nodes,
+                        this.conns,
+                        this.funValidConnCreating
+                    )
+
+                    if (valid) {
+                        const connId = `e${connection.from}-${connection.to}`
+                        const conn = {
+                            id: this.connById(connId) ? generateId() : connId,
+                            ...connection,
+                        }
+
+                        this.addConn(conn)
+                        this.emitConnsUpdate()
+                        this.$emit('connect', connection)
+                    }
+                }
+            }
+
+            this.$emit('connect-end', event)
+            this.isConnecting = false
+            this.connectingFrom = null
+            if (this._connectCursorStyle) {
+                document.head.removeChild(this._connectCursorStyle)
+                this._connectCursorStyle = null
+            }
+        },
+
+        // --- Selection ---
+        onNodeClick({ node, event }) {
+            if (!this.elementsSelectable) return
+            if (this.isMultiSelectPressed) {
+                const idx = this.selectedNodes.indexOf(node.id)
+                if (idx === -1) {
+                    this.selectedNodes.push(node.id)
+                }
+                else {
+                    this.selectedNodes.splice(idx, 1)
+                }
+            }
+            else {
+                this.setSelectedNodes([node.id])
+                this.setSelectedConns([])
+            }
+            this.emitSelectionChange()
+
+            this.$emit('node-click', { node, event })
+        },
+        onNodeDoubleClick(payload) {
+            this.$emit('node-double-click', payload)
+        },
+        onNodeContextMenu(payload) {
+            this.$emit('node-context-menu', payload)
+        },
+        onNodeSettingsClick(payload) {
+            this.$emit('node-settings-click', payload)
+        },
+        onNodeSettingsUpdate({ node, key, value }) {
+            let n = this.nodeById(node.id)
+            if (!n) return
+            let oldType = n.type
+            this.$set(n, key, value)
+            if (key === 'type' && oldType !== value) {
+                let nodeId = n.id
+                let hasTo = value === 'input' || value === 'basic'
+                let hasFrom = value === 'output' || value === 'basic'
+                let conns = this.conns
+                for (let i = conns.length - 1; i >= 0; i--) {
+                    let c = conns[i]
+                    if ((!hasTo && c.from === nodeId) || (!hasFrom && c.to === nodeId)) {
+                        conns.splice(i, 1)
+                    }
+                }
+            }
+        },
+        onNodeSettingsDelete({ node }) {
+            this.removeNode(node.id)
+            clearStepCache()
+            this.emitNodesUpdate()
+            this.emitConnsUpdate()
+        },
+        onNodeMouseEnter({ node, event }) {
+            this.$emit('node-mouseenter', { node, event })
+        },
+        onNodeMouseLeave({ node, event }) {
+            this.$emit('node-mouseleave', { node, event })
+        },
+        onConnClick({ conn, event }) {
+            if (!this.elementsSelectable) return
+            if (this.isMultiSelectPressed) {
+                const idx = this.selectedConns.indexOf(conn.id)
+                if (idx === -1) {
+                    this.selectedConns.push(conn.id)
+                }
+                else {
+                    this.selectedConns.splice(idx, 1)
+                }
+            }
+            else {
+                this.setSelectedConns([conn.id])
+                this.setSelectedNodes([])
+            }
+            this.emitSelectionChange()
+
+            this.$emit('conn-click', { conn, event })
+        },
+        onConnDoubleClick(payload) {
+            this.$emit('conn-double-click', payload)
+        },
+        onConnContextMenu(payload) {
+            this.$emit('conn-context-menu', payload)
+        },
+        onConnMouseEnter({ conn, event }) {
+            this.$emit('conn-mouseenter', { conn, event })
+        },
+        onConnMouseLeave({ conn, event }) {
+            this.$emit('conn-mouseleave', { conn, event })
+        },
+        onConnSettingsClick(payload) {
+            this.$emit('conn-settings-click', payload)
+        },
+        onConnSettingsUpdate({ conn, key, value }) {
+            let c = this.connById(conn.id)
+            if (c) {
+                this.$set(c, key, value)
+            }
+        },
+        onConnSettingsDelete({ conn }) {
+            this.removeConn(conn.id)
+            clearStepCache()
+            this.emitConnsUpdate()
+        },
+
+        startSelection(event) {
+            this.isSelecting = true
+            const rect = this.$refs.canvas.getContainerRect()
+            if (!rect) return
+            this.selectionStartPos = {
+                x: event.clientX - rect.left,
+                y: event.clientY - rect.top,
+            }
+            this.selectionBox = {
+                x: this.selectionStartPos.x,
+                y: this.selectionStartPos.y,
+                width: 0,
+                height: 0,
+            }
+        },
+        doSelection(event) {
+            const rect = this.$refs.canvas.getContainerRect()
+            if (!rect) return
+            const currentX = event.clientX - rect.left
+            const currentY = event.clientY - rect.top
+            const x = Math.min(this.selectionStartPos.x, currentX)
+            const y = Math.min(this.selectionStartPos.y, currentY)
+            const width = Math.abs(currentX - this.selectionStartPos.x)
+            const height = Math.abs(currentY - this.selectionStartPos.y)
+            this.selectionBox = { x, y, width, height }
+        },
+        endSelection() {
+            if (this.selectionBox) {
+                const box = this.selectionBox
+                const vp = this.viewport
+                // Convert screen-space box to graph-space
+                const graphBox = {
+                    x: (box.x - vp.x) / vp.zoom,
+                    y: (box.y - vp.y) / vp.zoom,
+                    width: box.width / vp.zoom,
+                    height: box.height / vp.zoom,
+                }
+                const overlapping = getOverlappingNodes(graphBox, this.nodes, this.nodeInternals)
+                const nodeIds = overlapping.map(n => n.id)
+                this.setSelectedNodes(nodeIds)
+                // Auto-select conns whose both ends are within selected nodes
+                let nodeIdSet = new Set(nodeIds)
+                let connIds = this.conns
+                    .filter(c => nodeIdSet.has(c.from) && nodeIdSet.has(c.to))
+                    .map(c => c.id)
+                this.setSelectedConns(connIds)
+                this.emitSelectionChange()
+            }
+            this.isSelecting = false
+            this.selectionStartPos = null
+            this.selectionBox = null
+        },
+
+        // --- Delete ---
+        deleteSelectedElements() {
+            const { nodes, conns } = this.getSelectedElements()
+            if (nodes.length === 0 && conns.length === 0) return
+
+            nodes.forEach(n => {
+                if (n.deletable !== false) this.removeNode(n.id)
+            })
+            conns.forEach(e => {
+                if (e.deletable !== false) this.removeConn(e.id)
+            })
+            this.clearSelection()
+
+            this.$emit('delete', { nodes, conns })
+            this.emitNodesUpdate()
+            this.emitConnsUpdate()
+        },
+
+        // --- Node dimensions ---
+        onNodeDimensions({ nodeId, width, height }) {
+            this.updateNodeInternals(nodeId, { width, height })
+        },
+
+        onNodeResize({ nodeId, width, height, x, y }) {
+            if (this.locked) return
+            this.resizeOverlay = { id: nodeId, width, height, x, y }
+            this.updateNodeInternals(nodeId, { width, height })
+        },
+        onNodeResizeEnd({ nodeId, width, height, x, y }) {
+            let node = this.nodeById(nodeId)
+            if (node) {
+                node.width = width
+                node.height = height
+                node.position.x = x
+                node.position.y = y
+            }
+            this.resizeOverlay = null
+            clearStepCache()
+            this.emitNodesUpdate()
+        },
+
+        // --- Helpers ---
+        updateNodePosition(id, position) {
+            let node = this.nodeById(id)
+            if (!node) return
+            node.position.x = position.x
+            node.position.y = position.y
+        },
+        getSelectedElements() {
+            return {
+                nodes: this.nodes.filter(n => this.selectedNodes.includes(n.id)),
+                conns: this.conns.filter(c => this.selectedConns.includes(c.id)),
+            }
+        },
+
+        // --- Emit helpers ---
+        emitNodesUpdate() {
+            this.$emit('update:nodes', [...this.nodes])
+        },
+        emitConnsUpdate() {
+            this.$emit('update:conns', [...this.conns])
+        },
+        emitViewportChange() {
+            this.$emit('viewport-change', { ...this.viewport })
+        },
+        emitSelectionChange() {
+            this.$emit('selection-change', this.getSelectedElements())
+        },
+
+        // --- Public API ---
+        fitView(padding) {
+            padding = padding || 50
+            let nodes = this.nodes.filter(n => !n.hidden)
+            if (nodes.length === 0) return
+            let internals = this.nodeInternals
+            let minX = Infinity
+            let minY = Infinity
+            let maxX = -Infinity
+            let maxY = -Infinity
+            nodes.forEach(n => {
+                let w = (internals[n.id] && internals[n.id].width) || n.width || 150
+                let h = (internals[n.id] && internals[n.id].height) || n.height || 40
+                minX = Math.min(minX, n.position.x)
+                minY = Math.min(minY, n.position.y)
+                maxX = Math.max(maxX, n.position.x + w)
+                maxY = Math.max(maxY, n.position.y + h)
+            })
+            let rect = this.$refs.canvas ? this.$refs.canvas.getContainerRect() : null
+            let cw = rect ? rect.width : this.widthInp
+            let ch = rect ? rect.height : this.heightInp
+            let gw = maxX - minX + padding * 2
+            let gh = maxY - minY + padding * 2
+            let zoom = Math.min(cw / gw, ch / gh, 2)
+            this.viewport.zoom = zoom
+            this.viewport.x = (cw - (maxX + minX) * zoom) / 2
+            this.viewport.y = (ch - (maxY + minY) * zoom) / 2
+            this.emitViewportChange()
+        },
+        zoomIn() {
+            this.viewport.zoom = Math.min(this.viewport.zoom * 1.2, this.zoomMax)
+            this.emitViewportChange()
+        },
+        zoomOut() {
+            this.viewport.zoom = Math.max(this.viewport.zoom / 1.2, this.zoomMin)
+            this.emitViewportChange()
+        },
+        toggleInteractive() {
+            this.locked = !this.locked
+            this.$emit('toggle-interactive', this.locked)
+        },
+        getFlowData() {
+            return {
+                nodes: JSON.parse(JSON.stringify(this.nodes)),
+                conns: JSON.parse(JSON.stringify(this.conns)),
+            }
+        },
+    },
+}
+</script>
+
+<style scoped>
+
+
+</style>

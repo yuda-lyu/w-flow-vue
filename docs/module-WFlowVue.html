@@ -1,0 +1,2790 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    
+    <meta charset="utf-8">
+    <title>WFlowVue - Documentation</title>
+    
+    
+    <script src="scripts/prettify/prettify.js"></script>
+    <script src="scripts/prettify/lang-css.js"></script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc.css">
+    <script src="scripts/nav.js" defer></script>
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body>
+
+<input type="checkbox" id="nav-trigger" class="nav-trigger" />
+<label for="nav-trigger" class="navicon-button x">
+  <div class="navicon"></div>
+</label>
+
+<label for="nav-trigger" class="overlay"></label>
+
+<nav >
+    
+    
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-WFlowVue.html">WFlowVue</a></li></ul><h3>Global</h3><ul><li><a href="global.html#NODE_DEFAULTS">NODE_DEFAULTS</a></li><li><a href="global.html#clampPosition">clampPosition</a></li><li><a href="global.html#generateId">generateId</a></li><li><a href="global.html#getBezierPath">getBezierPath</a></li><li><a href="global.html#getControlOffset">getControlOffset</a></li><li><a href="global.html#getDiamondEdgePoint">getDiamondEdgePoint</a></li><li><a href="global.html#getEllipseEdgePoint">getEllipseEdgePoint</a></li><li><a href="global.html#getHandlePosition">getHandlePosition</a></li><li><a href="global.html#getOverlappingNodes">getOverlappingNodes</a></li><li><a href="global.html#getSmoothStepPath">getSmoothStepPath</a></li><li><a href="global.html#getStepPath">getStepPath</a></li><li><a href="global.html#getStraightPath">getStraightPath</a></li><li><a href="global.html#getTriangleEdgePoint">getTriangleEdgePoint</a></li><li><a href="global.html#isValidConnection">isValidConnection</a></li><li><a href="global.html#labelAtHalfLength">labelAtHalfLength</a></li><li><a href="global.html#lookupRoute">lookupRoute</a></li><li><a href="global.html#rectsOverlap">rectsOverlap</a></li><li><a href="global.html#segmentFallback">segmentFallback</a></li><li><a href="global.html#snapPosition">snapPosition</a></li></ul>
+    
+</nav>
+
+<div id="main">
+    
+    <h1 class="page-title">WFlowVue</h1>
+    
+
+    
+
+
+
+
+<section>
+
+<header>
+    
+        
+            
+        
+    
+</header>
+
+<article>
+    
+        <div class="container-overview">
+        
+            
+                <div class="description usertext"><p>WFlowVue — Vue 2 flow/graph editor component.</p>
+<p>All configuration is passed via the <code>opt</code> prop object.</p></div>
+            
+
+            
+                
+
+
+
+
+<dl class="details">
+    
+    <dt class="tag-description">Description:</dt>
+    <dd class="tag-description"><ul class="dummy"><li><p>WFlowVue — Vue 2 flow/graph editor component.</p>
+<p>All configuration is passed via the <code>opt</code> prop object.</p></li></ul></dd>
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="components_WFlowVue.vue.html">components/WFlowVue.vue</a>, <a href="components_WFlowVue.vue.html#line104">line 104</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+    <h5 class="subsection-title">Properties:</h5>
+
+    
+
+<table class="props">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>opt</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Object</span>
+
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>─── Canvas ────────────────────────────────────────────────────────────</p>
+                <h6>Properties</h6>
+
+<table class="props">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+        <th>Attributes</th>
+        
+
+        
+        <th>Default</th>
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>width</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">number</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>800</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Canvas width (px)</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>height</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">number</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>600</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Canvas height (px)</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>nodes</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Array</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>[]</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Node data array</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>conns</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Array</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>[]</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Connection data array</p>
+<p>─── Interaction ───────────────────────────────────────────────────────</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>nodesDraggable</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">boolean</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>true</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Allow node dragging</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>nodesConnectable</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">boolean</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>true</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Allow creating connections</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>nodesResizable</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">boolean</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>true</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Allow resizing nodes (per-node override: node.resizable)</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>elementsSelectable</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">boolean</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>true</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Allow selecting nodes/conns</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>selectNodesOnDrag</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">boolean</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>true</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Select node when drag starts</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>deleteKeyEnabled</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">boolean</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>false</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Enable keyboard deletion of selected elements</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>deleteKeyCode</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>'Backspace'</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Key to delete selected elements (requires deleteKeyEnabled)</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>multiSelectEnabled</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">boolean</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>true</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Enable multi-selection (box select + Shift+Click)</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>boxSelectionKeyCode</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>'Shift'</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Key to hold for box selection (drag on canvas)</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>multiSelectionKeyCode</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>'Shift'</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Key to hold for Shift+Click add/remove selection</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>zoomOnScroll</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">boolean</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>true</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Zoom with mouse wheel</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>zoomMin</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">number</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>0.5</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Minimum zoom level</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>zoomMax</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">number</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>2</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Maximum zoom level</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>panOnDrag</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">boolean</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>true</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Pan canvas by dragging background</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>center</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Array</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>[0,0]</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Initial viewport center [x, y]</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>zoom</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">number</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>1</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Initial viewport zoom level</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>panLimits</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Array</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>null</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Pan limits [[minX,minY],[maxX,maxY]]</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>snapToGrid</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">boolean</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>false</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Snap node positions to grid</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>snapGridSize</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">number</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>20</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Grid cell size (px, used for both drag snap and resize snap)</p>
+<p>─── Platform ────────────────────────────────────────────────────────</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>platformBackgroundPatternType</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>'dots'</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Background pattern: 'dots' | 'lines' | 'cross'</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>platformBackgroundPatternGap</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">number</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>20</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Pattern spacing (px)</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>platformBackgroundPatternSize</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">number</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>1</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Pattern element size</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>platformBackgroundPatternColor</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>'#81818a'</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Pattern color</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>platformBackgroundColor</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>'#fff'</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Canvas background color</p>
+<p>─── Settings Popup ────────────────────────────────────────────────────</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>settingsPopupBackgroundColor</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>'#fff'</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Settings popup background</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>settingsPopupTextColor</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>'#333'</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Settings popup text color</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>settingsPopupTextFontSize</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>'12px'</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Settings popup font size</p>
+<p>─── Infor Popup ────────────────────────────────────────────────────────</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>inforPopupBackgroundColor</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>'#fff'</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Info popup background</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>inforPopupTitleTextColor</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>'#333'</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Info popup title text color</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>inforPopupTitleTextFontSize</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>'12px'</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Info popup title font size</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>inforPopupDescriptionTextColor</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>'#888'</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Info popup description text color</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>inforPopupDescriptionTextFontSize</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>'10px'</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Info popup description font size</p>
+<p>─── Default Node ──────────────────────────────────────────</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>defNodeType</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>'basic'</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Default node type: 'input' | 'basic' | 'output'</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>defNodeShape</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>'rectangle'</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Default shape: 'rectangle' | 'diamond' | 'ellipse' | 'triangle' | ...</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>defNodeWidth</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">number</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>100</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Default node width (px)</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>defNodeHeight</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">number</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>40</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Default node height (px)</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>defNodeFontSize</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">number</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>12</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Default node font size (px)</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>defNodeFontSizeMin</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">number</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>1</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Min font size in settings</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>defNodeFontSizeMax</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">number</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>72</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Max font size in settings</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>defNodeFontColor</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>'#333333'</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Default node text color</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>defNodeFaceColor</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>'#ffffff'</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Default node fill color</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>defNodeEdgeColor</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>'#bbbbbb'</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Default node border color</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>defNodeEdgeWidth</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">number</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>1</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Default node border width (px)</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>defNodeToPosition</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>'bottom'</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Default outgoing handle position: 'top' | 'bottom' | 'left' | 'right'</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>defNodeFromPosition</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>'top'</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Default incoming handle position</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>defNodePopupDirection</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>'right'</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Default settings popup direction</p>
+<p>─── Default Creating Connection ────────────────────────────────────────────────────────</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>defConnCreatingType</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>'bezier'</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Drag-line type: 'bezier' | 'straight' | 'step' | 'smoothstep'</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>defConnCreatingEdgeColor</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>'#b1b1b7'</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Drag-line color</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>defConnCreatingEdgeWidth</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">number</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>1</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Drag-line width (px)</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>defConnCreatingEdgeDasharray</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>'5 5'</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Drag-line dash pattern ('' for solid)</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>funValidConnCreating</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">function</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>null</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Custom connection validator fn(connection) → boolean</p>
+<p>─── Default Connection ────────────────────────────────────</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>defConnType</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>'bezier'</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Default conn type: 'bezier' | 'straight' | 'step' | 'smoothstep'</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>defConnFontSize</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">number</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>10</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Default conn label font size (px)</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>defConnFontSizeMin</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">number</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>1</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Min font size in settings</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>defConnFontSizeMax</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">number</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>72</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Max font size in settings</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>defConnFontColor</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>'#333333'</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Default conn label text color</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>defConnEdgeColor</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>'#b1b1b7'</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Default conn line color</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>defConnEdgeWidth</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">number</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>1</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Default conn line width (px)</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>defConnEdgeDasharray</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>''</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Default conn dash pattern ('' for solid, '5 5' for dashed)</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>defConnMarkerEnd</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>''</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Default arrow marker: '' | 'arrow' | 'arrowclosed'</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>defConnAnimated</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">boolean</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>false</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Default conn animation (dashed flow)</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>defOffset</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">number</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>24</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Step/smoothstep routing buffer (px)</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+            </td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+            
+        
+        </div>
+    
+
+    
+
+    
+
+    
+    
+    
+
+     
+
+    
+
+    
+
+    
+
+    
+
+    
+</article>
+
+</section>
+
+
+
+
+    
+    
+</div>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 4.0.5</a> on Sun Apr 12 2026 22:18:33 GMT+0800 (台北標準時間) using the <a href="https://github.com/clenemt/docdash">docdash</a> theme.
+</footer>
+
+<script>prettyPrint();</script>
+<script src="scripts/polyfill.js"></script>
+<script src="scripts/linenumber.js"></script>
+
+
+
+</body>
+</html>
