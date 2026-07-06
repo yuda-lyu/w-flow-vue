@@ -18,6 +18,8 @@
       :infor-popup-description-text-color="inforPopupDescriptionTextColor"
       :infor-popup-description-text-font-size="inforPopupDescriptionTextFontSize"
       :snap-grid-size="snapGridSize"
+      :settings-enabled="settingsEnabled"
+      :settings-excludes="settingsExcludes"
       @drag-start="$emit('drag-start', $event)"
       @node-click="$emit('node-click', $event)"
       @node-double-click="$emit('node-double-click', $event)"
@@ -61,6 +63,8 @@ export default {
         inforPopupDescriptionTextColor: { type: String, default: '#888' },
         inforPopupDescriptionTextFontSize: { type: String, default: '10px' },
         snapGridSize: { type: Number, default: null },
+        settingsEnabled: { type: Boolean, default: true },
+        settingsExcludes: { type: Array, default: () => [] },
     },
     computed: {
         visibleNodes() {

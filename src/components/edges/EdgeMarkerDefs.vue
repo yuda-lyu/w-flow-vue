@@ -25,25 +25,29 @@
 <script>
 export default {
     name: 'EdgeMarkerDefs',
+    inject: { getDefConn: { default: () => () => ({}) } },
     props: {
         conns: { type: Array, default: () => [] },
     },
     computed: {
         markers() {
             const set = new Map()
+            const defConn = this.getDefConn()
             this.conns.forEach(conn => {
-                this.collectMarker(conn.markerStart, set)
-                this.collectMarker(conn.markerEnd, set)
+                const lineColor = conn.edgeColor || defConn.edgeColor
+                this.collectMarker(conn.markerStart, set, lineColor)
+                this.collectMarker(conn.markerEnd || defConn.markerEnd, set, lineColor)
             })
             return Array.from(set.values())
         },
     },
     methods: {
-        collectMarker(marker, set) {
+        collectMarker(marker, set, lineColor) {
             if (!marker) return
             const config = typeof marker === 'string' ? { type: marker } : marker
-            const color = config.color || '#b1b1b7'
-            const id = this.getMarkerId(config)
+            // Fallback chain must match EdgeWrapper.getMarkerUrl so the ids agree.
+            const color = config.color || lineColor || '#b1b1b7'
+            const id = this.getMarkerId(config, color)
             if (set.has(id)) return
 
             if (config.type === 'arrowclosed') {
@@ -66,10 +70,9 @@ export default {
                 })
             }
         },
-        getMarkerId(config) {
+        getMarkerId(config, colorUse) {
             const type = typeof config === 'string' ? config : config.type
-            const color = (typeof config === 'object' && config.color) || '#b1b1b7'
-            return `vue-flow__${type}_${color.replace('#', '')}`
+            return `vue-flow__${type}_${colorUse.replace('#', '')}`
         },
     },
 }

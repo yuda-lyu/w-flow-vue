@@ -47,7 +47,7 @@ describe('NodeSettingsForm', () => {
         return mount(NodeSettingsForm, { propsData: { node: { ...node, ...ov }, defNode } })
     }
 
-    test('renders text inputs', () => { const w = mountForm(); expect(w.findAll('input[type="text"]').length).toBe(3); w.destroy() })
+    test('renders text inputs', () => { const w = mountForm(); expect(w.findAll('input[type="text"]').length).toBe(2); w.destroy() })
     test('emits update on name', async () => { const w = mountForm(); await w.findAll('input[type="text"]').at(0).setValue('X'); expect(w.emitted('update')[0]).toEqual(['name', 'X']); w.destroy() })
     test('emits update on description', async () => { const w = mountForm(); await w.findAll('input[type="text"]').at(1).setValue('D'); expect(w.emitted('update')[0]).toEqual(['description', 'D']); w.destroy() })
     test('emits update on type', async () => { const w = mountForm(); const s = w.findAll('select').at(0); s.element.value = 'output'; await s.trigger('input'); expect(w.emitted('update').some(e => e[0] === 'type')).toBe(true); w.destroy() })
@@ -62,7 +62,7 @@ describe('NodeSettingsForm', () => {
         expect(w.find('.vue-flow__delete-warn').exists()).toBe(false)
         await w.find('.vue-flow__delete-btn').trigger('click')
         expect(w.find('.vue-flow__delete-warn').exists()).toBe(true)
-        await w.find('.vue-flow__delete-btn--confirm').trigger('click')
+        await w.find('.vue-flow__delete-confirm-row .vue-flow__delete-btn').trigger('click')
         expect(w.emitted('delete')).toBeTruthy()
         w.destroy()
     })
@@ -100,7 +100,7 @@ describe('ConnSettingsForm', () => {
         return mount(ConnSettingsForm, { propsData: { conn: { ...conn, ...ov }, defConn } })
     }
 
-    test('renders text inputs', () => { const w = mountForm(); expect(w.findAll('input[type="text"]').length).toBe(3); w.destroy() })
+    test('renders text inputs', () => { const w = mountForm(); expect(w.findAll('input[type="text"]').length).toBe(2); w.destroy() })
     test('emits update on name', async () => { const w = mountForm(); await w.findAll('input[type="text"]').at(0).setValue('N'); expect(w.emitted('update')[0]).toEqual(['name', 'N']); w.destroy() })
     test('emits update on type', async () => { const w = mountForm(); const s = w.findAll('select').at(0); s.element.value = 'step'; await s.trigger('input'); expect(w.emitted('update').some(e => e[0] === 'type')).toBe(true); w.destroy() })
     test('emits update on animated', async () => { const w = mountForm(); await w.find('input[type="checkbox"]').setChecked(true); expect(w.emitted('update').some(e => e[0] === 'animated')).toBe(true); w.destroy() })
@@ -110,7 +110,7 @@ describe('ConnSettingsForm', () => {
     test('delete confirm', async () => {
         const w = mountForm()
         await w.find('.vue-flow__delete-btn').trigger('click')
-        await w.find('.vue-flow__delete-btn--confirm').trigger('click')
+        await w.find('.vue-flow__delete-confirm-row .vue-flow__delete-btn').trigger('click')
         expect(w.emitted('delete')).toBeTruthy()
         w.destroy()
     })
@@ -389,8 +389,8 @@ describe('EdgeMarkerDefs ID consistency', () => {
     test('string marker and object marker produce same ID', () => {
         const w = createWrapper()
         const defs = w.findComponent({ name: 'EdgeMarkerDefs' })
-        const id1 = defs.vm.getMarkerId('arrowclosed')
-        const id2 = defs.vm.getMarkerId({ type: 'arrowclosed' })
+        const id1 = defs.vm.getMarkerId('arrowclosed', '#b1b1b7')
+        const id2 = defs.vm.getMarkerId({ type: 'arrowclosed' }, '#b1b1b7')
         expect(id1).toBe(id2)
         w.destroy()
     })

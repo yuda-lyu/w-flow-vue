@@ -23,7 +23,6 @@
       :backgroundColor="inforPopupBackgroundColor"
       :textFontSize="inforPopupTitleTextFontSize"
       :paddingStyle="{v:8,h:12}"
-      :cmpZIndex="10000"
     >
       <template v-slot:trigger>
         <NodeBody
@@ -50,7 +49,7 @@
     </WPopup>
     <!-- Settings popup -->
     <transition name="vue-flow__fade">
-    <div v-if="(hovered || settingsPopupShow) && draggable && !locked" class="vue-flow__node-settings-anchor">
+    <div v-if="(hovered || settingsPopupShow) && draggable && !locked && settingsEnabled" class="vue-flow__node-settings-anchor">
       <WPopup
         v-model="settingsPopupShow"
         placement="right-start"
@@ -62,7 +61,6 @@
         :backgroundColor="settingsPopupBackgroundColor"
         :textColor="settingsPopupTextColor"
         :paddingStyle="{v:8,h:8}"
-        :cmpZIndex="10000"
         @show="$emit('node-settings-click', { node: node })"
       >
         <template v-slot:trigger>
@@ -77,6 +75,7 @@
             :node="node"
             :def-node="dn"
             :text-font-size="settingsPopupTextFontSize"
+            :excludes="settingsExcludes"
             @update="onSettingsUpdate"
             @delete="onSettingsDelete"
           />
@@ -112,6 +111,8 @@ export default {
         inforPopupDescriptionTextColor: { type: String, default: '#888' },
         inforPopupDescriptionTextFontSize: { type: String, default: '10px' },
         snapGridSize: { type: Number, default: null },
+        settingsEnabled: { type: Boolean, default: true },
+        settingsExcludes: { type: Array, default: () => [] },
     },
     computed: {
         dn() {
@@ -154,6 +155,9 @@ export default {
             const style = {
                 transform: `translate(${n.position.x}px, ${n.position.y}px)`,
                 zIndex: n.zIndex || 0,
+                // Nodes with an explicit width wrap long names instead of
+                // overflowing (base CSS is nowrap); per-node style can override.
+                ...(n.width ? { whiteSpace: 'pre-line' } : {}),
                 ...(n.style || {}),
             }
             if (n.width) style.width = typeof n.width === 'number' ? `${n.width}px` : n.width

@@ -42,6 +42,8 @@
         :infor-popup-title-text-font-size="inforPopupTitleTextFontSize"
         :infor-popup-description-text-color="inforPopupDescriptionTextColor"
         :infor-popup-description-text-font-size="inforPopupDescriptionTextFontSize"
+        :settings-enabled="connsSettingsEnabled"
+        :settings-excludes="connsSettingsExcludes"
         @conn-click="onConnClick"
         @conn-double-click="onConnDoubleClick"
         @conn-context-menu="onConnContextMenu"
@@ -50,7 +52,11 @@
         @conn-settings-click="onConnSettingsClick"
         @conn-settings-update="onConnSettingsUpdate"
         @conn-settings-delete="onConnSettingsDelete"
-      />
+      >
+        <template v-if="$scopedSlots['conn-popup']" v-slot:conn-popup="scope">
+          <slot name="conn-popup" v-bind="scope" />
+        </template>
+      </EdgeRenderer>
 
       <NodeRenderer
         :nodes="renderNodes"
@@ -68,6 +74,8 @@
         :infor-popup-description-text-color="inforPopupDescriptionTextColor"
         :infor-popup-description-text-font-size="inforPopupDescriptionTextFontSize"
         :snap-grid-size="snapToGrid ? snapGridSize : null"
+        :settings-enabled="nodesSettingsEnabled"
+        :settings-excludes="nodesSettingsExcludes"
         @drag-start="onNodeDragStart"
         @node-click="onNodeClick"
         @node-double-click="onNodeDoubleClick"
@@ -81,7 +89,11 @@
         @dimensions="onNodeDimensions"
         @node-resize="onNodeResize"
         @node-resize-end="onNodeResizeEnd"
-      />
+      >
+        <template v-if="$scopedSlots['node-popup']" v-slot:node-popup="scope">
+          <slot name="node-popup" v-bind="scope" />
+        </template>
+      </NodeRenderer>
 
       <ConnectionLine
         :active="isConnecting"
@@ -144,6 +156,10 @@ import { NODE_DEFAULTS, CONN_DEFAULTS } from '../js/defaults'
  * @prop {boolean}  [opt.nodesConnectable=true]           Allow creating connections
  * @prop {boolean}  [opt.nodesResizable=true]            Allow resizing nodes (per-node override: node.resizable)
  * @prop {boolean}  [opt.elementsSelectable=true]         Allow selecting nodes/conns
+ * @prop {boolean}  [opt.nodesSettingsEnabled=true]       Show built-in node settings popup (gear icon)
+ * @prop {boolean}  [opt.connsSettingsEnabled=true]       Show built-in connection settings popup (gear icon)
+ * @prop {Array}    [opt.nodesSettingsExcludes=[]]        Field keys hidden in node settings form (e.g. ['name','description'])
+ * @prop {Array}    [opt.connsSettingsExcludes=[]]        Field keys hidden in connection settings form
  * @prop {boolean}  [opt.selectNodesOnDrag=true]          Select node when drag starts
  * @prop {boolean}  [opt.deleteKeyEnabled=false]           Enable keyboard deletion of selected elements
  * @prop {string}   [opt.deleteKeyCode='Backspace']       Key to delete selected elements (requires deleteKeyEnabled)
@@ -151,7 +167,7 @@ import { NODE_DEFAULTS, CONN_DEFAULTS } from '../js/defaults'
  * @prop {string}   [opt.boxSelectionKeyCode='Shift']     Key to hold for box selection (drag on canvas)
  * @prop {string}   [opt.multiSelectionKeyCode='Shift']   Key to hold for Shift+Click add/remove selection
  * @prop {boolean}  [opt.zoomOnScroll=true]               Zoom with mouse wheel
- * @prop {number}   [opt.zoomMin=0.5]                     Minimum zoom level
+ * @prop {number}   [opt.zoomMin=0.5]                     Minimum zoom level (fitView may go below it; wheel zoom then keeps the current level as its lower bound instead of jumping back)
  * @prop {number}   [opt.zoomMax=2]                       Maximum zoom level
  * @prop {boolean}  [opt.panOnDrag=true]                  Pan canvas by dragging background
  * @prop {Array}    [opt.center=[0,0]]            Initial viewport center [x, y]
@@ -340,6 +356,18 @@ export default {
         },
         elementsSelectable() {
             return this.opt.elementsSelectable !== undefined ? this.opt.elementsSelectable : true
+        },
+        nodesSettingsEnabled() {
+            return this.opt.nodesSettingsEnabled !== undefined ? this.opt.nodesSettingsEnabled : true
+        },
+        connsSettingsEnabled() {
+            return this.opt.connsSettingsEnabled !== undefined ? this.opt.connsSettingsEnabled : true
+        },
+        nodesSettingsExcludes() {
+            return this.opt.nodesSettingsExcludes || []
+        },
+        connsSettingsExcludes() {
+            return this.opt.connsSettingsExcludes || []
         },
         selectNodesOnDrag() {
             return this.opt.selectNodesOnDrag !== undefined ? this.opt.selectNodesOnDrag : true
@@ -633,7 +661,10 @@ export default {
             if (!this.zoomOnScroll) return
             const delta = -event.deltaY * 0.001
             const currentZoom = this.viewport.zoom
-            const newZoom = Math.max(this.zoomMin, Math.min(this.zoomMax, currentZoom + delta * currentZoom))
+            // fitView may set zoom below zoomMin; use the current level as the
+            // effective lower bound so wheel zoom does not jump the view back.
+            const zoomMinUse = Math.min(this.zoomMin, currentZoom)
+            const newZoom = Math.max(zoomMinUse, Math.min(this.zoomMax, currentZoom + delta * currentZoom))
 
             const rect = this.$refs.canvas.getContainerRect()
             if (!rect) return
@@ -904,12 +935,14 @@ export default {
                     }
                 }
             }
+            this.$emit('node-settings-update', { node: n, key, value })
         },
         onNodeSettingsDelete({ node }) {
             this.removeNode(node.id)
             clearStepCache()
             this.emitNodesUpdate()
             this.emitConnsUpdate()
+            this.$emit('node-settings-delete', { node })
         },
         onNodeMouseEnter({ node, event }) {
             this.$emit('node-mouseenter', { node, event })
@@ -955,12 +988,14 @@ export default {
             let c = this.connById(conn.id)
             if (c) {
                 this.$set(c, key, value)
+                this.$emit('conn-settings-update', { conn: c, key, value })
             }
         },
         onConnSettingsDelete({ conn }) {
             this.removeConn(conn.id)
             clearStepCache()
             this.emitConnsUpdate()
+            this.$emit('conn-settings-delete', { conn })
         },
 
         startSelection(event) {
@@ -1119,7 +1154,7 @@ export default {
             this.emitViewportChange()
         },
         zoomOut() {
-            this.viewport.zoom = Math.max(this.viewport.zoom / 1.2, this.zoomMin)
+            this.viewport.zoom = Math.max(this.viewport.zoom / 1.2, Math.min(this.zoomMin, this.viewport.zoom))
             this.emitViewportChange()
         },
         toggleInteractive() {

@@ -53,7 +53,6 @@
             :backgroundColor="inforPopupBackgroundColor"
             :textFontSize="inforPopupTitleTextFontSize"
             :paddingStyle="{v:8,h:12}"
-            :cmpZIndex="10000"
           >
             <template v-slot:trigger>
               <span class="vue-flow__edge-label" :style="labelStyle" @mousedown="onLabelMouseDown">{{ conn.name }}</span>
@@ -68,7 +67,7 @@
             </template>
           </WPopup>
           <transition name="vue-flow__fade">
-          <span v-if="(hovered || settingsPopupShow) && interactive && !locked" class="vue-flow__edge-settings-anchor">
+          <span v-if="(hovered || settingsPopupShow) && interactive && !locked && settingsEnabled" class="vue-flow__edge-settings-anchor">
               <WPopup
                 v-model="settingsPopupShow"
                 placement="right-start"
@@ -80,7 +79,6 @@
                 :backgroundColor="settingsPopupBackgroundColor"
                 :textColor="settingsPopupTextColor"
                 :paddingStyle="{v:8,h:8}"
-                :cmpZIndex="10000"
                 @show="$emit('conn-settings-click', { conn: conn })"
               >
                 <template v-slot:trigger>
@@ -95,6 +93,7 @@
                     :conn="conn"
                     :def-conn="dc"
                     :text-font-size="settingsPopupTextFontSize"
+                    :excludes="settingsExcludes"
                     @update="onSettingsUpdate"
                     @delete="onSettingsDelete"
                   />
@@ -113,10 +112,6 @@ import { getBezierPath, getStraightPath, getStepPath, getSmoothStepPath } from '
 import ConnSettingsForm from '../ui/ConnSettingsForm.vue'
 import WPopup from 'w-component-vue/src/components/WPopup.vue'
 
-// Wrapper that forces HTML namespace for children inside SVG foreignObject.
-// Fixes Vue 2 bug: components inside foreignObject inherit SVG namespace
-// from context.$vnode.ns, causing all child elements to be created as
-// SVGElement instead of HTMLElement.
 const pathFunctions = {
     bezier: getBezierPath,
     straight: getStraightPath,
@@ -149,6 +144,8 @@ export default {
         inforPopupDescriptionTextFontSize: { type: String, default: '10px' },
         allNodes: { type: Array, default: () => [] },
         nodeInternals: { type: Object, default: () => ({}) },
+        settingsEnabled: { type: Boolean, default: true },
+        settingsExcludes: { type: Array, default: () => [] },
     },
     data() {
         return {
@@ -216,7 +213,7 @@ export default {
             return this.getMarkerUrl(this.conn.markerStart)
         },
         markerEndUrl() {
-            return this.getMarkerUrl(this.conn.markerEnd)
+            return this.getMarkerUrl(this.conn.markerEnd || this.dc.markerEnd)
         },
         labelStyle() {
             const d = this.dc
@@ -232,7 +229,8 @@ export default {
         getMarkerUrl(marker) {
             if (!marker) return null
             const config = typeof marker === 'string' ? { type: marker } : marker
-            const color = config.color || '#b1b1b7'
+            // Fallback chain must match EdgeMarkerDefs so the generated ids agree.
+            const color = config.color || this.conn.edgeColor || this.dc.edgeColor || '#b1b1b7'
             return `url(#vue-flow__${config.type}_${color.replace('#', '')})`
         },
         onGroupMouseEnter(event) {

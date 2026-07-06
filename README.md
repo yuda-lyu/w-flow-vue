@@ -1,5 +1,5 @@
 # w-flow-vue
-A vue component for three.js.
+A vue component for flowchart and workflow diagram editing.
 
 ![language](https://img.shields.io/badge/language-JavaScript-orange.svg) 
 [![language](https://img.shields.io/badge/vue-2.x-brightgreen.svg)](https://github.com/vuejs/vue) 
@@ -33,5 +33,29 @@ Add script for vue.
 
 Add script for w-flow-vue.
 ```alias
-<script src="https://cdn.jsdelivr.net/npm/w-flow-vue@1.0.0/dist/w-flow-vue.umd.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/w-flow-vue@1.0.1/dist/w-flow-vue.umd.js"></script>
 ```
+
+## Required setup for Vue 2 apps
+
+Node and connection popups are rendered inside SVG `foreignObject`. Vue 2 has a known bug ([vuejs/vue#7330](https://github.com/vuejs/vue/issues/7330)) where components inside `foreignObject` inherit the SVG namespace, so their HTML content renders as `SVGElement` with zero size. Add this global mixin once in your app entry (e.g. `main.js`) before mounting:
+
+```js
+import Vue from 'vue'
+
+// Fix Vue 2 bug #7330: components inside SVG foreignObject inherit
+// SVG namespace, causing HTML elements to render as SVGElement (0x0).
+Vue.mixin({
+    beforeCreate() {
+        if (this.$vnode && this.$vnode.ns === 'svg') this.$vnode.ns = undefined
+    },
+    beforeMount() {
+        if (this.$vnode && this.$vnode.ns === 'svg') this.$vnode.ns = undefined
+    },
+    beforeUpdate() {
+        if (this.$vnode && this.$vnode.ns === 'svg') this.$vnode.ns = undefined
+    },
+})
+```
+
+The mixin only clears the inherited namespace on component boundaries; SVG tags still resolve to the SVG namespace via `getTagNamespace`, so normal SVG rendering is unaffected.

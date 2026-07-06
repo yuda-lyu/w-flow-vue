@@ -1,13 +1,13 @@
 {
   "name": "w-flow-vue",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "main": "dist/w-flow-vue.umd.js",
   "dependencies": {
     "@mdi/js": "^7.4.47",
     "lodash-es": "^4.18.1",
-    "w-component-vue": "^2.4.49",
+    "w-component-vue": "^2.4.71",
     "w-jsonview-tree": "^1.0.31",
-    "wsemi": "^1.8.45"
+    "wsemi": "^1.8.63"
   },
   "devDependencies": {
     "@vue/cli-plugin-babel": "^5.0.8",
@@ -29,7 +29,7 @@
     "playwright": "^1.59.1",
     "pngjs": "^7.0.0",
     "vue": "^2.6.14",
-    "w-package-tools": "^1.1.5"
+    "w-package-tools": "^1.1.10"
   },
   "scripts": {
     "serve": "vue-cli-service serve",
@@ -70,10 +70,11 @@
   "keywords": [
     "component",
     "vue",
-    "three.js",
-    "model",
-    "stl",
-    "3d"
+    "flow",
+    "flowchart",
+    "workflow",
+    "diagram",
+    "editor"
   ],
   "author": "yuda-lyu(semisphere)",
   "license": "MIT"

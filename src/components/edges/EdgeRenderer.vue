@@ -24,6 +24,8 @@
       :infor-popup-title-text-font-size="inforPopupTitleTextFontSize"
       :infor-popup-description-text-color="inforPopupDescriptionTextColor"
       :infor-popup-description-text-font-size="inforPopupDescriptionTextFontSize"
+      :settings-enabled="settingsEnabled"
+      :settings-excludes="settingsExcludes"
       @conn-click="$emit('conn-click', $event)"
       @conn-double-click="$emit('conn-double-click', $event)"
       @conn-context-menu="$emit('conn-context-menu', $event)"
@@ -63,6 +65,8 @@ export default {
         inforPopupTitleTextFontSize: { type: String, default: '12px' },
         inforPopupDescriptionTextColor: { type: String, default: '#888' },
         inforPopupDescriptionTextFontSize: { type: String, default: '10px' },
+        settingsEnabled: { type: Boolean, default: true },
+        settingsExcludes: { type: Array, default: () => [] },
     },
     computed: {
         visibleConns() {
