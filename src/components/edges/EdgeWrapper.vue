@@ -41,7 +41,7 @@
       <div class="vue-flow__edge-label-area" xmlns="http://www.w3.org/1999/xhtml">
         <span class="vue-flow__edge-label-group">
           <WPopup
-            v-if="conn.name"
+            v-if="hasInfoPopup"
             v-model="infoPopupShow"
             placement="bottom"
             modeHide="mousedown"
@@ -55,7 +55,9 @@
             :paddingStyle="{v:8,h:12}"
           >
             <template v-slot:trigger>
-              <span class="vue-flow__edge-label" :style="labelStyle" @mousedown="onLabelMouseDown">{{ conn.name }}</span>
+              <span v-if="conn.name" class="vue-flow__edge-label" :style="labelStyle" @mousedown="onLabelMouseDown">{{ conn.name }}</span>
+              <!-- Zero-size anchor keeps the popup positioned at the label midpoint when the conn has no name -->
+              <span v-else class="vue-flow__edge-popup-anchor"></span>
             </template>
             <template v-slot:content>
               <slot name="conn-popup" :conn="conn">
@@ -167,6 +169,9 @@ export default {
         dc() {
             return this.getDefConn()
         },
+        hasInfoPopup() {
+            return !!(this.conn.name || this.conn.description || this.$scopedSlots['conn-popup'])
+        },
         classes() {
             const connClasses = this.conn.class
                 ? (Array.isArray(this.conn.class) ? this.conn.class : [this.conn.class])
@@ -242,7 +247,13 @@ export default {
             this.$emit('conn-mouseleave', { conn: this.conn, event })
         },
         onClick(event) {
+            if (this.hasInfoPopup) {
+                this.infoPopupShow = true
+            }
             this.$emit('conn-click', { conn: this.conn, event })
+        },
+        openInfoPopup() {
+            this.infoPopupShow = true
         },
         onDoubleClick(event) {
             this.$emit('conn-double-click', { conn: this.conn, event })
@@ -338,6 +349,11 @@ export default {
   user-select: none;
   text-align: center;
   display: inline-block;
+}
+.vue-flow__edge-popup-anchor {
+  display: inline-block;
+  width: 0;
+  height: 0;
 }
 .vue-flow__edge-settings-anchor {
   position: absolute;

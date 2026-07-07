@@ -253,6 +253,9 @@ export default {
         onDoubleClick(event) {
             this.$emit('node-double-click', { node: this.node, event })
         },
+        openInfoPopup() {
+            this.infoPopupShow = true
+        },
         onContextMenu(event) {
             this.$emit('node-context-menu', { node: this.node, event })
         },
@@ -456,15 +459,18 @@ export default {
   box-shadow: none !important;
 }
 /* SVG shape hover */
-.vue-flow__node--diamond:hover .vue-flow__shape-svg polygon,
-.vue-flow__node--triangle:hover .vue-flow__shape-svg polygon,
-.vue-flow__node--ellipse:hover .vue-flow__shape-svg ellipse {
+/* polygon/ellipse live inside the NodeFace child component, so ::v-deep is
+   required — a plain scoped selector would pin this component's data-v
+   attribute onto the child's inner elements and never match. */
+.vue-flow__node--diamond:hover ::v-deep .vue-flow__shape-svg polygon,
+.vue-flow__node--triangle:hover ::v-deep .vue-flow__shape-svg polygon,
+.vue-flow__node--ellipse:hover ::v-deep .vue-flow__shape-svg ellipse {
   filter: drop-shadow(0 1px 4px rgba(0, 0, 0, 0.15));
 }
 /* SVG shape selected: red shadow */
-.vue-flow__node--diamond.vue-flow__node--selected .vue-flow__shape-svg polygon,
-.vue-flow__node--triangle.vue-flow__node--selected .vue-flow__shape-svg polygon,
-.vue-flow__node--ellipse.vue-flow__node--selected .vue-flow__shape-svg ellipse {
+.vue-flow__node--diamond.vue-flow__node--selected ::v-deep .vue-flow__shape-svg polygon,
+.vue-flow__node--triangle.vue-flow__node--selected ::v-deep .vue-flow__shape-svg polygon,
+.vue-flow__node--ellipse.vue-flow__node--selected ::v-deep .vue-flow__shape-svg ellipse {
   filter: drop-shadow(0 0 6px rgba(220, 38, 38, 0.6));
 }
 /* Fade transition for settings icon and resize handles */

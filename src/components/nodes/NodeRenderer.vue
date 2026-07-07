@@ -2,6 +2,7 @@
   <div class="vue-flow__nodes">
     <NodeWrapper
       v-for="node in visibleNodes"
+      ref="wrappers"
       :key="node.id"
       :node="node"
       :selected="isSelected(node.id)"
@@ -83,6 +84,13 @@ export default {
         },
         isResizable(node) {
             return node.resizable !== undefined ? node.resizable : this.nodesResizable
+        },
+        openNodeInfoPopup(nodeId) {
+            let wrappers = this.$refs.wrappers || []
+            let w = wrappers.find(c => c.node && c.node.id === nodeId)
+            if (!w) return false
+            w.openInfoPopup()
+            return true
         },
     },
 }

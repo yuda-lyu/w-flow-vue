@@ -3,6 +3,7 @@
     <EdgeMarkerDefs :conns="conns" />
     <EdgeWrapper
       v-for="conn in visibleConns"
+      ref="wrappers"
       :key="conn.id"
       :conn="conn"
       :source-x="getFromPos(conn).x"
@@ -106,6 +107,13 @@ export default {
         },
         isSelected(id) {
             return this.selectedConnIds.includes(id)
+        },
+        openConnInfoPopup(connId) {
+            let wrappers = this.$refs.wrappers || []
+            let w = wrappers.find(c => c.conn && c.conn.id === connId)
+            if (!w) return false
+            w.openInfoPopup()
+            return true
         },
     },
 }

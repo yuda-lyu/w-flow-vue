@@ -758,3 +758,150 @@ describe('setViewport', () => {
         w.destroy()
     })
 })
+
+// 18. panToNode
+describe('panToNode', () => {
+    // node '1': position (50,50), 100x40 → center (100,70); jsdom rect is 0 → container falls back to 800x600
+    test('returns false for unknown node', () => {
+        const w = createWrapper()
+        expect(w.vm.panToNode('nope')).toBe(false)
+        w.destroy()
+    })
+    test('duration 0 jumps to centered viewport and emits viewport-change', () => {
+        const w = createWrapper()
+        const ok = w.vm.panToNode('1', { zoom: 2, duration: 0 })
+        expect(ok).toBe(true)
+        expect(w.vm.viewport).toEqual({ x: 400 - 100 * 2, y: 300 - 70 * 2, zoom: 2 })
+        expect(w.emitted('viewport-change')).toBeTruthy()
+        w.destroy()
+    })
+    test('zoom defaults to current zoom', () => {
+        const w = createWrapper()
+        w.vm.setViewport({ x: 0, y: 0, zoom: 1.5 })
+        w.vm.panToNode('1', { duration: 0 })
+        expect(w.vm.viewport.zoom).toBe(1.5)
+        expect(w.vm.viewport.x).toBe(400 - 100 * 1.5)
+        w.destroy()
+    })
+    test('animates via requestAnimationFrame and finishes at target', () => {
+        const rafCbs = []
+        const origRaf = global.requestAnimationFrame
+        const origCaf = global.cancelAnimationFrame
+        global.requestAnimationFrame = (cb) => { rafCbs.push(cb); return rafCbs.length }
+        global.cancelAnimationFrame = () => {}
+        const w = createWrapper()
+        const ok = w.vm.panToNode('1', { zoom: 1, duration: 100 })
+        expect(ok).toBe(true)
+        rafCbs.shift()(0) // first frame → t=0, viewport stays at start
+        expect(w.vm.viewport.x).toBe(0)
+        rafCbs.shift()(50) // midway → easeInOutCubic(0.5)=0.5
+        expect(w.vm.viewport.x).toBeCloseTo(150)
+        expect(w.vm.viewport.y).toBeCloseTo(115)
+        rafCbs.shift()(100) // done
+        expect(w.vm.viewport).toEqual({ x: 300, y: 230, zoom: 1 })
+        expect(w.emitted('viewport-change')).toBeTruthy()
+        w.destroy()
+        global.requestAnimationFrame = origRaf
+        global.cancelAnimationFrame = origCaf
+    })
+    test('re-call cancels previous animation', () => {
+        const rafCbs = []
+        let cancelled = null
+        const origRaf = global.requestAnimationFrame
+        const origCaf = global.cancelAnimationFrame
+        let rafId = 0
+        global.requestAnimationFrame = (cb) => { rafCbs.push(cb); return ++rafId }
+        global.cancelAnimationFrame = (id) => { cancelled = id }
+        const w = createWrapper()
+        w.vm.panToNode('1', { duration: 100 })
+        const firstId = rafId
+        w.vm.panToNode('2', { duration: 100 })
+        expect(cancelled).toBe(firstId)
+        w.destroy()
+        global.requestAnimationFrame = origRaf
+        global.cancelAnimationFrame = origCaf
+    })
+    test('openPopup opens node info popup after pan', async () => {
+        const w = createWrapper()
+        w.vm.panToNode('1', { duration: 0, openPopup: true })
+        await w.vm.$nextTick()
+        const nw = w.findAllComponents({ name: 'NodeWrapper' }).wrappers.find(c => c.vm.node.id === '1')
+        expect(nw.vm.infoPopupShow).toBe(true)
+        w.destroy()
+    })
+})
+
+// 19. openNodeInfoPopup / openConnInfoPopup / conn click popup
+describe('info popup programmatic open', () => {
+    test('openNodeInfoPopup opens target node popup', () => {
+        const w = createWrapper()
+        expect(w.vm.openNodeInfoPopup('1')).toBe(true)
+        const nw = w.findAllComponents({ name: 'NodeWrapper' }).wrappers.find(c => c.vm.node.id === '1')
+        expect(nw.vm.infoPopupShow).toBe(true)
+        w.destroy()
+    })
+    test('openNodeInfoPopup returns false for unknown node', () => {
+        const w = createWrapper()
+        expect(w.vm.openNodeInfoPopup('nope')).toBe(false)
+        w.destroy()
+    })
+    test('openConnInfoPopup opens target conn popup', () => {
+        const w = createWrapper()
+        expect(w.vm.openConnInfoPopup('e1-3')).toBe(true)
+        const ew = w.findAllComponents({ name: 'EdgeWrapper' }).wrappers.find(c => c.vm.conn.id === 'e1-3')
+        expect(ew.vm.infoPopupShow).toBe(true)
+        w.destroy()
+    })
+    test('openConnInfoPopup returns false for unknown conn', () => {
+        const w = createWrapper()
+        expect(w.vm.openConnInfoPopup('nope')).toBe(false)
+        w.destroy()
+    })
+    test('conn click opens info popup when conn has name', () => {
+        const w = createWrapper()
+        const ew = w.findAllComponents({ name: 'EdgeWrapper' }).at(0)
+        ew.vm.onClick(new MouseEvent('click'))
+        expect(ew.vm.infoPopupShow).toBe(true)
+        expect(ew.emitted('conn-click')).toBeTruthy()
+        w.destroy()
+    })
+    test('conn click opens info popup when unnamed conn has description', () => {
+        const w = createWrapper({ conns: [{ id: 'e1-3', from: '1', to: '3', description: 'desc' }] })
+        const ew = w.findAllComponents({ name: 'EdgeWrapper' }).at(0)
+        expect(ew.find('.vue-flow__edge-popup-anchor').exists()).toBe(true)
+        ew.vm.onClick(new MouseEvent('click'))
+        expect(ew.vm.infoPopupShow).toBe(true)
+        w.destroy()
+    })
+    test('conn click without popup content keeps original behavior', () => {
+        const w = createWrapper({ conns: [{ id: 'e1-3', from: '1', to: '3' }] })
+        const ew = w.findAllComponents({ name: 'EdgeWrapper' }).at(0)
+        ew.vm.onClick(new MouseEvent('click'))
+        expect(ew.vm.infoPopupShow).toBe(false)
+        expect(ew.emitted('conn-click')).toBeTruthy()
+        w.destroy()
+    })
+})
+
+// 20. opt.locked initial state
+describe('opt.locked', () => {
+    test('defaults to unlocked', () => {
+        const w = createWrapper()
+        expect(w.vm.locked).toBe(false)
+        w.destroy()
+    })
+    test('locked: true starts locked', async () => {
+        const w = createWrapper({ locked: true })
+        expect(w.vm.locked).toBe(true)
+        await w.vm.$nextTick()
+        expect(w.findComponent({ name: 'NodeRenderer' }).props('locked')).toBe(true)
+        w.destroy()
+    })
+    test('Controls toggle still works after initial lock', () => {
+        const w = createWrapper({ locked: true })
+        w.vm.toggleInteractive()
+        expect(w.vm.locked).toBe(false)
+        expect(w.emitted('toggle-interactive')[0]).toEqual([false])
+        w.destroy()
+    })
+})

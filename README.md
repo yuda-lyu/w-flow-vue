@@ -33,7 +33,7 @@ Add script for vue.
 
 Add script for w-flow-vue.
 ```alias
-<script src="https://cdn.jsdelivr.net/npm/w-flow-vue@1.0.1/dist/w-flow-vue.umd.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/w-flow-vue@1.0.2/dist/w-flow-vue.umd.js"></script>
 ```
 
 ## Required setup for Vue 2 apps

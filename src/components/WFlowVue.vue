@@ -28,6 +28,7 @@
       :zoom="viewport.zoom"
     >
       <EdgeRenderer
+        ref="edgeRenderer"
         :conns="conns"
         :nodes="renderNodes"
         :node-internals="nodeInternals"
@@ -59,6 +60,7 @@
       </EdgeRenderer>
 
       <NodeRenderer
+        ref="nodeRenderer"
         :nodes="renderNodes"
         :selected-node-ids="selectedNodes"
         :nodes-draggable="nodesDraggable"
@@ -156,6 +158,7 @@ import { NODE_DEFAULTS, CONN_DEFAULTS } from '../js/defaults'
  * @prop {boolean}  [opt.nodesConnectable=true]           Allow creating connections
  * @prop {boolean}  [opt.nodesResizable=true]            Allow resizing nodes (per-node override: node.resizable)
  * @prop {boolean}  [opt.elementsSelectable=true]         Allow selecting nodes/conns
+ * @prop {boolean}  [opt.locked=false]                    Initial interactive-lock state (afterwards toggled via Controls lock button, emits toggle-interactive)
  * @prop {boolean}  [opt.nodesSettingsEnabled=true]       Show built-in node settings popup (gear icon)
  * @prop {boolean}  [opt.connsSettingsEnabled=true]       Show built-in connection settings popup (gear icon)
  * @prop {Array}    [opt.nodesSettingsExcludes=[]]        Field keys hidden in node settings form (e.g. ['name','description'])
@@ -269,8 +272,9 @@ export default {
             selectionBox: null,
             nodeInternals: {},
 
-            // Interactive lock state
-            locked: false,
+            // Interactive lock state (opt.locked sets the initial value only;
+            // afterwards toggled via the Controls lock button)
+            locked: this.opt.locked === true,
 
             // Drag state
             isDraggingNode: false,
@@ -326,6 +330,10 @@ export default {
         document.addEventListener('mouseup', this.onDocMouseUp)
     },
     beforeDestroy() {
+        if (this._panAnimId) {
+            cancelAnimationFrame(this._panAnimId)
+            this._panAnimId = null
+        }
         document.removeEventListener('keydown', this.onKeyDown)
         document.removeEventListener('keyup', this.onKeyUp)
         document.removeEventListener('mousemove', this.onDocMouseMove)
@@ -1160,6 +1168,69 @@ export default {
         toggleInteractive() {
             this.locked = !this.locked
             this.$emit('toggle-interactive', this.locked)
+        },
+        panToNode(nodeId, opt) {
+            opt = opt || {}
+            let node = this.nodeById(nodeId)
+            if (!node) return false
+            let internals = this.nodeInternals[nodeId]
+            let w = (internals && internals.width) || node.width || 150
+            let h = (internals && internals.height) || node.height || 40
+            let cx = node.position.x + w / 2
+            let cy = node.position.y + h / 2
+            let rect = this.$refs.canvas ? this.$refs.canvas.getContainerRect() : null
+            let cw = (rect && rect.width) || this.widthInp
+            let ch = (rect && rect.height) || this.heightInp
+            let zoom = opt.zoom !== undefined ? opt.zoom : this.viewport.zoom
+            let duration = opt.duration !== undefined ? opt.duration : 400
+            let target = { x: cw / 2 - cx * zoom, y: ch / 2 - cy * zoom, zoom }
+            if (this._panAnimId) {
+                cancelAnimationFrame(this._panAnimId)
+                this._panAnimId = null
+            }
+            let finish = () => {
+                this.setViewport(target)
+                this.emitViewportChange()
+                if (opt.openPopup === true) {
+                    this.$nextTick(() => this.openNodeInfoPopup(nodeId))
+                }
+            }
+            if (!(duration > 0)) {
+                finish()
+                return true
+            }
+            let from = { x: this.viewport.x, y: this.viewport.y, zoom: this.viewport.zoom }
+            let easeInOutCubic = (t) => t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2
+            let startTs = null
+            let stepFrame = (ts) => {
+                if (startTs === null) startTs = ts
+                let t = Math.min((ts - startTs) / duration, 1)
+                let k = easeInOutCubic(t)
+                this.setViewport({
+                    x: from.x + (target.x - from.x) * k,
+                    y: from.y + (target.y - from.y) * k,
+                    zoom: from.zoom + (target.zoom - from.zoom) * k,
+                })
+                if (t < 1) {
+                    this._panAnimId = requestAnimationFrame(stepFrame)
+                }
+                else {
+                    this._panAnimId = null
+                    finish()
+                }
+            }
+            this._panAnimId = requestAnimationFrame(stepFrame)
+            return true
+        },
+        openNodeInfoPopup(nodeId) {
+            let r = this.$refs.nodeRenderer
+            if (!r) return false
+            return r.openNodeInfoPopup(nodeId)
+        },
+        openConnInfoPopup(connId) {
+            let r = this.$refs.edgeRenderer
+            if (!r) return false
+            return r.openConnInfoPopup(connId)
         },
         getFlowData() {
             return {
