@@ -1157,13 +1157,27 @@ export default {
             this.viewport.y = (ch - (maxY + minY) * zoom) / 2
             this.emitViewportChange()
         },
-        zoomIn() {
-            this.viewport.zoom = Math.min(this.viewport.zoom * 1.2, this.zoomMax)
+        zoomAtCenter(factor) {
+            const currentZoom = this.viewport.zoom
+            const zoomMinUse = Math.min(this.zoomMin, currentZoom)
+            const newZoom = Math.max(zoomMinUse, Math.min(this.zoomMax, currentZoom * factor))
+            const rect = this.$refs.canvas ? this.$refs.canvas.getContainerRect() : null
+            const cx = rect ? rect.width / 2 : this.widthInp / 2
+            const cy = rect ? rect.height / 2 : this.heightInp / 2
+            const vp = this.viewport
+            const scale = newZoom / currentZoom
+            this.setViewport({
+                x: cx - (cx - vp.x) * scale,
+                y: cy - (cy - vp.y) * scale,
+                zoom: newZoom,
+            })
             this.emitViewportChange()
         },
+        zoomIn() {
+            this.zoomAtCenter(1.2)
+        },
         zoomOut() {
-            this.viewport.zoom = Math.max(this.viewport.zoom / 1.2, Math.min(this.zoomMin, this.viewport.zoom))
-            this.emitViewportChange()
+            this.zoomAtCenter(1 / 1.2)
         },
         toggleInteractive() {
             this.locked = !this.locked

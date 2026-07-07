@@ -1,6 +1,6 @@
 {
   "name": "w-flow-vue",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "main": "dist/w-flow-vue.umd.js",
   "dependencies": {
     "@mdi/js": "^7.4.47",
