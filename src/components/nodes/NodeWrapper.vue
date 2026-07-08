@@ -94,7 +94,7 @@ import WPopup from 'w-component-vue/src/components/WPopup.vue'
 export default {
     name: 'NodeWrapper',
     components: { NodeBody, NodeSettingsForm, WPopup },
-    inject: { getDefNode: { default: () => () => ({}) } },
+    inject: { getDefNode: { default: () => () => ({}) }, getDragGhost: { default: () => () => null } },
     props: {
         node: { type: Object, required: true },
         selected: { type: Boolean, default: false },
@@ -152,16 +152,22 @@ export default {
         wrapperStyle() {
             const d = this.dn
             const n = this.node
+            //拖曳/縮放ghost(細粒度): 進行中之暫時幾何優先(per-key反應式, 只有本節點被拖/縮放時才觸發重渲染)
+            const g = this.getDragGhost(n.id)
+            const px = g ? g.x : n.position.x
+            const py = g ? g.y : n.position.y
+            const w = (g && g.width !== undefined) ? g.width : n.width
+            const h = (g && g.height !== undefined) ? g.height : n.height
             const style = {
-                transform: `translate(${n.position.x}px, ${n.position.y}px)`,
+                transform: `translate(${px}px, ${py}px)`,
                 zIndex: n.zIndex || 0,
                 // Nodes with an explicit width wrap long names instead of
                 // overflowing (base CSS is nowrap); per-node style can override.
-                ...(n.width ? { whiteSpace: 'pre-line' } : {}),
+                ...(w ? { whiteSpace: 'pre-line' } : {}),
                 ...(n.style || {}),
             }
-            if (n.width) style.width = typeof n.width === 'number' ? `${n.width}px` : n.width
-            if (n.height) style.height = typeof n.height === 'number' ? `${n.height}px` : n.height
+            if (w) style.width = typeof w === 'number' ? `${w}px` : w
+            if (h) style.height = typeof h === 'number' ? `${h}px` : h
             if (!this.isSvgShape) {
                 let fColor = n.faceColor || d.faceColor
                 if (fColor) style.background = fColor
@@ -342,6 +348,13 @@ export default {
                     newH = resizeBottom(dy)
                 }
 
+                //closure追蹤縮放最終值供resize-end發送
+                //why: 縮放中node本體不變動(ghost僅作用於視覺), this.node.*是原值, 不可作為結果
+                lastW = newW
+                lastH = newH
+                lastX = newX
+                lastY = newY
+
                 this.$emit('node-resize', {
                     nodeId: this.node.id,
                     width: newW,
@@ -350,6 +363,11 @@ export default {
                     y: newY,
                 })
             }
+
+            let lastW = startW
+            let lastH = startH
+            let lastX = startPosX
+            let lastY = startPosY
 
             const onMouseUp = () => {
                 document.removeEventListener('mousemove', onMouseMove)
@@ -360,10 +378,10 @@ export default {
                 }, 0)
                 this.$emit('node-resize-end', {
                     nodeId: this.node.id,
-                    width: this.node.width || this.$el.offsetWidth,
-                    height: this.node.height || this.$el.offsetHeight,
-                    x: this.node.position.x,
-                    y: this.node.position.y,
+                    width: lastW,
+                    height: lastH,
+                    x: lastX,
+                    y: lastY,
                 })
             }
 

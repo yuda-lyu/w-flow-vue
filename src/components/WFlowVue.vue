@@ -30,7 +30,7 @@
       <EdgeRenderer
         ref="edgeRenderer"
         :conns="conns"
-        :nodes="renderNodes"
+        :nodes="nodes"
         :node-internals="nodeInternals"
         :selected-conn-ids="selectedConns"
         :interactive="elementsSelectable"
@@ -61,7 +61,7 @@
 
       <NodeRenderer
         ref="nodeRenderer"
-        :nodes="renderNodes"
+        :nodes="nodes"
         :selected-node-ids="selectedNodes"
         :nodes-draggable="nodesDraggable"
         :nodes-connectable="nodesConnectable"
@@ -115,11 +115,13 @@
 
     <Controls
       :locked="locked"
+      :show-save="changed"
       position="top-left"
       @zoom-in="zoomIn"
       @zoom-out="zoomOut"
       @fit-view="fitView"
       @toggle-interactive="toggleInteractive"
+      @save="onSaveClick"
     />
 
   </FlowCanvas>
@@ -255,6 +257,11 @@ export default {
         return {
             getDefNode: () => this.defNode,
             getDefConn: () => this.defConn,
+            getConns: () => this.conns, //供節點元件推導實際使用之連接點方位(conn層級錨點)
+            //拖曳/縮放ghost(細粒度): 回傳該節點進行中之暫時幾何({x,y}或{x,y,width,height}), 無則null
+            getDragGhost: (id) => {
+                return this.dragPositions[id] || null
+            },
         }
     },
     data() {
@@ -281,8 +288,9 @@ export default {
             draggingNodeId: null,
             dragStartPos: null,
             dragNodeStartPositions: null,
-            dragPositions: null,
-            resizeOverlay: null,
+            //拖曳/縮放ghost容器: 鍵隨nodes預建(值null=無ghost), 永不整包替換——
+            //讀取端(Node/EdgeWrapper)依賴per-key, 拖曳開始/每步/結束皆僅通知被拖節點之讀者, 無全量重渲染
+            dragPositions: {},
 
             // Pan state
             isPanning: false,
@@ -307,6 +315,17 @@ export default {
         }
     },
     watch: {
+        //ghost鍵預建: 於節點首次渲染前備妥per-key反應式插槽, 讀者才能建立細粒度依賴
+        nodes: {
+            immediate: true,
+            handler(ns) {
+                for (const n of (ns || [])) {
+                    if (!(n.id in this.dragPositions)) {
+                        this.$set(this.dragPositions, n.id, null)
+                    }
+                }
+            },
+        },
         opt: {
             handler() {
                 if (!this.inited) {
@@ -355,6 +374,10 @@ export default {
 
         nodesDraggable() {
             return this.opt.nodesDraggable !== undefined ? this.opt.nodesDraggable : true
+        },
+        changed() {
+            //flow數據有未儲存變更(由宿主設定), Controls顯示儲存鈕
+            return !!this.opt.changed
         },
         nodesConnectable() {
             return this.opt.nodesConnectable !== undefined ? this.opt.nodesConnectable : true
@@ -529,16 +552,9 @@ export default {
             }
         },
 
-        renderNodes() {
-            let dp = this.dragPositions
-            let ro = this.resizeOverlay
-            if (!dp && !ro) return this.nodes
-            return this.nodes.map(n => {
-                if (dp && dp[n.id]) return { ...n, position: dp[n.id] }
-                if (ro && ro.id === n.id) return { ...n, position: { x: ro.x, y: ro.y }, width: ro.width, height: ro.height }
-                return n
-            })
-        },
+        //(效能重構)拖曳/縮放ghost改由getDragGhost細粒度提供(per-node反應式鍵), 不再整包重建nodes陣列
+        //why: 舊renderNodes每步mousemove產新陣列+新物件prop, 使兩Renderer與全部Node/EdgeWrapper(含WPopup/WTooltip子樹)
+        //     每步全量重渲染(84節點+95邊實測~128ms/步); 細粒度後僅被拖節點與其相連邊重渲染
         isBoxSelectPressed() {
             return this.multiSelectEnabled && !!this.keysPressed[this.boxSelectionKeyCode]
         },
@@ -770,6 +786,14 @@ export default {
             }
             this.dragNodeStartPositions = starts
 
+            //啟用被拖節點之ghost(per-key賦值, 僅通知讀該鍵之元件), 之後每步僅原地改x/y
+            for (let id in starts) {
+                if (!(id in this.dragPositions)) {
+                    this.$set(this.dragPositions, id, null)
+                }
+                this.dragPositions[id] = { x: starts[id].x, y: starts[id].y }
+            }
+
             this.$emit('node-drag-start', { node, event })
         },
         doDrag(event) {
@@ -777,7 +801,6 @@ export default {
             const dx = (event.clientX - this.dragStartPos.x) / zoom
             const dy = (event.clientY - this.dragStartPos.y) / zoom
             const snap = this.snapToGrid
-            const dp = {}
 
             for (let id in this.dragNodeStartPositions) {
                 const start = this.dragNodeStartPositions[id]
@@ -788,20 +811,24 @@ export default {
                     x = s.x
                     y = s.y
                 }
-                dp[id] = { x, y }
+                const gg = this.dragPositions && this.dragPositions[id]
+                if (gg) {
+                    gg.x = x
+                    gg.y = y
+                }
             }
-            this.dragPositions = dp
         },
         endDrag(event) {
-            // Write final positions back to opt.nodes
-            if (this.dragPositions) {
-                for (let id in this.dragPositions) {
+            // Write final positions back to opt.nodes, 並關閉ghost(per-key設回null)
+            if (this.dragNodeStartPositions) {
+                for (let id in this.dragNodeStartPositions) {
+                    let pos = this.dragPositions[id]
                     let node = this.nodeById(id)
-                    if (node) {
-                        let pos = this.dragPositions[id]
+                    if (node && pos) {
                         node.position.x = pos.x
                         node.position.y = pos.y
                     }
+                    this.dragPositions[id] = null
                 }
             }
             const dragNode = this.nodeById(this.draggingNodeId)
@@ -809,7 +836,6 @@ export default {
             this.draggingNodeId = null
             this.dragStartPos = null
             this.dragNodeStartPositions = null
-            this.dragPositions = null
             clearStepCache()
             if (dragNode) {
                 this.$emit('node-drag-stop', { node: dragNode, event })
@@ -820,6 +846,8 @@ export default {
         // --- Connection ---
         onConnectStart(payload) {
             if (this.locked || !this.nodesConnectable) return
+            //建線只能自source(連出)型handle出發: target(連入)型handle拖曳不啟動建線, 維持方向語義
+            if (payload.handleType !== 'source') return
             this.isConnecting = true
             this.connectingFrom = payload
             // Lock cursor to default during connecting, only handles show crosshair
@@ -857,7 +885,8 @@ export default {
             const el = document.elementFromPoint(event.clientX, event.clientY)
             const handleEl = el && el.closest && el.closest('.vue-flow__handle')
 
-            if (handleEl && this.connectingFrom) {
+            if (handleEl && this.connectingFrom && handleEl.dataset.handleType === 'target') {
+                //落點限target(連入)型handle: 連出點不可被當作輸入端(如input節點僅有連出點, 不可作為連線終點)
                 const toNodeEl = handleEl.closest('.vue-flow__node')
                 const toNodeId = toNodeEl ? toNodeEl.dataset.id : null
 
@@ -865,6 +894,9 @@ export default {
                     const connection = {
                         from: this.connectingFrom.nodeId,
                         to: toNodeId,
+                        //逐邊錨點: 起點=實際拖曳出發之連接點方位, 迄點=落點handle之方位(缺則不設, 回退節點層級/預設)
+                        ...(this.connectingFrom.handlePosition ? { fromPosition: this.connectingFrom.handlePosition } : {}),
+                        ...(handleEl.dataset.handlePosition ? { toPosition: handleEl.dataset.handlePosition } : {}),
                     }
 
                     const valid = isValidConnection(
@@ -1084,7 +1116,20 @@ export default {
 
         onNodeResize({ nodeId, width, height, x, y }) {
             if (this.locked) return
-            this.resizeOverlay = { id: nodeId, width, height, x, y }
+            //縮放ghost併入dragPositions同一per-key機制: 首步建物件, 之後原地改欄位
+            if (!(nodeId in this.dragPositions)) {
+                this.$set(this.dragPositions, nodeId, null)
+            }
+            const g = this.dragPositions[nodeId]
+            if (!g) {
+                this.dragPositions[nodeId] = { x, y, width, height }
+            }
+            else {
+                g.x = x
+                g.y = y
+                g.width = width
+                g.height = height
+            }
             this.updateNodeInternals(nodeId, { width, height })
         },
         onNodeResizeEnd({ nodeId, width, height, x, y }) {
@@ -1095,7 +1140,7 @@ export default {
                 node.position.x = x
                 node.position.y = y
             }
-            this.resizeOverlay = null
+            this.dragPositions[nodeId] = null
             clearStepCache()
             this.emitNodesUpdate()
         },
@@ -1182,6 +1227,10 @@ export default {
         toggleInteractive() {
             this.locked = !this.locked
             this.$emit('toggle-interactive', this.locked)
+        },
+        onSaveClick() {
+            //變更儲存: 攜帶當前flow數據emit, 由宿主持久化
+            this.$emit('save', { nodes: this.nodes, conns: this.conns })
         },
         panToNode(nodeId, opt) {
             opt = opt || {}

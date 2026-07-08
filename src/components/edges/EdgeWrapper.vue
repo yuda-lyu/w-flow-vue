@@ -30,6 +30,18 @@
       :marker-start="markerStartUrl"
       :marker-end="markerEndUrl"
     />
+    <!-- 強制轉折點標記(編輯模式顯示, 可直接拖曳移動座標; 亦可經齒輪設定表單編修) -->
+    <template v-if="showWaypoints">
+      <circle
+        v-for="(p, i) in waypointPts"
+        :key="'wp' + i"
+        :cx="p.x"
+        :cy="p.y"
+        r="4"
+        class="vue-flow__edge-waypoint"
+        @mousedown.stop="onWaypointMouseDown(i, $event)"
+      />
+    </template>
     <!-- Label + Settings icon (merged into one foreignObject for correct relative positioning) -->
     <foreignObject
       :x="pathData.labelX - 100"
@@ -96,6 +108,8 @@
                     :def-conn="dc"
                     :text-font-size="settingsPopupTextFontSize"
                     :excludes="settingsExcludes"
+                    :default-point="waypointDefaultPoint"
+                    :target-point="waypointTargetPoint"
                     @update="onSettingsUpdate"
                     @delete="onSettingsDelete"
                   />
@@ -111,6 +125,7 @@
 
 <script>
 import { getBezierPath, getStraightPath, getStepPath, getSmoothStepPath } from '../../js/edge-path'
+import { getHandlePosition } from '../../js/geometry'
 import ConnSettingsForm from '../ui/ConnSettingsForm.vue'
 import WPopup from 'w-component-vue/src/components/WPopup.vue'
 
@@ -124,15 +139,11 @@ const pathFunctions = {
 export default {
     name: 'EdgeWrapper',
     components: { ConnSettingsForm, WPopup },
-    inject: { getDefConn: { default: () => () => ({}) } },
+    inject: { getDefConn: { default: () => () => ({}) }, getDragGhost: { default: () => () => null } },
     props: {
         conn: { type: Object, required: true },
-        sourceX: { type: Number, required: true },
-        sourceY: { type: Number, required: true },
-        sourcePosition: { type: String, default: 'bottom' },
-        targetX: { type: Number, required: true },
-        targetY: { type: Number, required: true },
-        targetPosition: { type: String, default: 'top' },
+        sourceNode: { type: Object, default: null },
+        targetNode: { type: Object, default: null },
         selected: { type: Boolean, default: false },
         interactive: { type: Boolean, default: true },
         locked: { type: Boolean, default: false },
@@ -172,6 +183,64 @@ export default {
         hasInfoPopup() {
             return !!(this.conn.name || this.conn.description || this.$scopedSlots['conn-popup'])
         },
+        //(效能重構)錨點方位/座標自算(原由EdgeRenderer解析後以props傳入):
+        //  含拖曳/縮放ghost(細粒度反應式), 僅本邊兩端節點變動時本元件才重渲染
+        sourcePosition() {
+            return this.conn.fromPosition || (this.sourceNode && this.sourceNode.toPosition) || 'bottom' //conn層級覆寫優先
+        },
+        targetPosition() {
+            return this.conn.toPosition || (this.targetNode && this.targetNode.fromPosition) || 'top'
+        },
+        effSourceNode() {
+            return this.effNode(this.sourceNode)
+        },
+        effTargetNode() {
+            return this.effNode(this.targetNode)
+        },
+        sourcePoint() {
+            const n = this.effSourceNode
+            if (!n) return { x: 0, y: 0 }
+            return getHandlePosition(n, this.sourcePosition, this.nodeInternals[n.id] || {}, 'source')
+        },
+        targetPoint() {
+            const n = this.effTargetNode
+            if (!n) return { x: 0, y: 0 }
+            return getHandlePosition(n, this.targetPosition, this.nodeInternals[n.id] || {}, 'target')
+        },
+        sourceX() { return this.sourcePoint.x },
+        sourceY() { return this.sourcePoint.y },
+        targetX() { return this.targetPoint.x },
+        targetY() { return this.targetPoint.y },
+        // 強制轉折點正規化([[x,y],...]或[{x,y},...]皆可), 無效回空陣列
+        waypointPts() {
+            const pts = this.conn.points
+            if (!Array.isArray(pts) || pts.length === 0) return []
+            const r = []
+            for (const p of pts) {
+                let x = null
+                let y = null
+                if (Array.isArray(p) && p.length >= 2) {
+                    x = Number(p[0]); y = Number(p[1])
+                }
+                else if (p && typeof p === 'object') {
+                    x = Number(p.x); y = Number(p.y)
+                }
+                if (!Number.isFinite(x) || !Number.isFinite(y)) return []
+                r.push({ x, y })
+            }
+            return r
+        },
+        showWaypoints() {
+            return this.settingsEnabled && this.interactive && !this.locked && this.waypointPts.length > 0
+        },
+        //新增轉折點之預設位置=路徑中點(新點落於既有線上, 路徑幾乎不變不跳動)
+        waypointDefaultPoint() {
+            return { x: Math.round(this.pathData.labelX), y: Math.round(this.pathData.labelY) }
+        },
+        //後續新增以「末點與迄點錨中點」細分(供表單計算)
+        waypointTargetPoint() {
+            return { x: Math.round(this.targetX), y: Math.round(this.targetY) }
+        },
         classes() {
             const connClasses = this.conn.class
                 ? (Array.isArray(this.conn.class) ? this.conn.class : [this.conn.class])
@@ -197,6 +266,7 @@ export default {
                 targetY: this.targetY,
                 targetPosition: this.targetPosition,
                 curvature: this.conn.curvature,
+                points: this.conn.points, //強制轉折點([[x,y],...]或[{x,y},...]), 有給即取代自動路由(兩端錨點方位仍生效)
                 allNodes: this.allNodes,
                 nodeInternals: this.nodeInternals,
                 connFromId: this.conn.from,
@@ -231,6 +301,18 @@ export default {
         },
     },
     methods: {
+        //拖曳/縮放ghost套用: 有進行中之暫時幾何則以其構成有效節點(不改原節點物件)
+        effNode(node) {
+            if (!node) return null
+            const g = this.getDragGhost(node.id)
+            if (!g) return node
+            return {
+                ...node,
+                position: { x: g.x, y: g.y },
+                width: g.width !== undefined ? g.width : node.width,
+                height: g.height !== undefined ? g.height : node.height,
+            }
+        },
         getMarkerUrl(marker) {
             if (!marker) return null
             const config = typeof marker === 'string' ? { type: marker } : marker
@@ -286,6 +368,40 @@ export default {
         onSettingsUpdate(key, value) {
             this.$emit('conn-settings-update', { conn: this.conn, key, value })
         },
+        onWaypointMouseDown(i, event) {
+            if (!this.interactive || this.locked || !this.settingsEnabled) return
+            event.preventDefault()
+
+            // 鎖定拖曳游標
+            const cursorStyle = document.createElement('style')
+            cursorStyle.textContent = '* { cursor: move !important; }'
+            document.head.appendChild(cursorStyle)
+
+            const startX = event.clientX
+            const startY = event.clientY
+            const pts0 = this.waypointPts.map(p => [p.x, p.y]) //拖曳起始快照
+            // Get zoom from the viewport transform(同 NodeWrapper 拖曳之換算)
+            const viewport = this.$el.closest('.vue-flow__viewport')
+            const zoom = viewport ? parseFloat(viewport.style.transform.match(/scale\(([^)]+)\)/)?.[1] || 1) : 1
+
+            const onMouseMove = (e) => {
+                const dx = (e.clientX - startX) / zoom
+                const dy = (e.clientY - startY) / zoom
+                const np = pts0.map(p => [p[0], p[1]])
+                np[i] = [Math.round(pts0[i][0] + dx), Math.round(pts0[i][1] + dy)]
+                //以splice整組替換維持Vue2反應性, 路徑即時重繪
+                this.conn.points.splice(0, this.conn.points.length, ...np)
+            }
+            const onMouseUp = () => {
+                document.removeEventListener('mousemove', onMouseMove)
+                document.removeEventListener('mouseup', onMouseUp)
+                document.head.removeChild(cursorStyle)
+                //放開才發更新事件(與齒輪表單同一事件流, 由宿主持久化)
+                this.$emit('conn-settings-update', { conn: this.conn, key: 'points', value: this.waypointPts.map(p => [p.x, p.y]) })
+            }
+            document.addEventListener('mousemove', onMouseMove)
+            document.addEventListener('mouseup', onMouseUp)
+        },
         onSettingsDelete() {
             this.$emit('conn-settings-delete', { conn: this.conn })
         },
@@ -308,6 +424,20 @@ export default {
   fill: none;
   pointer-events: stroke !important;
   cursor: pointer;
+}
+.vue-flow__edge-waypoint {
+  fill: #9e9e9e;
+  stroke: #fff;
+  stroke-width: 1.5;
+  pointer-events: all;
+  cursor: grab;
+}
+.vue-flow__edge-waypoint:hover {
+  fill: #616161;
+  stroke-width: 2;
+}
+.vue-flow__edge-waypoint:active {
+  cursor: grabbing;
 }
 .vue-flow__edge:hover > path {
   stroke: #555;

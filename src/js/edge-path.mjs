@@ -7,94 +7,80 @@ import { calculateStepPoints, clearStepCache } from './step-routing.mjs'
 export { clearStepCache }
 
 /**
- * Calculate the control point offset for bezier curves based on handle position.
+ * Normalize conn.points (forced waypoints) into [{x,y},...].
+ * Accepts [[x,y],...] or [{x,y},...]; returns null when absent/invalid so callers
+ * can fall back to automatic routing.
  */
-function getControlOffset(distance, position) {
-    switch (position) {
-    case 'top': return { x: 0, y: -distance }
-    case 'bottom': return { x: 0, y: distance }
-    case 'left': return { x: -distance, y: 0 }
-    case 'right': return { x: distance, y: 0 }
-    default: return { x: 0, y: 0 }
+function normalizeConnPoints(points) {
+    if (!Array.isArray(points) || points.length === 0) return null
+    const pts = []
+    for (const p of points) {
+        let x = null
+        let y = null
+        if (Array.isArray(p) && p.length >= 2) {
+            x = Number(p[0]); y = Number(p[1])
+        }
+        else if (p && typeof p === 'object') {
+            x = Number(p.x); y = Number(p.y)
+        }
+        if (!Number.isFinite(x) || !Number.isFinite(y)) return null
+        pts.push({ x, y })
     }
+    return pts
 }
 
 /**
- * Get bezier curve path.
- * @returns {{ path: string, labelX: number, labelY: number }}
+ * Build an orthogonal point list passing through forced waypoints.
+ * - Leaves the source along its anchor axis (perpendicular to the node edge).
+ * - Turns AT each waypoint (leaves it along the other axis than it arrived on).
+ * - Arrives at the target along its anchor axis.
+ * Inserts at most one corner between consecutive points; skips zero-length segments.
  */
-export function getBezierPath({
-    sourceX, sourceY, sourcePosition = 'bottom',
-    targetX, targetY, targetPosition = 'top',
-    curvature = 0.25,
-}) {
-    const dist = Math.sqrt(Math.pow(targetX - sourceX, 2) + Math.pow(targetY - sourceY, 2))
-    const offset = Math.max(dist * curvature, 25)
+function orthogonalizeThroughPoints(
+    sourceX, sourceY, sourcePosition,
+    targetX, targetY, targetPosition,
+    waypoints
+) {
+    const pts = [{ x: sourceX, y: sourceY }]
+    const push = (p) => {
+        const last = pts[pts.length - 1]
+        if (Math.abs(p.x - last.x) > 0.5 || Math.abs(p.y - last.y) > 0.5) pts.push({ x: p.x, y: p.y })
+    }
+    // Axis of the first sub-segment when leaving the previous point
+    let leaveHoriz = sourcePosition === 'left' || sourcePosition === 'right'
 
-    const s = getControlOffset(offset, sourcePosition)
-    const t = getControlOffset(offset, targetPosition)
+    for (let i = 0; i < waypoints.length; i++) {
+        const w = waypoints[i]
+        const prev = pts[pts.length - 1]
+        const dx = Math.abs(w.x - prev.x)
+        const dy = Math.abs(w.y - prev.y)
+        let arriveHoriz
+        if (dx > 0.5 && dy > 0.5) {
+            push(leaveHoriz ? { x: w.x, y: prev.y } : { x: prev.x, y: w.y })
+            arriveHoriz = !leaveHoriz
+        }
+        else {
+            arriveHoriz = dx > 0.5
+        }
+        push(w)
+        leaveHoriz = !arriveHoriz //bend point: turn at the waypoint
+    }
 
-    const controlX1 = sourceX + s.x
-    const controlY1 = sourceY + s.y
-    const controlX2 = targetX + t.x
-    const controlY2 = targetY + t.y
-
-    const path = `M ${sourceX},${sourceY} C ${controlX1},${controlY1} ${controlX2},${controlY2} ${targetX},${targetY}`
-
-    const labelX = (sourceX + controlX1 + controlX2 + targetX) / 4
-    const labelY = (sourceY + controlY1 + controlY2 + targetY) / 4
-
-    return { path, labelX, labelY }
+    // Final hop: approach the target along its anchor axis
+    const prev = pts[pts.length - 1]
+    const targetHoriz = targetPosition === 'left' || targetPosition === 'right'
+    if (Math.abs(targetX - prev.x) > 0.5 && Math.abs(targetY - prev.y) > 0.5) {
+        push(targetHoriz ? { x: prev.x, y: targetY } : { x: targetX, y: prev.y })
+    }
+    push({ x: targetX, y: targetY })
+    return pts
 }
 
 /**
- * Get straight line path.
+ * Build a rounded (smoothstep-style) svg path from an orthogonal point list.
  * @returns {{ path: string, labelX: number, labelY: number }}
  */
-export function getStraightPath({ sourceX, sourceY, targetX, targetY }) {
-    const path = `M ${sourceX},${sourceY} L ${targetX},${targetY}`
-    const labelX = (sourceX + targetX) / 2
-    const labelY = (sourceY + targetY) / 2
-    return { path, labelX, labelY }
-}
-
-/**
- * Get step (right-angle) path.
- * @returns {{ path: string, labelX: number, labelY: number }}
- */
-export function getStepPath({
-    sourceX, sourceY, sourcePosition = 'bottom',
-    targetX, targetY, targetPosition = 'top',
-    offset = 20,
-    allNodes, nodeInternals, connFromId, connToId,
-}) {
-    const points = calculateStepPoints(
-        sourceX, sourceY, sourcePosition,
-        targetX, targetY, targetPosition,
-        offset, allNodes, nodeInternals, connFromId, connToId
-    )
-    const path = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x},${p.y}`).join(' ')
-    const label = labelAtHalfLength(points)
-    return { path, labelX: label.x, labelY: label.y }
-}
-
-/**
- * Get smooth step (rounded right-angle) path.
- * @returns {{ path: string, labelX: number, labelY: number }}
- */
-export function getSmoothStepPath({
-    sourceX, sourceY, sourcePosition = 'bottom',
-    targetX, targetY, targetPosition = 'top',
-    borderRadius = 5,
-    offset = 20,
-    allNodes, nodeInternals, connFromId, connToId,
-}) {
-    const points = calculateStepPoints(
-        sourceX, sourceY, sourcePosition,
-        targetX, targetY, targetPosition,
-        offset, allNodes, nodeInternals, connFromId, connToId
-    )
-
+function buildRoundedPath(points, borderRadius) {
     if (points.length <= 2) {
         const path = `M ${points[0].x},${points[0].y} L ${points[1].x},${points[1].y}`
         const labelX = (points[0].x + points[1].x) / 2
@@ -137,6 +123,138 @@ export function getSmoothStepPath({
 
     const label = labelAtHalfLength(points)
     return { path, labelX: label.x, labelY: label.y }
+}
+
+/**
+ * Calculate the control point offset for bezier curves based on handle position.
+ */
+function getControlOffset(distance, position) {
+    switch (position) {
+    case 'top': return { x: 0, y: -distance }
+    case 'bottom': return { x: 0, y: distance }
+    case 'left': return { x: -distance, y: 0 }
+    case 'right': return { x: distance, y: 0 }
+    default: return { x: 0, y: 0 }
+    }
+}
+
+/**
+ * Get bezier curve path.
+ * @returns {{ path: string, labelX: number, labelY: number }}
+ */
+export function getBezierPath({
+    sourceX, sourceY, sourcePosition = 'bottom',
+    targetX, targetY, targetPosition = 'top',
+    curvature = 0.25,
+    points,
+}) {
+    // Forced waypoints: smooth curve passing exactly through each point (Catmull-Rom → cubic)
+    const wps = normalizeConnPoints(points)
+    if (wps) {
+        const pts = [{ x: sourceX, y: sourceY }, ...wps, { x: targetX, y: targetY }]
+        let path = `M ${pts[0].x},${pts[0].y}`
+        for (let i = 0; i < pts.length - 1; i++) {
+            const p0 = pts[i - 1] || pts[i]
+            const p1 = pts[i]
+            const p2 = pts[i + 1]
+            const p3 = pts[i + 2] || p2
+            const c1x = p1.x + (p2.x - p0.x) / 6
+            const c1y = p1.y + (p2.y - p0.y) / 6
+            const c2x = p2.x - (p3.x - p1.x) / 6
+            const c2y = p2.y - (p3.y - p1.y) / 6
+            path += ` C ${c1x},${c1y} ${c2x},${c2y} ${p2.x},${p2.y}`
+        }
+        const label = labelAtHalfLength(pts)
+        return { path, labelX: label.x, labelY: label.y }
+    }
+
+    const dist = Math.sqrt(Math.pow(targetX - sourceX, 2) + Math.pow(targetY - sourceY, 2))
+    const offset = Math.max(dist * curvature, 25)
+
+    const s = getControlOffset(offset, sourcePosition)
+    const t = getControlOffset(offset, targetPosition)
+
+    const controlX1 = sourceX + s.x
+    const controlY1 = sourceY + s.y
+    const controlX2 = targetX + t.x
+    const controlY2 = targetY + t.y
+
+    const path = `M ${sourceX},${sourceY} C ${controlX1},${controlY1} ${controlX2},${controlY2} ${targetX},${targetY}`
+
+    const labelX = (sourceX + controlX1 + controlX2 + targetX) / 4
+    const labelY = (sourceY + controlY1 + controlY2 + targetY) / 4
+
+    return { path, labelX, labelY }
+}
+
+/**
+ * Get straight line path.
+ * @returns {{ path: string, labelX: number, labelY: number }}
+ */
+export function getStraightPath({ sourceX, sourceY, targetX, targetY, points }) {
+    // Forced waypoints: polyline through each point
+    const wps = normalizeConnPoints(points)
+    if (wps) {
+        const pts = [{ x: sourceX, y: sourceY }, ...wps, { x: targetX, y: targetY }]
+        const path = pts.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x},${p.y}`).join(' ')
+        const label = labelAtHalfLength(pts)
+        return { path, labelX: label.x, labelY: label.y }
+    }
+
+    const path = `M ${sourceX},${sourceY} L ${targetX},${targetY}`
+    const labelX = (sourceX + targetX) / 2
+    const labelY = (sourceY + targetY) / 2
+    return { path, labelX, labelY }
+}
+
+/**
+ * Get step (right-angle) path.
+ * @returns {{ path: string, labelX: number, labelY: number }}
+ */
+export function getStepPath({
+    sourceX, sourceY, sourcePosition = 'bottom',
+    targetX, targetY, targetPosition = 'top',
+    offset = 20,
+    allNodes, nodeInternals, connFromId, connToId,
+    points,
+}) {
+    // Forced waypoints bypass automatic routing (anchors still honored at both ends)
+    const wps = normalizeConnPoints(points)
+    const pts = wps
+        ? orthogonalizeThroughPoints(sourceX, sourceY, sourcePosition, targetX, targetY, targetPosition, wps)
+        : calculateStepPoints(
+            sourceX, sourceY, sourcePosition,
+            targetX, targetY, targetPosition,
+            offset, allNodes, nodeInternals, connFromId, connToId
+        )
+    const path = pts.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x},${p.y}`).join(' ')
+    const label = labelAtHalfLength(pts)
+    return { path, labelX: label.x, labelY: label.y }
+}
+
+/**
+ * Get smooth step (rounded right-angle) path.
+ * @returns {{ path: string, labelX: number, labelY: number }}
+ */
+export function getSmoothStepPath({
+    sourceX, sourceY, sourcePosition = 'bottom',
+    targetX, targetY, targetPosition = 'top',
+    borderRadius = 5,
+    offset = 20,
+    allNodes, nodeInternals, connFromId, connToId,
+    points,
+}) {
+    // Forced waypoints bypass automatic routing (anchors still honored at both ends)
+    const wps = normalizeConnPoints(points)
+    const pts = wps
+        ? orthogonalizeThroughPoints(sourceX, sourceY, sourcePosition, targetX, targetY, targetPosition, wps)
+        : calculateStepPoints(
+            sourceX, sourceY, sourcePosition,
+            targetX, targetY, targetPosition,
+            offset, allNodes, nodeInternals, connFromId, connToId
+        )
+
+    return buildRoundedPath(pts, borderRadius)
 }
 
 /**

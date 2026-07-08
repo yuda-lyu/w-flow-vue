@@ -1,22 +1,26 @@
 <template>
   <div class="vue-flow__node-basic">
     <Handle
+      v-for="p in usedTargetSides"
+      :key="'t-' + p"
       type="target"
-      :position="nodeFromPosition"
+      :position="p"
       :connectable="connectable"
       :locked="locked"
-      :offset="targetOffset"
-      :custom-style="targetHandleStyle"
+      :offset="targetOffsetFor(p)"
+      :custom-style="targetHandleStyleFor(p)"
       @connect-start="$emit('connect-start', $event)"
     />
     <div class="vue-flow__node-label" :style="labelStyle">{{ node.name }}</div>
     <Handle
+      v-for="p in usedSourceSides"
+      :key="'s-' + p"
       type="source"
-      :position="nodeToPosition"
+      :position="p"
       :connectable="connectable"
       :locked="locked"
-      :offset="sourceOffset"
-      :custom-style="sourceHandleStyle"
+      :offset="sourceOffsetFor(p)"
+      :custom-style="sourceHandleStyleFor(p)"
       @connect-start="$emit('connect-start', $event)"
     />
   </div>
@@ -28,7 +32,7 @@ import Handle from './Handle.vue'
 export default {
     name: 'DefaultNode',
     components: { Handle },
-    inject: { getDefNode: { default: () => () => ({}) } },
+    inject: { getDefNode: { default: () => () => ({}) }, getConns: { default: () => () => [] } },
     props: {
         node: { type: Object, required: true },
         connectable: { type: Boolean, default: true },
@@ -44,8 +48,28 @@ export default {
         nodeFromPosition() {
             return this.node.fromPosition || this.dn.fromPosition || 'top'
         },
-        sameSide() {
-            return this.nodeToPosition === this.nodeFromPosition
+        // 連接點依「實際連線使用之方位」顯示(conn層級錨點優先), 無邊時回退節點/預設方位
+        usedSourceSides() {
+            const def = this.nodeToPosition
+            const conns = this.getConns() || []
+            const sides = []
+            for (const c of conns) {
+                if (c.from !== this.node.id) continue
+                const p = c.fromPosition || def
+                if (sides.indexOf(p) < 0) sides.push(p)
+            }
+            return sides.length ? sides : [def]
+        },
+        usedTargetSides() {
+            const def = this.nodeFromPosition
+            const conns = this.getConns() || []
+            const sides = []
+            for (const c of conns) {
+                if (c.to !== this.node.id) continue
+                const p = c.toPosition || def
+                if (sides.indexOf(p) < 0) sides.push(p)
+            }
+            return sides.length ? sides : [def]
         },
         isDiamond() {
             return this.node.shape === 'diamond'
@@ -59,36 +83,6 @@ export default {
         },
         isSvgShape() {
             return this.isDiamond || this.isEllipse || this.isTriangle
-        },
-        targetOffset() {
-            if (this.isSvgShape) return null
-            return this.sameSide ? '33%' : null
-        },
-        sourceOffset() {
-            if (this.isSvgShape) return null
-            return this.sameSide ? '67%' : null
-        },
-        targetHandleStyle() {
-            if (this.isTriangle) {
-                let pos = this.nodeFromPosition
-                return this.getTriangleHandleStyle(pos, this.sameSide ? 0.33 : 0.5)
-            }
-            if (this.isEllipse && this.sameSide) {
-                return this.getEllipseHandleStyle(this.nodeFromPosition, 0.33)
-            }
-            if (!this.isDiamond || !this.sameSide) return null
-            return this.getDiamondOffsetStyle(this.nodeFromPosition, 0.33)
-        },
-        sourceHandleStyle() {
-            if (this.isTriangle) {
-                let pos = this.nodeToPosition
-                return this.getTriangleHandleStyle(pos, this.sameSide ? 0.67 : 0.5)
-            }
-            if (this.isEllipse && this.sameSide) {
-                return this.getEllipseHandleStyle(this.nodeToPosition, 0.67)
-            }
-            if (!this.isDiamond || !this.sameSide) return null
-            return this.getDiamondOffsetStyle(this.nodeToPosition, 0.67)
         },
         labelStyle() {
             if (!this.isTriangle) return null
@@ -105,6 +99,40 @@ export default {
         },
     },
     methods: {
+        // 同一側同時有入點與出點時錯開(入33%/出67%), 否則置中
+        isBothSide(p) {
+            return this.usedSourceSides.indexOf(p) >= 0 && this.usedTargetSides.indexOf(p) >= 0
+        },
+        targetOffsetFor(p) {
+            if (this.isSvgShape) return null
+            return this.isBothSide(p) ? '33%' : null
+        },
+        sourceOffsetFor(p) {
+            if (this.isSvgShape) return null
+            return this.isBothSide(p) ? '67%' : null
+        },
+        targetHandleStyleFor(p) {
+            const both = this.isBothSide(p)
+            if (this.isTriangle) {
+                return this.getTriangleHandleStyle(p, both ? 0.33 : 0.5)
+            }
+            if (this.isEllipse && both) {
+                return this.getEllipseHandleStyle(p, 0.33)
+            }
+            if (!this.isDiamond || !both) return null
+            return this.getDiamondOffsetStyle(p, 0.33)
+        },
+        sourceHandleStyleFor(p) {
+            const both = this.isBothSide(p)
+            if (this.isTriangle) {
+                return this.getTriangleHandleStyle(p, both ? 0.67 : 0.5)
+            }
+            if (this.isEllipse && both) {
+                return this.getEllipseHandleStyle(p, 0.67)
+            }
+            if (!this.isDiamond || !both) return null
+            return this.getDiamondOffsetStyle(p, 0.67)
+        },
         getTriangleHandleStyle(side, ratio) {
             // Get vertices based on triangle direction
             let v = this.triangleVertices()

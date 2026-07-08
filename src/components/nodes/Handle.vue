@@ -65,6 +65,15 @@ export default {
   cursor: crosshair;
   z-index: 3;
 }
+/* 連出點(source)白面黑線, 與連入點(深灰底白框)區隔: 使用者一眼可辨可拖曳建線之出發點 */
+.vue-flow__handle--source {
+  background: #fff;
+  border: 1px solid #1a1918;
+}
+/* 連入點(target)不可作為拖曳建線之出發點, 不顯示十字準星 */
+.vue-flow__handle--target {
+  cursor: default;
+}
 .vue-flow__handle--top {
   top: -4px;
   left: 50%;

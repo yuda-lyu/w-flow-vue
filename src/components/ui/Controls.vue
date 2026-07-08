@@ -29,6 +29,15 @@
       <svg v-if="locked" viewBox="0 0 24 24"><path d="M17 11H7a2 2 0 00-2 2v6a2 2 0 002 2h10a2 2 0 002-2v-6a2 2 0 00-2-2zM12 17a1.5 1.5 0 110-3 1.5 1.5 0 010 3zM8 11V7a4 4 0 118 0v4" stroke="currentColor" stroke-width="1.5" fill="none"/></svg>
       <svg v-else viewBox="0 0 24 24"><path d="M17 11H7a2 2 0 00-2 2v6a2 2 0 002 2h10a2 2 0 002-2v-6a2 2 0 00-2-2zM12 17a1.5 1.5 0 110-3 1.5 1.5 0 010 3zM16 11V7a4 4 0 10-8 0" stroke="currentColor" stroke-width="1.5" fill="none"/></svg>
     </button>
+    <!-- 變更儲存鈕: 僅於flow數據有未儲存變更(showSave)時顯示, 按下emit save由宿主持久化 -->
+    <button
+      v-if="showSave"
+      class="vue-flow__controls-save"
+      title="Save Changes"
+      @click="$emit('save')"
+    >
+      <svg viewBox="0 0 24 24"><path d="M17 21H7a2 2 0 01-2-2V5a2 2 0 012-2h9l5 5v11a2 2 0 01-2 2zM17 21v-8H7v8M7 3v5h8" stroke="currentColor" stroke-width="1.5" fill="none"/></svg>
+    </button>
     <slot />
   </div>
 </template>
@@ -40,6 +49,7 @@ export default {
         showZoom: { type: Boolean, default: true },
         showFitView: { type: Boolean, default: true },
         showInteractive: { type: Boolean, default: true },
+        showSave: { type: Boolean, default: false },
         locked: { type: Boolean, default: false },
         position: { type: String, default: 'top-left' },
     },
@@ -71,6 +81,14 @@ export default {
 }
 .vue-flow__controls button:hover {
   background: #f0f0f0;
+}
+/* 變更儲存鈕: 紅底白icon(重要儲存/刪除統一配色, 同設定表單刪除鈕 #dc2626 色系) */
+.vue-flow__controls .vue-flow__controls-save {
+  background: #dc2626;
+  color: #fff;
+}
+.vue-flow__controls .vue-flow__controls-save:hover {
+  background: #b91c1c;
 }
 .vue-flow__panel {
   position: absolute;

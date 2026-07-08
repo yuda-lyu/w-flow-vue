@@ -6,12 +6,8 @@
       ref="wrappers"
       :key="conn.id"
       :conn="conn"
-      :source-x="getFromPos(conn).x"
-      :source-y="getFromPos(conn).y"
-      :source-position="getFromHandlePosition(conn)"
-      :target-x="getToPos(conn).x"
-      :target-y="getToPos(conn).y"
-      :target-position="getToHandlePosition(conn)"
+      :source-node="nodeMap[conn.from]"
+      :target-node="nodeMap[conn.to]"
       :selected="isSelected(conn.id)"
       :all-nodes="nodes"
       :node-internals="nodeInternals"
@@ -46,7 +42,6 @@
 <script>
 import EdgeWrapper from './EdgeWrapper.vue'
 import EdgeMarkerDefs from './EdgeMarkerDefs.vue'
-import { getHandlePosition } from '../../js/geometry'
 
 export default {
     name: 'EdgeRenderer', // lock support
@@ -72,9 +67,13 @@ export default {
     computed: {
         visibleConns() {
             const visibleNodeIds = new Set(this.nodes.filter(n => !n.hidden).map(n => n.id))
-            return this.conns.filter(
+            const list = this.conns.filter(
                 e => !e.hidden && visibleNodeIds.has(e.from) && visibleNodeIds.has(e.to)
             )
+            //選取之連線移至最後渲染(SVG疊序=文件順序即置頂): 該線與其轉折點不被其他線遮擋, 便於檢視與編修
+            const sel = this.selectedConnIds || []
+            if (!sel.length) return list
+            return [...list.filter(c => sel.indexOf(c.id) < 0), ...list.filter(c => sel.indexOf(c.id) >= 0)]
         },
         nodeMap() {
             const map = {}
@@ -85,26 +84,8 @@ export default {
         },
     },
     methods: {
-        getFromPos(conn) {
-            const node = this.nodeMap[conn.from]
-            if (!node) return { x: 0, y: 0 }
-            const pos = node.toPosition || 'bottom'
-            return getHandlePosition(node, pos, this.nodeInternals[node.id] || {}, 'source')
-        },
-        getToPos(conn) {
-            const node = this.nodeMap[conn.to]
-            if (!node) return { x: 0, y: 0 }
-            const pos = node.fromPosition || 'top'
-            return getHandlePosition(node, pos, this.nodeInternals[node.id] || {}, 'target')
-        },
-        getFromHandlePosition(conn) {
-            const node = this.nodeMap[conn.from]
-            return (node && node.toPosition) || 'bottom'
-        },
-        getToHandlePosition(conn) {
-            const node = this.nodeMap[conn.to]
-            return (node && node.fromPosition) || 'top'
-        },
+        //(效能重構)錨點座標/方位解析下沉至EdgeWrapper自算(含拖曳ghost):
+        //  本層render不再讀取各節點position, 拖曳節點時EdgeRenderer不重渲染, 僅相連邊之EdgeWrapper更新
         isSelected(id) {
             return this.selectedConnIds.includes(id)
         },

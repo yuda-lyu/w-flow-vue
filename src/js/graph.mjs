@@ -7,6 +7,12 @@ export function isValidConnection(connection, nodes, conns, validator) {
     // Self-connection not allowed by default
     if (connection.from === connection.to) return false
 
+    // 節點種類語義: input(僅出點)不可作為連線終點, output(僅入點)不可作為連線起點
+    const fromNode = nodes.find(n => n.id === connection.from)
+    const toNode = nodes.find(n => n.id === connection.to)
+    if (fromNode && fromNode.type === 'output') return false
+    if (toNode && toNode.type === 'input') return false
+
     // Check duplicate (same from→to path)
     const duplicate = conns.find(
         e => e.from === connection.from && e.to === connection.to
