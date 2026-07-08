@@ -1,51 +1,4 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    
-    <meta charset="utf-8">
-    <title>js/edge-path.mjs - Documentation</title>
-    
-    
-    <script src="scripts/prettify/prettify.js"></script>
-    <script src="scripts/prettify/lang-css.js"></script>
-    <!--[if lt IE 9]>
-      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
-    <![endif]-->
-    <link type="text/css" rel="stylesheet" href="styles/prettify.css">
-    <link type="text/css" rel="stylesheet" href="styles/jsdoc.css">
-    <script src="scripts/nav.js" defer></script>
-    
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-</head>
-<body>
-
-<input type="checkbox" id="nav-trigger" class="nav-trigger" />
-<label for="nav-trigger" class="navicon-button x">
-  <div class="navicon"></div>
-</label>
-
-<label for="nav-trigger" class="overlay"></label>
-
-<nav >
-    
-    
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-WFlowVue.html">WFlowVue</a></li></ul><h3>Global</h3><ul><li><a href="global.html#NODE_DEFAULTS">NODE_DEFAULTS</a></li><li><a href="global.html#buildRoundedPath">buildRoundedPath</a></li><li><a href="global.html#clampPosition">clampPosition</a></li><li><a href="global.html#generateId">generateId</a></li><li><a href="global.html#getBezierPath">getBezierPath</a></li><li><a href="global.html#getControlOffset">getControlOffset</a></li><li><a href="global.html#getDiamondEdgePoint">getDiamondEdgePoint</a></li><li><a href="global.html#getEllipseEdgePoint">getEllipseEdgePoint</a></li><li><a href="global.html#getHandlePosition">getHandlePosition</a></li><li><a href="global.html#getOverlappingNodes">getOverlappingNodes</a></li><li><a href="global.html#getSmoothStepPath">getSmoothStepPath</a></li><li><a href="global.html#getStepPath">getStepPath</a></li><li><a href="global.html#getStraightPath">getStraightPath</a></li><li><a href="global.html#getTriangleEdgePoint">getTriangleEdgePoint</a></li><li><a href="global.html#isValidConnection">isValidConnection</a></li><li><a href="global.html#labelAtHalfLength">labelAtHalfLength</a></li><li><a href="global.html#lookupRoute">lookupRoute</a></li><li><a href="global.html#normalizeConnPoints">normalizeConnPoints</a></li><li><a href="global.html#orthogonalizeThroughPoints">orthogonalizeThroughPoints</a></li><li><a href="global.html#rectsOverlap">rectsOverlap</a></li><li><a href="global.html#segmentFallback">segmentFallback</a></li><li><a href="global.html#snapPosition">snapPosition</a></li></ul>
-    
-</nav>
-
-<div id="main">
-    
-    <h1 class="page-title">js/edge-path.mjs</h1>
-    
-
-    
-
-
-
-    
-    <section>
-        <article>
-            <pre class="prettyprint source linenums"><code>/**
+/**
  * Edge path generators for different edge types.
  */
 
@@ -64,10 +17,10 @@ function normalizeConnPoints(points) {
     for (const p of points) {
         let x = null
         let y = null
-        if (Array.isArray(p) &amp;&amp; p.length >= 2) {
+        if (Array.isArray(p) && p.length >= 2) {
             x = Number(p[0]); y = Number(p[1])
         }
-        else if (p &amp;&amp; typeof p === 'object') {
+        else if (p && typeof p === 'object') {
             x = Number(p.x); y = Number(p.y)
         }
         if (!Number.isFinite(x) || !Number.isFinite(y)) return null
@@ -96,13 +49,13 @@ function orthogonalizeThroughPoints(
     // Axis of the first sub-segment when leaving the previous point
     let leaveHoriz = sourcePosition === 'left' || sourcePosition === 'right'
 
-    for (let i = 0; i &lt; waypoints.length; i++) {
+    for (let i = 0; i < waypoints.length; i++) {
         const w = waypoints[i]
         const prev = pts[pts.length - 1]
         const dx = Math.abs(w.x - prev.x)
         const dy = Math.abs(w.y - prev.y)
         let arriveHoriz
-        if (dx > 0.5 &amp;&amp; dy > 0.5) {
+        if (dx > 0.5 && dy > 0.5) {
             push(leaveHoriz ? { x: w.x, y: prev.y } : { x: prev.x, y: w.y })
             arriveHoriz = !leaveHoriz
         }
@@ -116,7 +69,7 @@ function orthogonalizeThroughPoints(
     // Final hop: approach the target along its anchor axis
     const prev = pts[pts.length - 1]
     const targetHoriz = targetPosition === 'left' || targetPosition === 'right'
-    if (Math.abs(targetX - prev.x) > 0.5 &amp;&amp; Math.abs(targetY - prev.y) > 0.5) {
+    if (Math.abs(targetX - prev.x) > 0.5 && Math.abs(targetY - prev.y) > 0.5) {
         push(targetHoriz ? { x: prev.x, y: targetY } : { x: targetX, y: prev.y })
     }
     push({ x: targetX, y: targetY })
@@ -128,7 +81,7 @@ function orthogonalizeThroughPoints(
  * @returns {{ path: string, labelX: number, labelY: number }}
  */
 function buildRoundedPath(points, borderRadius) {
-    if (points.length &lt;= 2) {
+    if (points.length <= 2) {
         const path = `M ${points[0].x},${points[0].y} L ${points[1].x},${points[1].y}`
         const labelX = (points[0].x + points[1].x) / 2
         const labelY = (points[0].y + points[1].y) / 2
@@ -137,7 +90,7 @@ function buildRoundedPath(points, borderRadius) {
 
     let path = `M ${points[0].x},${points[0].y}`
 
-    for (let i = 1; i &lt; points.length - 1; i++) {
+    for (let i = 1; i < points.length - 1; i++) {
         const prev = points[i - 1]
         const curr = points[i]
         const next = points[i + 1]
@@ -200,7 +153,7 @@ export function getBezierPath({
     if (wps) {
         const pts = [{ x: sourceX, y: sourceY }, ...wps, { x: targetX, y: targetY }]
         let path = `M ${pts[0].x},${pts[0].y}`
-        for (let i = 0; i &lt; pts.length - 1; i++) {
+        for (let i = 0; i < pts.length - 1; i++) {
             const p0 = pts[i - 1] || pts[i]
             const p1 = pts[i]
             const p2 = pts[i + 1]
@@ -308,14 +261,14 @@ export function getSmoothStepPath({
  * Find the point at exactly half the total Manhattan path length.
  */
 function labelAtHalfLength(pts) {
-    if (pts.length &lt; 2) return { x: pts[0].x, y: pts[0].y }
+    if (pts.length < 2) return { x: pts[0].x, y: pts[0].y }
     let totalLen = 0
-    for (let i = 0; i &lt; pts.length - 1; i++) {
+    for (let i = 0; i < pts.length - 1; i++) {
         totalLen += Math.abs(pts[i + 1].x - pts[i].x) + Math.abs(pts[i + 1].y - pts[i].y)
     }
     let half = totalLen / 2
     let acc = 0
-    for (let i = 0; i &lt; pts.length - 1; i++) {
+    for (let i = 0; i < pts.length - 1; i++) {
         let segLen = Math.abs(pts[i + 1].x - pts[i].x) + Math.abs(pts[i + 1].y - pts[i].y)
         if (acc + segLen >= half) {
             let ratio = segLen > 0 ? (half - acc) / segLen : 0
@@ -328,28 +281,3 @@ function labelAtHalfLength(pts) {
     }
     return { x: pts[pts.length - 1].x, y: pts[pts.length - 1].y }
 }
-</code></pre>
-        </article>
-    </section>
-
-
-
-
-    
-    
-</div>
-
-<br class="clear">
-
-<footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 4.0.5</a> on Wed Jul 08 2026 18:27:05 GMT+0800 (台北標準時間) using the <a href="https://github.com/clenemt/docdash">docdash</a> theme.
-</footer>
-
-<script>prettyPrint();</script>
-<script src="scripts/polyfill.js"></script>
-<script src="scripts/linenumber.js"></script>
-
-
-
-</body>
-</html>

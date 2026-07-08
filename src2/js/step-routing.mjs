@@ -1,51 +1,4 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    
-    <meta charset="utf-8">
-    <title>js/step-routing.mjs - Documentation</title>
-    
-    
-    <script src="scripts/prettify/prettify.js"></script>
-    <script src="scripts/prettify/lang-css.js"></script>
-    <!--[if lt IE 9]>
-      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
-    <![endif]-->
-    <link type="text/css" rel="stylesheet" href="styles/prettify.css">
-    <link type="text/css" rel="stylesheet" href="styles/jsdoc.css">
-    <script src="scripts/nav.js" defer></script>
-    
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-</head>
-<body>
-
-<input type="checkbox" id="nav-trigger" class="nav-trigger" />
-<label for="nav-trigger" class="navicon-button x">
-  <div class="navicon"></div>
-</label>
-
-<label for="nav-trigger" class="overlay"></label>
-
-<nav >
-    
-    
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-WFlowVue.html">WFlowVue</a></li></ul><h3>Global</h3><ul><li><a href="global.html#NODE_DEFAULTS">NODE_DEFAULTS</a></li><li><a href="global.html#buildRoundedPath">buildRoundedPath</a></li><li><a href="global.html#clampPosition">clampPosition</a></li><li><a href="global.html#generateId">generateId</a></li><li><a href="global.html#getBezierPath">getBezierPath</a></li><li><a href="global.html#getControlOffset">getControlOffset</a></li><li><a href="global.html#getDiamondEdgePoint">getDiamondEdgePoint</a></li><li><a href="global.html#getEllipseEdgePoint">getEllipseEdgePoint</a></li><li><a href="global.html#getHandlePosition">getHandlePosition</a></li><li><a href="global.html#getOverlappingNodes">getOverlappingNodes</a></li><li><a href="global.html#getSmoothStepPath">getSmoothStepPath</a></li><li><a href="global.html#getStepPath">getStepPath</a></li><li><a href="global.html#getStraightPath">getStraightPath</a></li><li><a href="global.html#getTriangleEdgePoint">getTriangleEdgePoint</a></li><li><a href="global.html#isValidConnection">isValidConnection</a></li><li><a href="global.html#labelAtHalfLength">labelAtHalfLength</a></li><li><a href="global.html#lookupRoute">lookupRoute</a></li><li><a href="global.html#normalizeConnPoints">normalizeConnPoints</a></li><li><a href="global.html#orthogonalizeThroughPoints">orthogonalizeThroughPoints</a></li><li><a href="global.html#rectsOverlap">rectsOverlap</a></li><li><a href="global.html#segmentFallback">segmentFallback</a></li><li><a href="global.html#snapPosition">snapPosition</a></li></ul>
-    
-</nav>
-
-<div id="main">
-    
-    <h1 class="page-title">js/step-routing.mjs</h1>
-    
-
-    
-
-
-
-    
-    <section>
-        <article>
-            <pre class="prettyprint source linenums"><code>// --- Step path routing using draw.io OrthConnector algorithm ---
+// --- Step path routing using draw.io OrthConnector algorithm ---
 
 let _cache = new Map()
 let _cacheFrame = -1
@@ -73,13 +26,13 @@ export function calculateStepPoints(
 
     // Collect obstacles (bbox for all visible nodes)
     let obs = []
-    if (allNodes &amp;&amp; allNodes.length > 0) {
+    if (allNodes && allNodes.length > 0) {
         let ni = nodeInternals || {}
-        for (let i = 0; i &lt; allNodes.length; i++) {
+        for (let i = 0; i < allNodes.length; i++) {
             let n = allNodes[i]
             if (n.hidden) continue
-            let w = (ni[n.id] &amp;&amp; ni[n.id].width) || n.width || 100
-            let h = (ni[n.id] &amp;&amp; ni[n.id].height) || n.height || 40
+            let w = (ni[n.id] && ni[n.id].width) || n.width || 100
+            let h = (ni[n.id] && ni[n.id].height) || n.height || 40
             obs.push({ l: n.position.x, t: n.position.y, r: n.position.x + w, b: n.position.y + h })
         }
     }
@@ -101,9 +54,9 @@ export function calculateStepPoints(
 // ==================== Helpers ====================
 
 function findObstacleAt(obs, hx, hy) {
-    for (let i = 0; i &lt; obs.length; i++) {
+    for (let i = 0; i < obs.length; i++) {
         let o = obs[i]
-        if (hx >= o.l - 5 &amp;&amp; hx &lt;= o.r + 5 &amp;&amp; hy >= o.t - 5 &amp;&amp; hy &lt;= o.b + 5) return o
+        if (hx >= o.l - 5 && hx <= o.r + 5 && hy >= o.t - 5 && hy <= o.b + 5) return o
     }
     return null
 }
@@ -152,15 +105,15 @@ function lookupRoute(sourceX, sourceY, sourcePosition, targetX, targetY, targetP
         [tObs.l, tObs.t, tObs.r - tObs.l, tObs.b - tObs.t]
     ]
 
-    // Too-close check: distance &lt; 2*buf → fallback
+    // Too-close check: distance < 2*buf → fallback
     let ddx = sourceX - targetX; let ddy = sourceY - targetY
     let totalBuf = buf * 2
-    if (ddx * ddx + ddy * ddy &lt; totalBuf * totalBuf) return null
+    if (ddx * ddx + ddy * ddy < totalBuf * totalBuf) return null
 
     // Limits: expanded bbox per node (prevents lines crossing nodes)
     // draw.io hardcoded indices: [1]=left, [2]=top, [4]=right, [8]=bottom
     let lim = [[], []]
-    for (let i = 0; i &lt; 2; i++) {
+    for (let i = 0; i < 2; i++) {
         lim[i][1] = geo[i][0] - buf
         lim[i][2] = geo[i][1] - buf
         lim[i][4] = geo[i][0] + geo[i][2] + buf
@@ -184,10 +137,10 @@ function lookupRoute(sourceX, sourceY, sourcePosition, targetX, targetY, targetP
     let tCx = geo[1][0] + geo[1][2] / 2; let tCy = geo[1][1] + geo[1][3] / 2
     let qx = sCx - tCx; let qy = sCy - tCy
     let quad = 0
-    if (qx &lt; 0) {
-        quad = qy &lt; 0 ? 2 : 1
+    if (qx < 0) {
+        quad = qy < 0 ? 2 : 1
     }
-    else if (qy &lt;= 0) {
+    else if (qy <= 0) {
         quad = qx === 0 ? 2 : 3
     }
 
@@ -203,13 +156,13 @@ function lookupRoute(sourceX, sourceY, sourcePosition, targetX, targetY, targetP
     let si = sDir === _E ? 3 : sDir
     let ti = tDir === _E ? 3 : tDir
     si -= quad; ti -= quad
-    if (si &lt; 1) si += 4
-    if (ti &lt; 1) ti += 4
+    if (si < 1) si += 4
+    if (ti < 1) ti += 4
     let rp = _rp[si - 1][ti - 1]
 
     // Initial waypoint: handle position moved outward by buffer
     let wp = []
-    for (let k = 0; k &lt; 12; k++) wp[k] = [0, 0]
+    for (let k = 0; k < 12; k++) wp[k] = [0, 0]
     wp[0][0] = geo[0][0]
     wp[0][1] = geo[0][1]
     switch (sDir) {
@@ -221,11 +174,11 @@ function lookupRoute(sourceX, sourceY, sourcePosition, targetX, targetY, targetP
 
     // Waypoint generation loop
     let ci = 0
-    let lastOr = (sDir &amp; (_E | _W)) > 0 ? 0 : 1
+    let lastOr = (sDir & (_E | _W)) > 0 ? 0 : 1
     let initOr = lastOr
 
-    for (let i = 0; i &lt; rp.length; i++) {
-        let nd = rp[i] &amp; 0xF
+    for (let i = 0; i < rp.length; i++) {
+        let nd = rp[i] & 0xF
         // draw.io: only map EAST(8)→3
         let di = nd === _E ? 3 : nd
         di += quad
@@ -238,17 +191,17 @@ function lookupRoute(sourceX, sourceY, sourcePosition, targetX, targetY, targetP
             wp[ci] = [wp[ci - 1][0], wp[ci - 1][1]]
         }
 
-        let tar = (rp[i] &amp; _TGT) > 0
-        let sou = (rp[i] &amp; _SRC) > 0
-        let side = (rp[i] &amp; _SIDE) >> 5
-        side = side &lt;&lt; quad
+        let tar = (rp[i] & _TGT) > 0
+        let sou = (rp[i] & _SRC) > 0
+        let side = (rp[i] & _SIDE) >> 5
+        side = side << quad
         if (side > 0xF) side = side >> 4
-        let ctr = (rp[i] &amp; _CTR) > 0
+        let ctr = (rp[i] & _CTR) > 0
 
-        if ((sou || tar) &amp;&amp; side &lt; 9) {
+        if ((sou || tar) && side < 9) {
             let st = sou ? 0 : 1
             let limit
-            if (ctr &amp;&amp; curOr === 0) {
+            if (ctr && curOr === 0) {
                 limit = geo[st][0] + con[st][0] * geo[st][2]
             }
             else if (ctr) {
@@ -272,7 +225,7 @@ function lookupRoute(sourceX, sourceY, sourcePosition, targetX, targetY, targetP
         }
 
         // Collapse zero-length segments
-        if (ci > 0 &amp;&amp; wp[ci][curOr] === wp[ci - 1][curOr]) {
+        if (ci > 0 && wp[ci][curOr] === wp[ci - 1][curOr]) {
             ci--
         }
         else {
@@ -282,18 +235,18 @@ function lookupRoute(sourceX, sourceY, sourcePosition, targetX, targetY, targetP
 
     // Build result: source handle → waypoints → target handle
     let pts = [{ x: sourceX, y: sourceY }]
-    let tOr = (tDir &amp; (_E | _W)) > 0 ? 0 : 1
+    let tOr = (tDir & (_E | _W)) > 0 ? 0 : 1
     let sameOr = tOr === initOr ? 0 : 1
 
-    for (let i = 0; i &lt;= ci; i++) {
-        if (i === ci &amp;&amp; sameOr !== (ci + 1) % 2) break
+    for (let i = 0; i <= ci; i++) {
+        if (i === ci && sameOr !== (ci + 1) % 2) break
         pts.push({ x: Math.round(wp[i][0] * 10) / 10, y: Math.round(wp[i][1] * 10) / 10 })
     }
     pts.push({ x: targetX, y: targetY })
 
     // Remove consecutive duplicates
     let result = [pts[0]]
-    for (let i = 1; i &lt; pts.length; i++) {
+    for (let i = 1; i < pts.length; i++) {
         if (Math.abs(pts[i].x - result[result.length - 1].x) > 0.5 ||
             Math.abs(pts[i].y - result[result.length - 1].y) > 0.5) {
             result.push(pts[i])
@@ -308,39 +261,14 @@ function lookupRoute(sourceX, sourceY, sourcePosition, targetX, targetY, targetP
  */
 function segmentFallback(sx, sy, tx, ty, sObs, tObs) {
     let pts = [{ x: sx, y: sy }]
-    if (tObs &amp;&amp; tx >= tObs.l &amp;&amp; tx &lt;= tObs.r &amp;&amp; sy >= tObs.t &amp;&amp; sy &lt;= tObs.b) {
-        if (!(sObs &amp;&amp; sx >= sObs.l &amp;&amp; sx &lt;= sObs.r &amp;&amp; ty >= sObs.t &amp;&amp; ty &lt;= sObs.b)) {
+    if (tObs && tx >= tObs.l && tx <= tObs.r && sy >= tObs.t && sy <= tObs.b) {
+        if (!(sObs && sx >= sObs.l && sx <= sObs.r && ty >= sObs.t && ty <= sObs.b)) {
             pts.push({ x: sx, y: ty })
         }
     }
-    else if (sx !== tx &amp;&amp; sy !== ty) {
+    else if (sx !== tx && sy !== ty) {
         pts.push({ x: tx, y: sy })
     }
     pts.push({ x: tx, y: ty })
     return pts
 }
-</code></pre>
-        </article>
-    </section>
-
-
-
-
-    
-    
-</div>
-
-<br class="clear">
-
-<footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 4.0.5</a> on Wed Jul 08 2026 18:27:05 GMT+0800 (台北標準時間) using the <a href="https://github.com/clenemt/docdash">docdash</a> theme.
-</footer>
-
-<script>prettyPrint();</script>
-<script src="scripts/polyfill.js"></script>
-<script src="scripts/linenumber.js"></script>
-
-
-
-</body>
-</html>

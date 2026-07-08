@@ -1,51 +1,4 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    
-    <meta charset="utf-8">
-    <title>js/geometry.mjs - Documentation</title>
-    
-    
-    <script src="scripts/prettify/prettify.js"></script>
-    <script src="scripts/prettify/lang-css.js"></script>
-    <!--[if lt IE 9]>
-      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
-    <![endif]-->
-    <link type="text/css" rel="stylesheet" href="styles/prettify.css">
-    <link type="text/css" rel="stylesheet" href="styles/jsdoc.css">
-    <script src="scripts/nav.js" defer></script>
-    
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-</head>
-<body>
-
-<input type="checkbox" id="nav-trigger" class="nav-trigger" />
-<label for="nav-trigger" class="navicon-button x">
-  <div class="navicon"></div>
-</label>
-
-<label for="nav-trigger" class="overlay"></label>
-
-<nav >
-    
-    
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-WFlowVue.html">WFlowVue</a></li></ul><h3>Global</h3><ul><li><a href="global.html#NODE_DEFAULTS">NODE_DEFAULTS</a></li><li><a href="global.html#buildRoundedPath">buildRoundedPath</a></li><li><a href="global.html#clampPosition">clampPosition</a></li><li><a href="global.html#generateId">generateId</a></li><li><a href="global.html#getBezierPath">getBezierPath</a></li><li><a href="global.html#getControlOffset">getControlOffset</a></li><li><a href="global.html#getDiamondEdgePoint">getDiamondEdgePoint</a></li><li><a href="global.html#getEllipseEdgePoint">getEllipseEdgePoint</a></li><li><a href="global.html#getHandlePosition">getHandlePosition</a></li><li><a href="global.html#getOverlappingNodes">getOverlappingNodes</a></li><li><a href="global.html#getSmoothStepPath">getSmoothStepPath</a></li><li><a href="global.html#getStepPath">getStepPath</a></li><li><a href="global.html#getStraightPath">getStraightPath</a></li><li><a href="global.html#getTriangleEdgePoint">getTriangleEdgePoint</a></li><li><a href="global.html#isValidConnection">isValidConnection</a></li><li><a href="global.html#labelAtHalfLength">labelAtHalfLength</a></li><li><a href="global.html#lookupRoute">lookupRoute</a></li><li><a href="global.html#normalizeConnPoints">normalizeConnPoints</a></li><li><a href="global.html#orthogonalizeThroughPoints">orthogonalizeThroughPoints</a></li><li><a href="global.html#rectsOverlap">rectsOverlap</a></li><li><a href="global.html#segmentFallback">segmentFallback</a></li><li><a href="global.html#snapPosition">snapPosition</a></li></ul>
-    
-</nav>
-
-<div id="main">
-    
-    <h1 class="page-title">js/geometry.mjs</h1>
-    
-
-    
-
-
-
-    
-    <section>
-        <article>
-            <pre class="prettyprint source linenums"><code>/**
+/**
  * Calculate the absolute position of a handle on the canvas.
  */
 export function getHandlePosition(node, handlePosition, nodeInternals, handleType) {
@@ -60,14 +13,14 @@ export function getHandlePosition(node, handlePosition, nodeInternals, handleTyp
     const isTriangle = ns === 'triangle' || ns === 'triangle-right' || ns === 'triangle-down' || ns === 'triangle-left'
 
     // Check if this is a default node with source and target on the same side
-    const sameSide = node.type === 'basic' &amp;&amp;
+    const sameSide = node.type === 'basic' &&
     (node.toPosition || 'bottom') === (node.fromPosition || 'top')
     let ratio = 0.5
-    if (sameSide &amp;&amp; handleType === 'target') ratio = 0.33
-    if (sameSide &amp;&amp; handleType === 'source') ratio = 0.67
+    if (sameSide && handleType === 'target') ratio = 0.33
+    if (sameSide && handleType === 'source') ratio = 0.67
 
     // Diamond same-side: position along diamond edges
-    if (isDiamond &amp;&amp; sameSide) {
+    if (isDiamond && sameSide) {
         return getDiamondEdgePoint(x, y, w, h, handlePosition, ratio)
     }
 
@@ -93,7 +46,7 @@ export function getHandlePosition(node, handlePosition, nodeInternals, handleTyp
 /**
  * Get a point on the diamond edge for same-side handles.
  * Each "side" of the diamond is split into two edges meeting at the vertex.
- * ratio &lt; 0.5: on the first edge, ratio >= 0.5: on the second edge.
+ * ratio < 0.5: on the first edge, ratio >= 0.5: on the second edge.
  */
 function getDiamondEdgePoint(x, y, w, h, side, ratio) {
     let halfW = w / 2
@@ -101,7 +54,7 @@ function getDiamondEdgePoint(x, y, w, h, side, ratio) {
 
     switch (side) {
     case 'top':
-        if (ratio &lt;= 0.5) {
+        if (ratio <= 0.5) {
             let t = ratio * 2
             return { x: x + t * halfW, y: y + halfH - t * halfH }
         }
@@ -110,7 +63,7 @@ function getDiamondEdgePoint(x, y, w, h, side, ratio) {
             return { x: x + halfW + t * halfW, y: y + t * halfH }
         }
     case 'bottom':
-        if (ratio &lt;= 0.5) {
+        if (ratio <= 0.5) {
             let t = ratio * 2
             return { x: x + t * halfW, y: y + halfH + t * halfH }
         }
@@ -119,7 +72,7 @@ function getDiamondEdgePoint(x, y, w, h, side, ratio) {
             return { x: x + halfW + t * halfW, y: y + h - t * halfH }
         }
     case 'left':
-        if (ratio &lt;= 0.5) {
+        if (ratio <= 0.5) {
             let t = ratio * 2
             return { x: x + halfW - t * halfW, y: y + t * halfH }
         }
@@ -128,7 +81,7 @@ function getDiamondEdgePoint(x, y, w, h, side, ratio) {
             return { x: x + t * halfW, y: y + halfH + t * halfH }
         }
     case 'right':
-        if (ratio &lt;= 0.5) {
+        if (ratio <= 0.5) {
             let t = ratio * 2
             return { x: x + halfW + t * halfW, y: y + t * halfH }
         }
@@ -197,7 +150,7 @@ function getTriangleEdgePoint(x, y, w, h, side, ratio, shape) {
     }
 
     if (side === apexSide) {
-        if (ratio &lt;= 0.5) {
+        if (ratio <= 0.5) {
             let t = ratio * 2
             return { x: baseA.x + (apex.x - baseA.x) * t, y: baseA.y + (apex.y - baseA.y) * t }
         }
@@ -223,7 +176,7 @@ function getTriangleEdgePoint(x, y, w, h, side, ratio, shape) {
  */
 export function getOverlappingNodes(rect, nodes, nodeInternals) {
     return nodes.filter(node => {
-        const internals = (nodeInternals &amp;&amp; nodeInternals[node.id]) || {}
+        const internals = (nodeInternals && nodeInternals[node.id]) || {}
         const w = internals.width || node.width || 150
         const h = internals.height || node.height || 40
         const nodeRect = {
@@ -241,9 +194,9 @@ export function getOverlappingNodes(rect, nodes, nodeInternals) {
  */
 function rectsOverlap(a, b) {
     return (
-        a.x &lt; b.x + b.width &amp;&amp;
-    a.x + a.width > b.x &amp;&amp;
-    a.y &lt; b.y + b.height &amp;&amp;
+        a.x < b.x + b.width &&
+    a.x + a.width > b.x &&
+    a.y < b.y + b.height &&
     a.y + a.height > b.y
     )
 }
@@ -271,28 +224,3 @@ export function snapPosition(position, gridSize) {
         y: Math.round(position.y / gridSize) * gridSize,
     }
 }
-</code></pre>
-        </article>
-    </section>
-
-
-
-
-    
-    
-</div>
-
-<br class="clear">
-
-<footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 4.0.5</a> on Wed Jul 08 2026 18:27:05 GMT+0800 (台北標準時間) using the <a href="https://github.com/clenemt/docdash">docdash</a> theme.
-</footer>
-
-<script>prettyPrint();</script>
-<script src="scripts/polyfill.js"></script>
-<script src="scripts/linenumber.js"></script>
-
-
-
-</body>
-</html>

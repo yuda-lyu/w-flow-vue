@@ -8,14 +8,18 @@
 export default {
     name: 'ViewportTransform',
     props: {
-        x: { type: Number, default: 0 },
-        y: { type: Number, default: 0 },
-        zoom: { type: Number, default: 1 },
+        //改收整個viewport物件(而非x/y/zoom三個純量): 令宿主WFlowVue之render僅讀取穩定物件參考,
+        //平移時mutate viewport.x/y不再觸發WFlowVue重渲染(進而不再連帶重渲染全部節點/連線), 僅本組件之computed重評估更新transform
+        viewport: { type: Object, default: () => ({ x: 0, y: 0, zoom: 1 }) },
     },
     computed: {
         transformStyle() {
+            let v = this.viewport || {}
+            let x = v.x || 0
+            let y = v.y || 0
+            let zoom = (v.zoom === undefined || v.zoom === null) ? 1 : v.zoom
             return {
-                transform: `translate(${this.x}px, ${this.y}px) scale(${this.zoom})`,
+                transform: `translate(${x}px, ${y}px) scale(${zoom})`,
                 transformOrigin: '0 0',
             }
         },

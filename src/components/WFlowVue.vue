@@ -17,15 +17,11 @@
       :size="platformBackgroundPatternSize"
       :pattern-color="platformBackgroundPatternColor"
       :bg-color="platformBackgroundColor"
-      :viewport-x="viewport.x"
-      :viewport-y="viewport.y"
-      :viewport-zoom="viewport.zoom"
+      :viewport="viewport"
     />
 
     <ViewportTransform
-      :x="viewport.x"
-      :y="viewport.y"
-      :zoom="viewport.zoom"
+      :viewport="viewport"
     >
       <EdgeRenderer
         ref="edgeRenderer"
@@ -115,13 +111,12 @@
 
     <Controls
       :locked="locked"
-      :show-save="changed"
+      :menu-y-shift="menuYShiftInp"
       position="top-left"
       @zoom-in="zoomIn"
       @zoom-out="zoomOut"
       @fit-view="fitView"
       @toggle-interactive="toggleInteractive"
-      @save="onSaveClick"
     />
 
   </FlowCanvas>
@@ -375,9 +370,9 @@ export default {
         nodesDraggable() {
             return this.opt.nodesDraggable !== undefined ? this.opt.nodesDraggable : true
         },
-        changed() {
-            //flow數據有未儲存變更(由宿主設定), Controls顯示儲存鈕
-            return !!this.opt.changed
+        menuYShiftInp() {
+            //垂直選單向下偏移量, 由宿主經opt設定(如宿主於左上角另置變更儲存鈕時, 令選單下移避讓)
+            return typeof this.opt.menuYShift === 'number' ? this.opt.menuYShift : 0
         },
         nodesConnectable() {
             return this.opt.nodesConnectable !== undefined ? this.opt.nodesConnectable : true
@@ -670,7 +665,10 @@ export default {
                 const target = event.target
                 const isOnNode = target.closest && target.closest('.vue-flow__node')
                 const isOnHandle = target.closest && target.closest('.vue-flow__handle')
-                if (!isOnNode && !isOnHandle) {
+                //齒輪等UI元素/左上角控制選單/連線轉折點之mousedown不啟動平移(取代其@mousedown.stop, 使mousedown仍能冒泡至window做popup互斥關閉;
+                // .vue-flow__panel=Controls垂直選單, .vue-flow__edge-waypoint=連線轉折點拖曳鈕, 否則按之再拖曳會誤觸發平移)
+                const isOnUi = target.closest && target.closest('.vue-flow__node-settings, .vue-flow__edge-settings, .vue-flow__panel, .vue-flow__edge-waypoint')
+                if (!isOnNode && !isOnHandle && !isOnUi) {
                     this.startPan(event)
                 }
             }
@@ -1227,10 +1225,6 @@ export default {
         toggleInteractive() {
             this.locked = !this.locked
             this.$emit('toggle-interactive', this.locked)
-        },
-        onSaveClick() {
-            //變更儲存: 攜帶當前flow數據emit, 由宿主持久化
-            this.$emit('save', { nodes: this.nodes, conns: this.conns })
         },
         panToNode(nodeId, opt) {
             opt = opt || {}

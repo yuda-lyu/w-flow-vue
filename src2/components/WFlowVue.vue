@@ -1,53 +1,6 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    
-    <meta charset="utf-8">
-    <title>components/WFlowVue.vue - Documentation</title>
-    
-    
-    <script src="scripts/prettify/prettify.js"></script>
-    <script src="scripts/prettify/lang-css.js"></script>
-    <!--[if lt IE 9]>
-      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
-    <![endif]-->
-    <link type="text/css" rel="stylesheet" href="styles/prettify.css">
-    <link type="text/css" rel="stylesheet" href="styles/jsdoc.css">
-    <script src="scripts/nav.js" defer></script>
-    
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-</head>
-<body>
-
-<input type="checkbox" id="nav-trigger" class="nav-trigger" />
-<label for="nav-trigger" class="navicon-button x">
-  <div class="navicon"></div>
-</label>
-
-<label for="nav-trigger" class="overlay"></label>
-
-<nav >
-    
-    
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-WFlowVue.html">WFlowVue</a></li></ul><h3>Global</h3><ul><li><a href="global.html#NODE_DEFAULTS">NODE_DEFAULTS</a></li><li><a href="global.html#buildRoundedPath">buildRoundedPath</a></li><li><a href="global.html#clampPosition">clampPosition</a></li><li><a href="global.html#generateId">generateId</a></li><li><a href="global.html#getBezierPath">getBezierPath</a></li><li><a href="global.html#getControlOffset">getControlOffset</a></li><li><a href="global.html#getDiamondEdgePoint">getDiamondEdgePoint</a></li><li><a href="global.html#getEllipseEdgePoint">getEllipseEdgePoint</a></li><li><a href="global.html#getHandlePosition">getHandlePosition</a></li><li><a href="global.html#getOverlappingNodes">getOverlappingNodes</a></li><li><a href="global.html#getSmoothStepPath">getSmoothStepPath</a></li><li><a href="global.html#getStepPath">getStepPath</a></li><li><a href="global.html#getStraightPath">getStraightPath</a></li><li><a href="global.html#getTriangleEdgePoint">getTriangleEdgePoint</a></li><li><a href="global.html#isValidConnection">isValidConnection</a></li><li><a href="global.html#labelAtHalfLength">labelAtHalfLength</a></li><li><a href="global.html#lookupRoute">lookupRoute</a></li><li><a href="global.html#normalizeConnPoints">normalizeConnPoints</a></li><li><a href="global.html#orthogonalizeThroughPoints">orthogonalizeThroughPoints</a></li><li><a href="global.html#rectsOverlap">rectsOverlap</a></li><li><a href="global.html#segmentFallback">segmentFallback</a></li><li><a href="global.html#snapPosition">snapPosition</a></li></ul>
-    
-</nav>
-
-<div id="main">
-    
-    <h1 class="page-title">components/WFlowVue.vue</h1>
-    
-
-    
-
-
-
-    
-    <section>
-        <article>
-            <pre class="prettyprint source linenums"><code>&lt;template>
-  &lt;div :style="`width:${widthInp}px; height:${heightInp}px;`">
-  &lt;FlowCanvas
+<template>
+  <div :style="`width:${widthInp}px; height:${heightInp}px;`">
+  <FlowCanvas
     v-if="inited"
     ref="canvas"
     @canvas-mousedown="onCanvasMouseDown"
@@ -58,19 +11,23 @@
     @canvas-click="onCanvasClick"
     @canvas-contextmenu="onCanvasContextMenu"
   >
-    &lt;BackgroundLayer
+    <BackgroundLayer
       :variant="platformBackgroundPatternType"
       :gap="platformBackgroundPatternGap"
       :size="platformBackgroundPatternSize"
       :pattern-color="platformBackgroundPatternColor"
       :bg-color="platformBackgroundColor"
-      :viewport="viewport"
+      :viewport-x="viewport.x"
+      :viewport-y="viewport.y"
+      :viewport-zoom="viewport.zoom"
     />
 
-    &lt;ViewportTransform
-      :viewport="viewport"
+    <ViewportTransform
+      :x="viewport.x"
+      :y="viewport.y"
+      :zoom="viewport.zoom"
     >
-      &lt;EdgeRenderer
+      <EdgeRenderer
         ref="edgeRenderer"
         :conns="conns"
         :nodes="nodes"
@@ -97,12 +54,12 @@
         @conn-settings-update="onConnSettingsUpdate"
         @conn-settings-delete="onConnSettingsDelete"
       >
-        &lt;template v-if="$scopedSlots['conn-popup']" v-slot:conn-popup="scope">
-          &lt;slot name="conn-popup" v-bind="scope" />
-        &lt;/template>
-      &lt;/EdgeRenderer>
+        <template v-if="$scopedSlots['conn-popup']" v-slot:conn-popup="scope">
+          <slot name="conn-popup" v-bind="scope" />
+        </template>
+      </EdgeRenderer>
 
-      &lt;NodeRenderer
+      <NodeRenderer
         ref="nodeRenderer"
         :nodes="nodes"
         :selected-node-ids="selectedNodes"
@@ -135,12 +92,12 @@
         @node-resize="onNodeResize"
         @node-resize-end="onNodeResizeEnd"
       >
-        &lt;template v-if="$scopedSlots['node-popup']" v-slot:node-popup="scope">
-          &lt;slot name="node-popup" v-bind="scope" />
-        &lt;/template>
-      &lt;/NodeRenderer>
+        <template v-if="$scopedSlots['node-popup']" v-slot:node-popup="scope">
+          <slot name="node-popup" v-bind="scope" />
+        </template>
+      </NodeRenderer>
 
-      &lt;ConnectionLine
+      <ConnectionLine
         :active="isConnecting"
         :source-x="connLineFromX"
         :source-y="connLineFromY"
@@ -151,26 +108,27 @@
         :line-style="defConnCreatingStyle"
       />
 
-      &lt;slot name="viewport-overlay" />
-    &lt;/ViewportTransform>
+      <slot name="viewport-overlay" />
+    </ViewportTransform>
 
-    &lt;SelectionBox :box="selectionBox" />
+    <SelectionBox :box="selectionBox" />
 
-    &lt;Controls
+    <Controls
       :locked="locked"
-      :menu-y-shift="menuYShiftInp"
+      :show-save="changed"
       position="top-left"
       @zoom-in="zoomIn"
       @zoom-out="zoomOut"
       @fit-view="fitView"
       @toggle-interactive="toggleInteractive"
+      @save="onSaveClick"
     />
 
-  &lt;/FlowCanvas>
-  &lt;/div>
-&lt;/template>
+  </FlowCanvas>
+  </div>
+</template>
 
-&lt;script>
+<script>
 import FlowCanvas from './canvas/FlowCanvas.vue'
 import ViewportTransform from './canvas/ViewportTransform.vue'
 import BackgroundLayer from './canvas/BackgroundLayer.vue'
@@ -417,9 +375,9 @@ export default {
         nodesDraggable() {
             return this.opt.nodesDraggable !== undefined ? this.opt.nodesDraggable : true
         },
-        menuYShiftInp() {
-            //垂直選單向下偏移量, 由宿主經opt設定(如宿主於左上角另置變更儲存鈕時, 令選單下移避讓)
-            return typeof this.opt.menuYShift === 'number' ? this.opt.menuYShift : 0
+        changed() {
+            //flow數據有未儲存變更(由宿主設定), Controls顯示儲存鈕
+            return !!this.opt.changed
         },
         nodesConnectable() {
             return this.opt.nodesConnectable !== undefined ? this.opt.nodesConnectable : true
@@ -598,10 +556,10 @@ export default {
         //why: 舊renderNodes每步mousemove產新陣列+新物件prop, 使兩Renderer與全部Node/EdgeWrapper(含WPopup/WTooltip子樹)
         //     每步全量重渲染(84節點+95邊實測~128ms/步); 細粒度後僅被拖節點與其相連邊重渲染
         isBoxSelectPressed() {
-            return this.multiSelectEnabled &amp;&amp; !!this.keysPressed[this.boxSelectionKeyCode]
+            return this.multiSelectEnabled && !!this.keysPressed[this.boxSelectionKeyCode]
         },
         isMultiSelectPressed() {
-            return this.multiSelectEnabled &amp;&amp; !!this.keysPressed[this.multiSelectionKeyCode]
+            return this.multiSelectEnabled && !!this.keysPressed[this.multiSelectionKeyCode]
         },
     },
     methods: {
@@ -653,7 +611,7 @@ export default {
         },
         updateNodeInternals(id, internals) {
             let existing = this.nodeInternals[id]
-            if (existing &amp;&amp; existing.width === internals.width &amp;&amp; existing.height === internals.height) return
+            if (existing && existing.width === internals.width && existing.height === internals.height) return
             this.$set(this.nodeInternals, id, internals)
         },
         setViewport({ x, y, zoom }) {
@@ -665,7 +623,7 @@ export default {
         // --- Key handling ---
         onKeyDown(e) {
             this.keysPressed = { ...this.keysPressed, [e.key]: true }
-            if (!this.locked &amp;&amp; this.deleteKeyEnabled &amp;&amp; (e.key === this.deleteKeyCode || e.key === 'Delete')) {
+            if (!this.locked && this.deleteKeyEnabled && (e.key === this.deleteKeyCode || e.key === 'Delete')) {
                 this.deleteSelectedElements()
             }
         },
@@ -678,7 +636,7 @@ export default {
         // --- Canvas events ---
         onCanvasClick(event) {
             if (event.target.closest('.vue-flow__popup')) return
-            if (!event.target.closest('.vue-flow__node') &amp;&amp; !event.target.closest('.vue-flow__edge')) {
+            if (!event.target.closest('.vue-flow__node') && !event.target.closest('.vue-flow__edge')) {
                 this.clearSelection()
                 this.$emit('pane-click', event)
             }
@@ -703,19 +661,16 @@ export default {
             })
         },
         onCanvasMouseDown(event) {
-            if (event.target.closest &amp;&amp; event.target.closest('.vue-flow__popup')) return
-            if (!this.locked &amp;&amp; this.isBoxSelectPressed) {
+            if (event.target.closest && event.target.closest('.vue-flow__popup')) return
+            if (!this.locked && this.isBoxSelectPressed) {
                 this.startSelection(event)
                 return
             }
-            if (this.panOnDrag &amp;&amp; event.button === 0) {
+            if (this.panOnDrag && event.button === 0) {
                 const target = event.target
-                const isOnNode = target.closest &amp;&amp; target.closest('.vue-flow__node')
-                const isOnHandle = target.closest &amp;&amp; target.closest('.vue-flow__handle')
-                //齒輪等UI元素/左上角控制選單/連線轉折點之mousedown不啟動平移(取代其@mousedown.stop, 使mousedown仍能冒泡至window做popup互斥關閉;
-                // .vue-flow__panel=Controls垂直選單, .vue-flow__edge-waypoint=連線轉折點拖曳鈕, 否則按之再拖曳會誤觸發平移)
-                const isOnUi = target.closest &amp;&amp; target.closest('.vue-flow__node-settings, .vue-flow__edge-settings, .vue-flow__panel, .vue-flow__edge-waypoint')
-                if (!isOnNode &amp;&amp; !isOnHandle &amp;&amp; !isOnUi) {
+                const isOnNode = target.closest && target.closest('.vue-flow__node')
+                const isOnHandle = target.closest && target.closest('.vue-flow__handle')
+                if (!isOnNode && !isOnHandle) {
                     this.startPan(event)
                 }
             }
@@ -814,7 +769,7 @@ export default {
             this.draggingNodeId = node.id
             this.dragStartPos = { x: event.clientX, y: event.clientY }
 
-            if (this.selectNodesOnDrag &amp;&amp; !this.isMultiSelectPressed) {
+            if (this.selectNodesOnDrag && !this.isMultiSelectPressed) {
                 this.setSelectedNodes([node.id])
                 this.setSelectedConns([])
             }
@@ -856,7 +811,7 @@ export default {
                     x = s.x
                     y = s.y
                 }
-                const gg = this.dragPositions &amp;&amp; this.dragPositions[id]
+                const gg = this.dragPositions && this.dragPositions[id]
                 if (gg) {
                     gg.x = x
                     gg.y = y
@@ -869,7 +824,7 @@ export default {
                 for (let id in this.dragNodeStartPositions) {
                     let pos = this.dragPositions[id]
                     let node = this.nodeById(id)
-                    if (node &amp;&amp; pos) {
+                    if (node && pos) {
                         node.position.x = pos.x
                         node.position.y = pos.y
                     }
@@ -928,9 +883,9 @@ export default {
         endConnect(event) {
             // Find handle element under cursor
             const el = document.elementFromPoint(event.clientX, event.clientY)
-            const handleEl = el &amp;&amp; el.closest &amp;&amp; el.closest('.vue-flow__handle')
+            const handleEl = el && el.closest && el.closest('.vue-flow__handle')
 
-            if (handleEl &amp;&amp; this.connectingFrom &amp;&amp; handleEl.dataset.handleType === 'target') {
+            if (handleEl && this.connectingFrom && handleEl.dataset.handleType === 'target') {
                 //落點限target(連入)型handle: 連出點不可被當作輸入端(如input節點僅有連出點, 不可作為連線終點)
                 const toNodeEl = handleEl.closest('.vue-flow__node')
                 const toNodeId = toNodeEl ? toNodeEl.dataset.id : null
@@ -1008,14 +963,14 @@ export default {
             if (!n) return
             let oldType = n.type
             this.$set(n, key, value)
-            if (key === 'type' &amp;&amp; oldType !== value) {
+            if (key === 'type' && oldType !== value) {
                 let nodeId = n.id
                 let hasTo = value === 'input' || value === 'basic'
                 let hasFrom = value === 'output' || value === 'basic'
                 let conns = this.conns
                 for (let i = conns.length - 1; i >= 0; i--) {
                     let c = conns[i]
-                    if ((!hasTo &amp;&amp; c.from === nodeId) || (!hasFrom &amp;&amp; c.to === nodeId)) {
+                    if ((!hasTo && c.from === nodeId) || (!hasFrom && c.to === nodeId)) {
                         conns.splice(i, 1)
                     }
                 }
@@ -1126,7 +1081,7 @@ export default {
                 // Auto-select conns whose both ends are within selected nodes
                 let nodeIdSet = new Set(nodeIds)
                 let connIds = this.conns
-                    .filter(c => nodeIdSet.has(c.from) &amp;&amp; nodeIdSet.has(c.to))
+                    .filter(c => nodeIdSet.has(c.from) && nodeIdSet.has(c.to))
                     .map(c => c.id)
                 this.setSelectedConns(connIds)
                 this.emitSelectionChange()
@@ -1139,7 +1094,7 @@ export default {
         // --- Delete ---
         deleteSelectedElements() {
             const { nodes, conns } = this.getSelectedElements()
-            if (nodes.length === 0 &amp;&amp; conns.length === 0) return
+            if (nodes.length === 0 && conns.length === 0) return
 
             nodes.forEach(n => {
                 if (n.deletable !== false) this.removeNode(n.id)
@@ -1229,8 +1184,8 @@ export default {
             let maxX = -Infinity
             let maxY = -Infinity
             nodes.forEach(n => {
-                let w = (internals[n.id] &amp;&amp; internals[n.id].width) || n.width || 150
-                let h = (internals[n.id] &amp;&amp; internals[n.id].height) || n.height || 40
+                let w = (internals[n.id] && internals[n.id].width) || n.width || 150
+                let h = (internals[n.id] && internals[n.id].height) || n.height || 40
                 minX = Math.min(minX, n.position.x)
                 minY = Math.min(minY, n.position.y)
                 maxX = Math.max(maxX, n.position.x + w)
@@ -1273,18 +1228,22 @@ export default {
             this.locked = !this.locked
             this.$emit('toggle-interactive', this.locked)
         },
+        onSaveClick() {
+            //變更儲存: 攜帶當前flow數據emit, 由宿主持久化
+            this.$emit('save', { nodes: this.nodes, conns: this.conns })
+        },
         panToNode(nodeId, opt) {
             opt = opt || {}
             let node = this.nodeById(nodeId)
             if (!node) return false
             let internals = this.nodeInternals[nodeId]
-            let w = (internals &amp;&amp; internals.width) || node.width || 150
-            let h = (internals &amp;&amp; internals.height) || node.height || 40
+            let w = (internals && internals.width) || node.width || 150
+            let h = (internals && internals.height) || node.height || 40
             let cx = node.position.x + w / 2
             let cy = node.position.y + h / 2
             let rect = this.$refs.canvas ? this.$refs.canvas.getContainerRect() : null
-            let cw = (rect &amp;&amp; rect.width) || this.widthInp
-            let ch = (rect &amp;&amp; rect.height) || this.heightInp
+            let cw = (rect && rect.width) || this.widthInp
+            let ch = (rect && rect.height) || this.heightInp
             let zoom = opt.zoom !== undefined ? opt.zoom : this.viewport.zoom
             let duration = opt.duration !== undefined ? opt.duration : 400
             let target = { x: cw / 2 - cx * zoom, y: ch / 2 - cy * zoom, zoom }
@@ -1304,7 +1263,7 @@ export default {
                 return true
             }
             let from = { x: this.viewport.x, y: this.viewport.y, zoom: this.viewport.zoom }
-            let easeInOutCubic = (t) => t &lt; 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2
+            let easeInOutCubic = (t) => t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2
             let startTs = null
             let stepFrame = (ts) => {
                 if (startTs === null) startTs = ts
@@ -1315,7 +1274,7 @@ export default {
                     y: from.y + (target.y - from.y) * k,
                     zoom: from.zoom + (target.zoom - from.zoom) * k,
                 })
-                if (t &lt; 1) {
+                if (t < 1) {
                     this._panAnimId = requestAnimationFrame(stepFrame)
                 }
                 else {
@@ -1344,34 +1303,9 @@ export default {
         },
     },
 }
-&lt;/script>
+</script>
 
-&lt;style scoped>
-
-
-&lt;/style>
-</code></pre>
-        </article>
-    </section>
+<style scoped>
 
 
-
-
-    
-    
-</div>
-
-<br class="clear">
-
-<footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 4.0.5</a> on Wed Jul 08 2026 18:27:05 GMT+0800 (台北標準時間) using the <a href="https://github.com/clenemt/docdash">docdash</a> theme.
-</footer>
-
-<script>prettyPrint();</script>
-<script src="scripts/polyfill.js"></script>
-<script src="scripts/linenumber.js"></script>
-
-
-
-</body>
-</html>
+</style>

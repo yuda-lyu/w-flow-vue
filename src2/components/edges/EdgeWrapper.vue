@@ -32,7 +32,6 @@
     />
     <!-- 強制轉折點標記(編輯模式顯示, 可直接拖曳移動座標; 亦可經齒輪設定表單編修) -->
     <template v-if="showWaypoints">
-      <!-- 不用@mousedown.stop: stopPropagation會擋掉window層WPopup互斥協調(致已開之node/conn資訊popup不關); 防canvas startPan改由onCanvasMouseDown排除.vue-flow__edge-waypoint處理 -->
       <circle
         v-for="(p, i) in waypointPts"
         :key="'wp' + i"
@@ -40,7 +39,7 @@
         :cy="p.y"
         r="4"
         class="vue-flow__edge-waypoint"
-        @mousedown="onWaypointMouseDown(i, $event)"
+        @mousedown.stop="onWaypointMouseDown(i, $event)"
       />
     </template>
     <!-- Label + Settings icon (merged into one foreignObject for correct relative positioning) -->
@@ -97,8 +96,7 @@
                 @show="$emit('conn-settings-click', { conn: conn })"
               >
                 <template v-slot:trigger>
-                  <!-- 不用@mousedown.stop: stopPropagation會連window層popup互斥協調一併擋掉(致其他popup無法關閉); 防canvas startPan改由onCanvasMouseDown排除.vue-flow__edge-settings處理 -->
-                  <span class="vue-flow__edge-settings">
+                  <span class="vue-flow__edge-settings" @mousedown.stop>
                     <svg viewBox="0 0 20 20" width="14" height="14" fill="currentColor">
                       <path d="M11.078 0l.294 1.833a7.587 7.587 0 0 1 2.174 1.25l1.725-.618 1.078 1.87-1.43 1.217a7.508 7.508 0 0 1 0 2.498l1.43 1.217-1.078 1.87-1.725-.618a7.587 7.587 0 0 1-2.174 1.25L11.078 14H8.922l-.294-1.833a7.587 7.587 0 0 1-2.174-1.25l-1.725.618-1.078-1.87 1.43-1.217a7.508 7.508 0 0 1 0-2.498L3.65 4.733l1.078-1.87 1.725.618a7.587 7.587 0 0 1 2.174-1.25L8.922 0h2.156zM10 4.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5z" transform="translate(0 3)"/>
                     </svg>
@@ -213,16 +211,6 @@ export default {
         sourceY() { return this.sourcePoint.y },
         targetX() { return this.targetPoint.x },
         targetY() { return this.targetPoint.y },
-        //自動路由(step/smoothstep)用之節點矩形: 僅取起訖兩節點且套用拖曳/縮放ghost。
-        //why: OrthConnector之calculateStepPoints僅以「起訖兩節點矩形」決定路徑(allNodes原僅供findObstacleAt依端點座標定位該兩矩形, 不做跨節點避讓);
-        //  若沿用store之allNodes, 拖曳時端點已隨ghost移動、但矩形仍為舊位→findObstacleAt找不到起訖矩形→退化為fallback直角短線, 放開後allNodes更新才恢復正交繞行→路徑跳動。
-        //  改用effSource/effTargetNode(含ghost)即拖曳中與放開後同一計算、路徑不跳; 靜止時eff=原節點, 與原本傳全部節點所得之起訖矩形一致(版面不重疊), 放開後路由不變。
-        routingNodes() {
-            const r = []
-            if (this.effSourceNode) r.push(this.effSourceNode)
-            if (this.effTargetNode) r.push(this.effTargetNode)
-            return r
-        },
         // 強制轉折點正規化([[x,y],...]或[{x,y},...]皆可), 無效回空陣列
         waypointPts() {
             const pts = this.conn.points
@@ -279,8 +267,7 @@ export default {
                 targetPosition: this.targetPosition,
                 curvature: this.conn.curvature,
                 points: this.conn.points, //強制轉折點([[x,y],...]或[{x,y},...]), 有給即取代自動路由(兩端錨點方位仍生效)
-                allNodes: this.routingNodes, //僅起訖兩節點且含ghost, 修拖曳中路徑與放開後不一致(見routingNodes說明)
-
+                allNodes: this.allNodes,
                 nodeInternals: this.nodeInternals,
                 connFromId: this.conn.from,
                 connToId: this.conn.to,

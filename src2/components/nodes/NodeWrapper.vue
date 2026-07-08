@@ -219,12 +219,6 @@ export default {
             this.$emit('dimensions', { nodeId: this.node.id, width: w, height: h })
         },
         onMouseDown(event) {
-            //點設定齒輪(及其popup錨區)不啟動節點拖曳/點擊: 齒輪刻意不用@mousedown.stop(stopPropagation會擋掉window層WPopup互斥協調),
-            //故於此明確排除, 使點齒輪只開設定popup、不移動節點座標(避免尚未變更設定就先改到座標→誤觸發變更儲存)
-            if (event.target.closest && event.target.closest('.vue-flow__node-settings-anchor')) {
-                this._mouseDownPos = null
-                return
-            }
             this._mouseDownPos = { x: event.clientX, y: event.clientY }
             if (!this.draggable) return
             if (this.node.dragHandle) {

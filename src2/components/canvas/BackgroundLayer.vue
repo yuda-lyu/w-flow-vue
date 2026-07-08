@@ -42,35 +42,25 @@ export default {
         size: { type: Number, default: 1 },
         patternColor: { type: String, default: '#81818a' },
         bgColor: { type: String, default: null },
-        //改收整個viewport物件(而非x/y/zoom三個純量): 令宿主WFlowVue之render僅讀取穩定物件參考,
-        //平移時mutate viewport.x/y不再觸發WFlowVue重渲染, 僅本組件之computed重評估更新pattern偏移
-        viewport: { type: Object, default: () => ({ x: 0, y: 0, zoom: 1 }) },
+        viewportX: { type: Number, default: 0 },
+        viewportY: { type: Number, default: 0 },
+        viewportZoom: { type: Number, default: 1 },
     },
     computed: {
         patternId() {
             return 'vue-flow-bg-pattern'
         },
-        vpX() {
-            return (this.viewport && this.viewport.x) || 0
-        },
-        vpY() {
-            return (this.viewport && this.viewport.y) || 0
-        },
-        vpZoom() {
-            let z = this.viewport && this.viewport.zoom
-            return (z === undefined || z === null) ? 1 : z
-        },
         scaledGap() {
-            return this.gap * this.vpZoom
+            return this.gap * this.viewportZoom
         },
         scaledSize() {
-            return this.size * this.vpZoom
+            return this.size * this.viewportZoom
         },
         transformedX() {
-            return (this.vpX % this.scaledGap)
+            return (this.viewportX % this.scaledGap)
         },
         transformedY() {
-            return (this.vpY % this.scaledGap)
+            return (this.viewportY % this.scaledGap)
         },
     },
 }
