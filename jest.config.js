@@ -1,8 +1,10 @@
 module.exports = {
     testEnvironment: 'jsdom',
     roots: ['<rootDir>/test'],
-    testMatch: ['**/*.test.mjs'],
-    testPathIgnorePatterns: ['/node_modules/', 'visual-regression\\.test\\.mjs', 'generate-visual-baselines\\.mjs'],
+    //測試檔以前綴分類: unit-* / api-* 歸 jest; e2e-* 由 Playwright 直跑(需 dev server), 不歸 jest 管。
+    //白名單而非黑名單: 新增之 e2e 檔不會因忘了加 ignore 而被 jest 誤抓。
+    testMatch: ['**/unit-*.test.mjs', '**/api-*.test.mjs'],
+    testPathIgnorePatterns: ['/node_modules/'],
     moduleFileExtensions: ['mjs', 'js', 'json', 'vue'],
     transform: {
         '^.+\\.vue$': '@vue/vue2-jest',

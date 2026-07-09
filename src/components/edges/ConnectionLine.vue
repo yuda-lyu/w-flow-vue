@@ -5,7 +5,7 @@
 </template>
 
 <script>
-import { getBezierPath, getStraightPath, getStepPath, getSmoothStepPath } from '../../js/edge-path'
+import { getBezierPath, getStraightPath, getStepPath, getSmoothStepPath } from '../../js/edgePath'
 
 const pathFunctions = {
     bezier: getBezierPath,

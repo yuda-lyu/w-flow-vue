@@ -126,10 +126,11 @@
 </template>
 
 <script>
-import { getBezierPath, getStraightPath, getStepPath, getSmoothStepPath } from '../../js/edge-path'
+import { getBezierPath, getStraightPath, getStepPath, getSmoothStepPath } from '../../js/edgePath'
 import { getHandlePosition } from '../../js/geometry'
 import ConnSettingsForm from '../ui/ConnSettingsForm.vue'
 import WPopup from 'w-component-vue/src/components/WPopup.vue'
+import fixSvgNs from '../../js/fixSvgNs.mjs'
 
 const pathFunctions = {
     bezier: getBezierPath,
@@ -140,6 +141,8 @@ const pathFunctions = {
 
 export default {
     name: 'EdgeWrapper',
+    //修Vue2 #7330: 本元件位於<svg>內且含foreignObject, 需清除$vnode.ns否則其內HTML元素(含WPopup之slot內容)被建為SVGElement而0x0不可見
+    mixins: [fixSvgNs],
     components: { ConnSettingsForm, WPopup },
     inject: { getDefConn: { default: () => () => ({}) }, getDragGhost: { default: () => () => null } },
     props: {
@@ -168,6 +171,7 @@ export default {
             infoPopupShow: false,
             infoPopupEditable: true,
             settingsPopupShow: false,
+            dragPts: null, //轉折點拖曳中之暫時座標([[x,y],...]), 比照節點拖曳之ghost: 不改conn.points(prop), 放開才emit由宿主寫回
         }
     },
     watch: {
@@ -209,10 +213,18 @@ export default {
             if (!n) return { x: 0, y: 0 }
             return getHandlePosition(n, this.targetPosition, this.nodeInternals[n.id] || {}, 'target')
         },
-        sourceX() { return this.sourcePoint.x },
-        sourceY() { return this.sourcePoint.y },
-        targetX() { return this.targetPoint.x },
-        targetY() { return this.targetPoint.y },
+        sourceX() {
+            return this.sourcePoint.x
+        },
+        sourceY() {
+            return this.sourcePoint.y
+        },
+        targetX() {
+            return this.targetPoint.x
+        },
+        targetY() {
+            return this.targetPoint.y
+        },
         //自動路由(step/smoothstep)用之節點矩形: 僅取起訖兩節點且套用拖曳/縮放ghost。
         //why: OrthConnector之calculateStepPoints僅以「起訖兩節點矩形」決定路徑(allNodes原僅供findObstacleAt依端點座標定位該兩矩形, 不做跨節點避讓);
         //  若沿用store之allNodes, 拖曳時端點已隨ghost移動、但矩形仍為舊位→findObstacleAt找不到起訖矩形→退化為fallback直角短線, 放開後allNodes更新才恢復正交繞行→路徑跳動。
@@ -223,9 +235,13 @@ export default {
             if (this.effTargetNode) r.push(this.effTargetNode)
             return r
         },
+        //拖曳中優先取暫時座標(ghost), 靜止時取conn.points
+        effPoints() {
+            return this.dragPts || this.conn.points
+        },
         // 強制轉折點正規化([[x,y],...]或[{x,y},...]皆可), 無效回空陣列
         waypointPts() {
-            const pts = this.conn.points
+            const pts = this.effPoints
             if (!Array.isArray(pts) || pts.length === 0) return []
             const r = []
             for (const p of pts) {
@@ -278,7 +294,7 @@ export default {
                 targetY: this.targetY,
                 targetPosition: this.targetPosition,
                 curvature: this.conn.curvature,
-                points: this.conn.points, //強制轉折點([[x,y],...]或[{x,y},...]), 有給即取代自動路由(兩端錨點方位仍生效)
+                points: this.effPoints, //強制轉折點([[x,y],...]或[{x,y},...]), 有給即取代自動路由(兩端錨點方位仍生效); 拖曳中為ghost座標
                 allNodes: this.routingNodes, //僅起訖兩節點且含ghost, 修拖曳中路徑與放開後不一致(見routingNodes說明)
 
                 nodeInternals: this.nodeInternals,
@@ -402,15 +418,17 @@ export default {
                 const dy = (e.clientY - startY) / zoom
                 const np = pts0.map(p => [p[0], p[1]])
                 np[i] = [Math.round(pts0[i][0] + dx), Math.round(pts0[i][1] + dy)]
-                //以splice整組替換維持Vue2反應性, 路徑即時重繪
-                this.conn.points.splice(0, this.conn.points.length, ...np)
+                //僅更新本元件之ghost, 路徑即時重繪; 不mutate conn.points(prop)以免波及宿主之deep watcher
+                this.dragPts = np
             }
             const onMouseUp = () => {
                 document.removeEventListener('mousemove', onMouseMove)
                 document.removeEventListener('mouseup', onMouseUp)
                 document.head.removeChild(cursorStyle)
-                //放開才發更新事件(與齒輪表單同一事件流, 由宿主持久化)
-                this.$emit('conn-settings-update', { conn: this.conn, key: 'points', value: this.waypointPts.map(p => [p.x, p.y]) })
+                //放開才發更新事件(與齒輪表單同一事件流, 由宿主持久化); 事件流為同步, 回來時conn.points已更新故可安全清ghost
+                const value = this.waypointPts.map(p => [p.x, p.y])
+                this.$emit('conn-settings-update', { conn: this.conn, key: 'points', value })
+                this.dragPts = null
             }
             document.addEventListener('mousemove', onMouseMove)
             document.addEventListener('mouseup', onMouseUp)

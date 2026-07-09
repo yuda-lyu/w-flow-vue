@@ -133,7 +133,7 @@ import EdgeRenderer from './edges/EdgeRenderer.vue'
 import ConnectionLine from './edges/ConnectionLine.vue'
 import Controls from './ui/Controls.vue'
 import { getHandlePosition, getOverlappingNodes, snapPosition, clampPosition } from '../js/geometry'
-import { clearStepCache } from '../js/edge-path'
+import { clearStepCache } from '../js/edgePath'
 import { isValidConnection, generateId } from '../js/graph'
 import { NODE_DEFAULTS, CONN_DEFAULTS } from '../js/defaults'
 

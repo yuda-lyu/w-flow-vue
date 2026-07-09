@@ -7,7 +7,7 @@
  * Based on AppExamConnectivity.vue defaults:
  *   A center: (350, 250), Node size: 100×40, Offset: 200
  */
-import { calculateStepPoints, clearStepCache } from '../src/js/step-routing.mjs'
+import { calculateStepPoints, clearStepCache } from '../src/js/stepRouting.mjs'
 import fs from 'fs'
 import path from 'path'
 import { fileURLToPath } from 'url'

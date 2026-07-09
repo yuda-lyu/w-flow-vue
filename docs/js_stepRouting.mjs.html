@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    
+    <meta charset="utf-8">
+    <title>js/stepRouting.mjs - Documentation</title>
+    
+    
+    <script src="scripts/prettify/prettify.js"></script>
+    <script src="scripts/prettify/lang-css.js"></script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc.css">
+    <script src="scripts/nav.js" defer></script>
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body>
+
+<input type="checkbox" id="nav-trigger" class="nav-trigger" />
+<label for="nav-trigger" class="navicon-button x">
+  <div class="navicon"></div>
+</label>
+
+<label for="nav-trigger" class="overlay"></label>
+
+<nav >
+    
+    
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-WFlowVue.html">WFlowVue</a></li></ul><h3>Global</h3><ul><li><a href="global.html#NODE_DEFAULTS">NODE_DEFAULTS</a></li><li><a href="global.html#buildRoundedPath">buildRoundedPath</a></li><li><a href="global.html#clampPosition">clampPosition</a></li><li><a href="global.html#fixSvgNs">fixSvgNs</a></li><li><a href="global.html#generateId">generateId</a></li><li><a href="global.html#getBezierPath">getBezierPath</a></li><li><a href="global.html#getControlOffset">getControlOffset</a></li><li><a href="global.html#getDiamondEdgePoint">getDiamondEdgePoint</a></li><li><a href="global.html#getEllipseEdgePoint">getEllipseEdgePoint</a></li><li><a href="global.html#getHandlePosition">getHandlePosition</a></li><li><a href="global.html#getOverlappingNodes">getOverlappingNodes</a></li><li><a href="global.html#getSmoothStepPath">getSmoothStepPath</a></li><li><a href="global.html#getStepPath">getStepPath</a></li><li><a href="global.html#getStraightPath">getStraightPath</a></li><li><a href="global.html#getTriangleEdgePoint">getTriangleEdgePoint</a></li><li><a href="global.html#isValidConnection">isValidConnection</a></li><li><a href="global.html#labelAtHalfLength">labelAtHalfLength</a></li><li><a href="global.html#lookupRoute">lookupRoute</a></li><li><a href="global.html#normalizeConnPoints">normalizeConnPoints</a></li><li><a href="global.html#orthogonalizeThroughPoints">orthogonalizeThroughPoints</a></li><li><a href="global.html#rectsOverlap">rectsOverlap</a></li><li><a href="global.html#segmentFallback">segmentFallback</a></li><li><a href="global.html#snapPosition">snapPosition</a></li></ul>
+    
+</nav>
+
+<div id="main">
+    
+    <h1 class="page-title">js/stepRouting.mjs</h1>
+    
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>// --- Step path routing using draw.io OrthConnector algorithm ---
+
+let _cache = new Map()
+let _cacheFrame = -1
+
+export function clearStepCache() {
+    _cache.clear()
+    _cacheFrame = -1
+}
+
+export function calculateStepPoints(
+    sourceX, sourceY, sourcePosition,
+    targetX, targetY, targetPosition,
+    offset, allNodes, nodeInternals, connFromId, connToId
+) {
+    // --- Per-frame cache ---
+    let frame = Math.floor(Date.now() / 16)
+    if (frame !== _cacheFrame) {
+        _cache.clear(); _cacheFrame = frame
+    }
+    let ck = Math.round(sourceX / 10) + ',' + Math.round(sourceY / 10) + ',' +
+        Math.round(targetX / 10) + ',' + Math.round(targetY / 10) + ',' +
+        sourcePosition + ',' + targetPosition
+    let cached = _cache.get(ck)
+    if (cached) return cached
+
+    // Collect obstacles (bbox for all visible nodes)
+    let obs = []
+    if (allNodes &amp;&amp; allNodes.length > 0) {
+        let ni = nodeInternals || {}
+        for (let i = 0; i &lt; allNodes.length; i++) {
+            let n = allNodes[i]
+            if (n.hidden) continue
+            let w = (ni[n.id] &amp;&amp; ni[n.id].width) || n.width || 100
+            let h = (ni[n.id] &amp;&amp; ni[n.id].height) || n.height || 40
+            obs.push({ l: n.position.x, t: n.position.y, r: n.position.x + w, b: n.position.y + h })
+        }
+    }
+
+    let sObs = findObstacleAt(obs, sourceX, sourceY)
+    let tObs = findObstacleAt(obs, targetX, targetY)
+    let hOff = offset || 24
+
+    let result = lookupRoute(sourceX, sourceY, sourcePosition, targetX, targetY, targetPosition, sObs, tObs, hOff)
+    if (!result) {
+        result = segmentFallback(sourceX, sourceY, targetX, targetY, sObs, tObs)
+    }
+
+    if (_cache.size > 200) _cache.clear()
+    _cache.set(ck, result)
+    return result
+}
+
+// ==================== Helpers ====================
+
+function findObstacleAt(obs, hx, hy) {
+    for (let i = 0; i &lt; obs.length; i++) {
+        let o = obs[i]
+        if (hx >= o.l - 5 &amp;&amp; hx &lt;= o.r + 5 &amp;&amp; hy >= o.t - 5 &amp;&amp; hy &lt;= o.b + 5) return o
+    }
+    return null
+}
+
+// === draw.io OrthConnector algorithm (adapted from mxEdgeStyle.js) ===
+// Route patterns encode movement steps as bit-packed integers.
+// Each step: direction(0-3) | side_mask(5-8) | center(9) | source(10) | target(11)
+// The quad rotation normalizes geometry so a 4×4 table covers all 16 direction combos.
+// Constants match draw.io: WEST=1, NORTH=2, SOUTH=4, EAST=8
+
+let _W = 1; let _N = 2; let _S = 4; let _E = 8
+let _SIDE = 480; let _CTR = 512; let _SRC = 1024; let _TGT = 2048
+let _dirV = [[-1, 0], [0, -1], [1, 0], [0, 1], [-1, 0], [0, -1], [1, 0]]
+
+let _rp = [
+    [[513, 2308, 2081, 2562], [513, 1090, 514, 2184, 2114, 2561], [513, 1090, 514, 2564, 2184, 2562], [513, 2308, 2561, 1090, 514, 2568, 2308]],
+    [[514, 1057, 513, 2308, 2081, 2562], [514, 2184, 2114, 2561], [514, 2184, 2562, 1057, 513, 2564, 2184], [514, 1057, 513, 2568, 2308, 2561]],
+    [[1090, 514, 1057, 513, 2308, 2081, 2562], [2114, 2561], [1090, 2562, 1057, 513, 2564, 2184], [1090, 514, 1057, 513, 2308, 2561, 2568]],
+    [[2081, 2562], [1057, 513, 1090, 514, 2184, 2114, 2561], [1057, 513, 1090, 514, 2184, 2562, 2564], [1057, 2561, 1090, 514, 2568, 2308]]
+]
+
+function posToDirMask(pos) {
+    switch (pos) {
+    case 'left': return _W
+    case 'top': return _N
+    case 'right': return _E
+    case 'bottom': return _S
+    default: return _S
+    }
+}
+
+/**
+ * draw.io OrthConnector route generation.
+ * Uses bit-encoded route patterns + quad rotation + limits clamping.
+ * Returns waypoint array or null (fallback needed).
+ */
+function lookupRoute(sourceX, sourceY, sourcePosition, targetX, targetY, targetPosition, sObs, tObs, buf) {
+    if (!sObs || !tObs) return null
+
+    let sDir = posToDirMask(sourcePosition)
+    let tDir = posToDirMask(targetPosition)
+
+    // Node geometry [x, y, width, height]
+    let geo = [
+        [sObs.l, sObs.t, sObs.r - sObs.l, sObs.b - sObs.t],
+        [tObs.l, tObs.t, tObs.r - tObs.l, tObs.b - tObs.t]
+    ]
+
+    // Too-close check: distance &lt; 2*buf → fallback
+    let ddx = sourceX - targetX; let ddy = sourceY - targetY
+    let totalBuf = buf * 2
+    if (ddx * ddx + ddy * ddy &lt; totalBuf * totalBuf) return null
+
+    // Limits: expanded bbox per node (prevents lines crossing nodes)
+    // draw.io hardcoded indices: [1]=left, [2]=top, [4]=right, [8]=bottom
+    let lim = [[], []]
+    for (let i = 0; i &lt; 2; i++) {
+        lim[i][1] = geo[i][0] - buf
+        lim[i][2] = geo[i][1] - buf
+        lim[i][4] = geo[i][0] + geo[i][2] + buf
+        lim[i][8] = geo[i][1] + geo[i][3] + buf
+    }
+
+    // Constraint: handle position relative to node (0–1)
+    let con = [[0.5, 0.5], [0.5, 0.5]]
+    let gw0 = geo[0][2] || 1; let gh0 = geo[0][3] || 1
+    let gw1 = geo[1][2] || 1; let gh1 = geo[1][3] || 1
+    con[0][0] = (sourceX - geo[0][0]) / gw0
+    con[0][1] = (sourceY - geo[0][1]) / gh0
+    con[1][0] = (targetX - geo[1][0]) / gw1
+    con[1][1] = (targetY - geo[1][1]) / gh1
+
+    // Quad: which quadrant is target center relative to source center
+    //  0 | 1
+    //  -----
+    //  3 | 2
+    let sCx = geo[0][0] + geo[0][2] / 2; let sCy = geo[0][1] + geo[0][3] / 2
+    let tCx = geo[1][0] + geo[1][2] / 2; let tCy = geo[1][1] + geo[1][3] / 2
+    let qx = sCx - tCx; let qy = sCy - tCy
+    let quad = 0
+    if (qx &lt; 0) {
+        quad = qy &lt; 0 ? 2 : 1
+    }
+    else if (qy &lt;= 0) {
+        quad = qx === 0 ? 2 : 3
+    }
+
+    // Vertex separations (gap between nodes minus buffer, min 0)
+    let vs = []
+    vs[1] = Math.max(geo[0][0] - (geo[1][0] + geo[1][2]) - totalBuf, 0)
+    vs[2] = Math.max(geo[0][1] - (geo[1][1] + geo[1][3]) - totalBuf, 0)
+    vs[3] = Math.max(geo[1][0] - (geo[0][0] + geo[0][2]) - totalBuf, 0)
+    vs[4] = Math.max(geo[1][1] - (geo[0][1] + geo[0][3]) - totalBuf, 0)
+
+    // Route pattern lookup (with quad rotation)
+    // draw.io: only map EAST(8)→3, others are already in range 1-4
+    let si = sDir === _E ? 3 : sDir
+    let ti = tDir === _E ? 3 : tDir
+    si -= quad; ti -= quad
+    if (si &lt; 1) si += 4
+    if (ti &lt; 1) ti += 4
+    let rp = _rp[si - 1][ti - 1]
+
+    // Initial waypoint: handle position moved outward by buffer
+    let wp = []
+    for (let k = 0; k &lt; 12; k++) wp[k] = [0, 0]
+    wp[0][0] = geo[0][0]
+    wp[0][1] = geo[0][1]
+    switch (sDir) {
+    case _W: wp[0][0] -= buf; wp[0][1] += con[0][1] * geo[0][3]; break
+    case _S: wp[0][0] += con[0][0] * geo[0][2]; wp[0][1] += geo[0][3] + buf; break
+    case _E: wp[0][0] += geo[0][2] + buf; wp[0][1] += con[0][1] * geo[0][3]; break
+    case _N: wp[0][0] += con[0][0] * geo[0][2]; wp[0][1] -= buf; break
+    }
+
+    // Waypoint generation loop
+    let ci = 0
+    let lastOr = (sDir &amp; (_E | _W)) > 0 ? 0 : 1
+    let initOr = lastOr
+
+    for (let i = 0; i &lt; rp.length; i++) {
+        let nd = rp[i] &amp; 0xF
+        // draw.io: only map EAST(8)→3
+        let di = nd === _E ? 3 : nd
+        di += quad
+        if (di > 4) di -= 4
+        let dir = _dirV[di - 1]
+        let curOr = (di % 2 > 0) ? 0 : 1
+
+        if (curOr !== lastOr) {
+            ci++
+            wp[ci] = [wp[ci - 1][0], wp[ci - 1][1]]
+        }
+
+        let tar = (rp[i] &amp; _TGT) > 0
+        let sou = (rp[i] &amp; _SRC) > 0
+        let side = (rp[i] &amp; _SIDE) >> 5
+        side = side &lt;&lt; quad
+        if (side > 0xF) side = side >> 4
+        let ctr = (rp[i] &amp; _CTR) > 0
+
+        if ((sou || tar) &amp;&amp; side &lt; 9) {
+            let st = sou ? 0 : 1
+            let limit
+            if (ctr &amp;&amp; curOr === 0) {
+                limit = geo[st][0] + con[st][0] * geo[st][2]
+            }
+            else if (ctr) {
+                limit = geo[st][1] + con[st][1] * geo[st][3]
+            }
+            else {
+                limit = lim[st][side]
+            }
+            if (curOr === 0) {
+                let delta = (limit - wp[ci][0]) * dir[0]
+                if (delta > 0) wp[ci][0] += dir[0] * delta
+            }
+            else {
+                let delta = (limit - wp[ci][1]) * dir[1]
+                if (delta > 0) wp[ci][1] += dir[1] * delta
+            }
+        }
+        else if (ctr) {
+            wp[ci][0] += dir[0] * Math.abs(vs[di] / 2)
+            wp[ci][1] += dir[1] * Math.abs(vs[di] / 2)
+        }
+
+        // Collapse zero-length segments
+        if (ci > 0 &amp;&amp; wp[ci][curOr] === wp[ci - 1][curOr]) {
+            ci--
+        }
+        else {
+            lastOr = curOr
+        }
+    }
+
+    // Build result: source handle → waypoints → target handle
+    let pts = [{ x: sourceX, y: sourceY }]
+    let tOr = (tDir &amp; (_E | _W)) > 0 ? 0 : 1
+    let sameOr = tOr === initOr ? 0 : 1
+
+    for (let i = 0; i &lt;= ci; i++) {
+        if (i === ci &amp;&amp; sameOr !== (ci + 1) % 2) break
+        pts.push({ x: Math.round(wp[i][0] * 10) / 10, y: Math.round(wp[i][1] * 10) / 10 })
+    }
+    pts.push({ x: targetX, y: targetY })
+
+    // Remove consecutive duplicates
+    let result = [pts[0]]
+    for (let i = 1; i &lt; pts.length; i++) {
+        if (Math.abs(pts[i].x - result[result.length - 1].x) > 0.5 ||
+            Math.abs(pts[i].y - result[result.length - 1].y) > 0.5) {
+            result.push(pts[i])
+        }
+    }
+    return result
+}
+
+/**
+ * SegmentConnector fallback (draw.io style).
+ * Used when nodes are too close for OrthConnector (tooShort).
+ */
+function segmentFallback(sx, sy, tx, ty, sObs, tObs) {
+    let pts = [{ x: sx, y: sy }]
+    if (tObs &amp;&amp; tx >= tObs.l &amp;&amp; tx &lt;= tObs.r &amp;&amp; sy >= tObs.t &amp;&amp; sy &lt;= tObs.b) {
+        if (!(sObs &amp;&amp; sx >= sObs.l &amp;&amp; sx &lt;= sObs.r &amp;&amp; ty >= sObs.t &amp;&amp; ty &lt;= sObs.b)) {
+            pts.push({ x: sx, y: ty })
+        }
+    }
+    else if (sx !== tx &amp;&amp; sy !== ty) {
+        pts.push({ x: tx, y: sy })
+    }
+    pts.push({ x: tx, y: ty })
+    return pts
+}
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+    
+    
+</div>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 4.0.5</a> on Thu Jul 09 2026 22:57:30 GMT+0800 (台北標準時間) using the <a href="https://github.com/clenemt/docdash">docdash</a> theme.
+</footer>
+
+<script>prettyPrint();</script>
+<script src="scripts/polyfill.js"></script>
+<script src="scripts/linenumber.js"></script>
+
+
+
+</body>
+</html>
