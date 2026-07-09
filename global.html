@@ -29,7 +29,7 @@
 <nav >
     
     
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-WFlowVue.html">WFlowVue</a></li></ul><h3>Global</h3><ul><li><a href="global.html#NODE_DEFAULTS">NODE_DEFAULTS</a></li><li><a href="global.html#buildRoundedPath">buildRoundedPath</a></li><li><a href="global.html#clampPosition">clampPosition</a></li><li><a href="global.html#generateId">generateId</a></li><li><a href="global.html#getBezierPath">getBezierPath</a></li><li><a href="global.html#getControlOffset">getControlOffset</a></li><li><a href="global.html#getDiamondEdgePoint">getDiamondEdgePoint</a></li><li><a href="global.html#getEllipseEdgePoint">getEllipseEdgePoint</a></li><li><a href="global.html#getHandlePosition">getHandlePosition</a></li><li><a href="global.html#getOverlappingNodes">getOverlappingNodes</a></li><li><a href="global.html#getSmoothStepPath">getSmoothStepPath</a></li><li><a href="global.html#getStepPath">getStepPath</a></li><li><a href="global.html#getStraightPath">getStraightPath</a></li><li><a href="global.html#getTriangleEdgePoint">getTriangleEdgePoint</a></li><li><a href="global.html#isValidConnection">isValidConnection</a></li><li><a href="global.html#labelAtHalfLength">labelAtHalfLength</a></li><li><a href="global.html#lookupRoute">lookupRoute</a></li><li><a href="global.html#normalizeConnPoints">normalizeConnPoints</a></li><li><a href="global.html#orthogonalizeThroughPoints">orthogonalizeThroughPoints</a></li><li><a href="global.html#rectsOverlap">rectsOverlap</a></li><li><a href="global.html#segmentFallback">segmentFallback</a></li><li><a href="global.html#snapPosition">snapPosition</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-WFlowVue.html">WFlowVue</a></li></ul><h3>Global</h3><ul><li><a href="global.html#NODE_DEFAULTS">NODE_DEFAULTS</a></li><li><a href="global.html#buildRoundedPath">buildRoundedPath</a></li><li><a href="global.html#clampPosition">clampPosition</a></li><li><a href="global.html#fixSvgNs">fixSvgNs</a></li><li><a href="global.html#generateId">generateId</a></li><li><a href="global.html#getBezierPath">getBezierPath</a></li><li><a href="global.html#getControlOffset">getControlOffset</a></li><li><a href="global.html#getDiamondEdgePoint">getDiamondEdgePoint</a></li><li><a href="global.html#getEllipseEdgePoint">getEllipseEdgePoint</a></li><li><a href="global.html#getHandlePosition">getHandlePosition</a></li><li><a href="global.html#getOverlappingNodes">getOverlappingNodes</a></li><li><a href="global.html#getSmoothStepPath">getSmoothStepPath</a></li><li><a href="global.html#getStepPath">getStepPath</a></li><li><a href="global.html#getStraightPath">getStraightPath</a></li><li><a href="global.html#getTriangleEdgePoint">getTriangleEdgePoint</a></li><li><a href="global.html#isValidConnection">isValidConnection</a></li><li><a href="global.html#labelAtHalfLength">labelAtHalfLength</a></li><li><a href="global.html#lookupRoute">lookupRoute</a></li><li><a href="global.html#normalizeConnPoints">normalizeConnPoints</a></li><li><a href="global.html#orthogonalizeThroughPoints">orthogonalizeThroughPoints</a></li><li><a href="global.html#rectsOverlap">rectsOverlap</a></li><li><a href="global.html#segmentFallback">segmentFallback</a></li><li><a href="global.html#snapPosition">snapPosition</a></li></ul>
     
 </nav>
 
@@ -191,6 +191,87 @@
 
 
         
+            
+<h4 class="name" id="fixSvgNs"><span class="type-signature type-signature-constant">(constant) </span>fixSvgNs<span class="type-signature"></span></h4>
+
+
+
+
+
+<dl class="details">
+    
+    <dt class="tag-description">Description:</dt>
+    <dd class="tag-description"><ul class="dummy"><li><p>Vue 2 bug #7330: 位於<svg>內之元件, 其$vnode.ns恆為'svg',
+致該元件render出的所有元素(含傳入子元件之slot內容)皆被建為SVGElement,
+HTML元素因而無排版盒(0x0不可見)。</p>
+<p>官方applyNS雖於遇到foreignObject時重置後代ns, 但僅走vnode.children;
+傳入子元件之slot內容存於componentOptions.children, 不在其巡訪範圍, 故無法被救回。</p>
+<p>修正: 於render前清除自身$vnode.ns, 使其createElement改依getTagNamespace決定
+(g/path→svg, div/span→HTML), root之<g>再經applyNS正確處理foreignObject。</p>
+<p>用法: 於「內含foreignObject且在<svg>內」之元件掛上 mixins: [fixSvgNs]。</p></li></ul></dd>
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="js_fixSvgNs.mjs.html">js/fixSvgNs.mjs</a>, <a href="js_fixSvgNs.mjs.html#line14">line 14</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+<div class="description usertext">
+    <p>Vue 2 bug #7330: 位於<svg>內之元件, 其$vnode.ns恆為'svg',
+致該元件render出的所有元素(含傳入子元件之slot內容)皆被建為SVGElement,
+HTML元素因而無排版盒(0x0不可見)。</p>
+<p>官方applyNS雖於遇到foreignObject時重置後代ns, 但僅走vnode.children;
+傳入子元件之slot內容存於componentOptions.children, 不在其巡訪範圍, 故無法被救回。</p>
+<p>修正: 於render前清除自身$vnode.ns, 使其createElement改依getTagNamespace決定
+(g/path→svg, div/span→HTML), root之<g>再經applyNS正確處理foreignObject。</p>
+<p>用法: 於「內含foreignObject且在<svg>內」之元件掛上 mixins: [fixSvgNs]。</p>
+</div>
+
+
+
+
+
+
+
+
+        
     
 
     
@@ -217,7 +298,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="js_edge-path.mjs.html">js/edge-path.mjs</a>, <a href="js_edge-path.mjs.html#line83">line 83</a>
+        <a href="js_edgePath.mjs.html">js/edgePath.mjs</a>, <a href="js_edgePath.mjs.html#line83">line 83</a>
     </li></ul></dd>
     
 
@@ -491,7 +572,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="js_edge-path.mjs.html">js/edge-path.mjs</a>, <a href="js_edge-path.mjs.html#line145">line 145</a>
+        <a href="js_edgePath.mjs.html">js/edgePath.mjs</a>, <a href="js_edgePath.mjs.html#line145">line 145</a>
     </li></ul></dd>
     
 
@@ -595,7 +676,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="js_edge-path.mjs.html">js/edge-path.mjs</a>, <a href="js_edge-path.mjs.html#line131">line 131</a>
+        <a href="js_edgePath.mjs.html">js/edgePath.mjs</a>, <a href="js_edgePath.mjs.html#line131">line 131</a>
     </li></ul></dd>
     
 
@@ -1023,7 +1104,7 @@ Maps ratio (0..1) to a parametric angle based on the side.</p></li></ul></dd>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="js_edge-path.mjs.html">js/edge-path.mjs</a>, <a href="js_edge-path.mjs.html#line239">line 239</a>
+        <a href="js_edgePath.mjs.html">js/edgePath.mjs</a>, <a href="js_edgePath.mjs.html#line239">line 239</a>
     </li></ul></dd>
     
 
@@ -1127,7 +1208,7 @@ Maps ratio (0..1) to a parametric angle based on the side.</p></li></ul></dd>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="js_edge-path.mjs.html">js/edge-path.mjs</a>, <a href="js_edge-path.mjs.html#line214">line 214</a>
+        <a href="js_edgePath.mjs.html">js/edgePath.mjs</a>, <a href="js_edgePath.mjs.html#line214">line 214</a>
     </li></ul></dd>
     
 
@@ -1231,7 +1312,7 @@ Maps ratio (0..1) to a parametric angle based on the side.</p></li></ul></dd>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="js_edge-path.mjs.html">js/edge-path.mjs</a>, <a href="js_edge-path.mjs.html#line194">line 194</a>
+        <a href="js_edgePath.mjs.html">js/edgePath.mjs</a>, <a href="js_edgePath.mjs.html#line194">line 194</a>
     </li></ul></dd>
     
 
@@ -1506,7 +1587,7 @@ Supports 4 directions: triangle (up), triangle-right, triangle-down, triangle-le
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="js_edge-path.mjs.html">js/edge-path.mjs</a>, <a href="js_edge-path.mjs.html#line263">line 263</a>
+        <a href="js_edgePath.mjs.html">js/edgePath.mjs</a>, <a href="js_edgePath.mjs.html#line263">line 263</a>
     </li></ul></dd>
     
 
@@ -1593,7 +1674,7 @@ Returns waypoint array or null (fallback needed).</p></li></ul></dd>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="js_step-routing.mjs.html">js/step-routing.mjs</a>, <a href="js_step-routing.mjs.html#line96">line 96</a>
+        <a href="js_stepRouting.mjs.html">js/stepRouting.mjs</a>, <a href="js_stepRouting.mjs.html#line96">line 96</a>
     </li></ul></dd>
     
 
@@ -1680,7 +1761,7 @@ can fall back to automatic routing.</p></li></ul></dd>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="js_edge-path.mjs.html">js/edge-path.mjs</a>, <a href="js_edge-path.mjs.html#line14">line 14</a>
+        <a href="js_edgePath.mjs.html">js/edgePath.mjs</a>, <a href="js_edgePath.mjs.html#line14">line 14</a>
     </li></ul></dd>
     
 
@@ -1771,7 +1852,7 @@ Inserts at most one corner between consecutive points; skips zero-length segment
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="js_edge-path.mjs.html">js/edge-path.mjs</a>, <a href="js_edge-path.mjs.html#line39">line 39</a>
+        <a href="js_edgePath.mjs.html">js/edgePath.mjs</a>, <a href="js_edgePath.mjs.html#line39">line 39</a>
     </li></ul></dd>
     
 
@@ -1942,7 +2023,7 @@ Used when nodes are too close for OrthConnector (tooShort).</p></li></ul></dd>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="js_step-routing.mjs.html">js/step-routing.mjs</a>, <a href="js_step-routing.mjs.html#line262">line 262</a>
+        <a href="js_stepRouting.mjs.html">js/stepRouting.mjs</a>, <a href="js_stepRouting.mjs.html#line262">line 262</a>
     </li></ul></dd>
     
 
@@ -2188,7 +2269,7 @@ Used when nodes are too close for OrthConnector (tooShort).</p></li></ul></dd>
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 4.0.5</a> on Wed Jul 08 2026 18:27:05 GMT+0800 (台北標準時間) using the <a href="https://github.com/clenemt/docdash">docdash</a> theme.
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 4.0.5</a> on Thu Jul 09 2026 22:57:30 GMT+0800 (台北標準時間) using the <a href="https://github.com/clenemt/docdash">docdash</a> theme.
 </footer>
 
 <script>prettyPrint();</script>

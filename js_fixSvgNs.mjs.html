@@ -3,7 +3,7 @@
 <head>
     
     <meta charset="utf-8">
-    <title>js/graph.mjs - Documentation</title>
+    <title>js/fixSvgNs.mjs - Documentation</title>
     
     
     <script src="scripts/prettify/prettify.js"></script>
@@ -35,7 +35,7 @@
 
 <div id="main">
     
-    <h1 class="page-title">js/graph.mjs</h1>
+    <h1 class="page-title">js/fixSvgNs.mjs</h1>
     
 
     
@@ -46,42 +46,31 @@
     <section>
         <article>
             <pre class="prettyprint source linenums"><code>/**
- * Validate a potential connection.
+ * Vue 2 bug #7330: 位於&lt;svg>內之元件, 其$vnode.ns恆為'svg',
+ * 致該元件render出的所有元素(含傳入子元件之slot內容)皆被建為SVGElement,
+ * HTML元素因而無排版盒(0x0不可見)。
+ *
+ * 官方applyNS雖於遇到foreignObject時重置後代ns, 但僅走vnode.children;
+ * 傳入子元件之slot內容存於componentOptions.children, 不在其巡訪範圍, 故無法被救回。
+ *
+ * 修正: 於render前清除自身$vnode.ns, 使其createElement改依getTagNamespace決定
+ * (g/path→svg, div/span→HTML), root之&lt;g>再經applyNS正確處理foreignObject。
+ *
+ * 用法: 於「內含foreignObject且在&lt;svg>內」之元件掛上 mixins: [fixSvgNs]。
  */
-export function isValidConnection(connection, nodes, conns, validator) {
-    if (!connection.from || !connection.to) return false
-
-    // Self-connection not allowed by default
-    if (connection.from === connection.to) return false
-
-    // 節點種類語義: input(僅出點)不可作為連線終點, output(僅入點)不可作為連線起點
-    const fromNode = nodes.find(n => n.id === connection.from)
-    const toNode = nodes.find(n => n.id === connection.to)
-    if (fromNode &amp;&amp; fromNode.type === 'output') return false
-    if (toNode &amp;&amp; toNode.type === 'input') return false
-
-    // Check duplicate (same from→to path)
-    const duplicate = conns.find(
-        e => e.from === connection.from &amp;&amp; e.to === connection.to
-    )
-    if (duplicate) return false
-
-    // Custom validator
-    if (validator &amp;&amp; !validator(connection)) return false
-
-    return true
+const fixSvgNs = {
+    beforeCreate() {
+        if (this.$vnode &amp;&amp; this.$vnode.ns === 'svg') this.$vnode.ns = undefined
+    },
+    beforeMount() {
+        if (this.$vnode &amp;&amp; this.$vnode.ns === 'svg') this.$vnode.ns = undefined
+    },
+    beforeUpdate() {
+        if (this.$vnode &amp;&amp; this.$vnode.ns === 'svg') this.$vnode.ns = undefined
+    },
 }
 
-let _idCounter = 0
-
-/**
- * Generate a unique ID.
- */
-export function generateId() {
-    _idCounter++
-    return `${Date.now()}-${_idCounter}-${Math.random().toString(36).slice(2, 7)}`
-}
-
+export default fixSvgNs
 </code></pre>
         </article>
     </section>
