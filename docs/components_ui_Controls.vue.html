@@ -1,13 +1,60 @@
-<template>
-  <!-- 垂直選單: 改用w-threejs-vue同款組件WGroupIconCheck(:dir='vertical'), 最頂為設定鈕, 收合時僅顯示設定鈕, 展開才顯示其餘按鈕 -->
-  <div
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    
+    <meta charset="utf-8">
+    <title>components/ui/Controls.vue - Documentation</title>
+    
+    
+    <script src="scripts/prettify/prettify.js"></script>
+    <script src="scripts/prettify/lang-css.js"></script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc.css">
+    <script src="scripts/nav.js" defer></script>
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body>
+
+<input type="checkbox" id="nav-trigger" class="nav-trigger" />
+<label for="nav-trigger" class="navicon-button x">
+  <div class="navicon"></div>
+</label>
+
+<label for="nav-trigger" class="overlay"></label>
+
+<nav >
+    
+    
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-WFlowVue.html">WFlowVue</a></li></ul><h3>Global</h3><ul><li><a href="global.html#NODE_DEFAULTS">NODE_DEFAULTS</a></li><li><a href="global.html#buildRoundedPath">buildRoundedPath</a></li><li><a href="global.html#clampPosition">clampPosition</a></li><li><a href="global.html#fixSvgNs">fixSvgNs</a></li><li><a href="global.html#generateId">generateId</a></li><li><a href="global.html#getBezierPath">getBezierPath</a></li><li><a href="global.html#getControlOffset">getControlOffset</a></li><li><a href="global.html#getDiamondEdgePoint">getDiamondEdgePoint</a></li><li><a href="global.html#getEllipseEdgePoint">getEllipseEdgePoint</a></li><li><a href="global.html#getHandlePosition">getHandlePosition</a></li><li><a href="global.html#getOverlappingNodes">getOverlappingNodes</a></li><li><a href="global.html#getSmoothStepPath">getSmoothStepPath</a></li><li><a href="global.html#getStepPath">getStepPath</a></li><li><a href="global.html#getStraightPath">getStraightPath</a></li><li><a href="global.html#getTriangleEdgePoint">getTriangleEdgePoint</a></li><li><a href="global.html#isValidConnection">isValidConnection</a></li><li><a href="global.html#labelAtHalfLength">labelAtHalfLength</a></li><li><a href="global.html#lookupRoute">lookupRoute</a></li><li><a href="global.html#normalizeConnPoints">normalizeConnPoints</a></li><li><a href="global.html#orthogonalizeThroughPoints">orthogonalizeThroughPoints</a></li><li><a href="global.html#pickMenuValue">pickMenuValue</a></li><li><a href="global.html#rectsOverlap">rectsOverlap</a></li><li><a href="global.html#segmentFallback">segmentFallback</a></li><li><a href="global.html#snapPosition">snapPosition</a></li></ul>
+    
+</nav>
+
+<div id="main">
+    
+    <h1 class="page-title">components/ui/Controls.vue</h1>
+    
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>&lt;template>
+  &lt;!-- 垂直選單: 改用w-threejs-vue同款組件WGroupIconCheck(:dir='vertical'), 最頂為設定鈕, 收合時僅顯示設定鈕, 展開才顯示其餘按鈕 -->
+  &lt;div
     v-if="cfg.useMenu"
     :class="['vue-flow__panel', `vue-flow__panel--${cfg.menuPosition}`]"
     :style="panelStyle"
   >
-    <!-- 淺色系配色(w-flow-vue圖台為白底, 沿用原Controls之#fefefe白底/深灰icon風格; iconSize預設22, 按鈕寬=22+左右padding8=30px與w-threejs-vue選單一致) -->
-    <!-- 全數為一般動作鈕(不用active態): 鎖頭點擊即切換上鎖/解鎖並換icon(比照fitView等), 不留固定灰底; value恆空故無任一鈕呈active, 故不開放*ColorActive類選項 -->
-    <WGroupIconCheck
+    &lt;!-- 淺色系配色(w-flow-vue圖台為白底, 沿用原Controls之#fefefe白底/深灰icon風格; iconSize預設22, 按鈕寬=22+左右padding8=30px與w-threejs-vue選單一致) -->
+    &lt;!-- 全數為一般動作鈕(不用active態): 鎖頭點擊即切換上鎖/解鎖並換icon(比照fitView等), 不留固定灰底; value恆空故無任一鈕呈active, 故不開放*ColorActive類選項 -->
+    &lt;WGroupIconCheck
       :items="useItems"
       :dir="'vertical'"
       :iconColor="cfg.menuIconColor"
@@ -24,11 +71,11 @@
       :tooltipBackgroundColor="cfg.menuTooltipBackgroundColor"
       :value="[]"
       @click="onClickItem"
-    ></WGroupIconCheck>
-  </div>
-</template>
+    >&lt;/WGroupIconCheck>
+  &lt;/div>
+&lt;/template>
 
-<script>
+&lt;script>
 import WGroupIconCheck from 'w-component-vue/src/components/WGroupIconCheck.vue'
 import { mdiCogOutline, mdiMagnifyPlusOutline, mdiMagnifyMinusOutline, mdiFitToPageOutline, mdiLockOutline, mdiLockOpenVariantOutline } from '@mdi/js/mdi.js'
 
@@ -94,13 +141,13 @@ let menuPositions = ['top-left', 'top-right', 'bottom-left', 'bottom-right']
 function pickMenuValue(k, v) {
     let d = menuDef[k]
     if (typeof d === 'string') {
-        return (typeof v === 'string' && v !== '') ? v : d
+        return (typeof v === 'string' &amp;&amp; v !== '') ? v : d
     }
     if (typeof d === 'boolean') {
         return (typeof v === 'boolean') ? v : d
     }
     if (typeof d === 'number') {
-        return (typeof v === 'number' && isFinite(v)) ? v : d
+        return (typeof v === 'number' &amp;&amp; isFinite(v)) ? v : d
     }
     return d
 }
@@ -127,7 +174,7 @@ export default {
                 r[k] = pickMenuValue(k, m[k])
             }
             //menuPosition另檢核列舉值
-            if (menuPositions.indexOf(r.menuPosition) < 0) {
+            if (menuPositions.indexOf(r.menuPosition) &lt; 0) {
                 r.menuPosition = menuDef.menuPosition
             }
             return r
@@ -173,7 +220,7 @@ export default {
     },
     methods: {
         onClickItem(item) {
-            let id = (item && item.id) || ''
+            let id = (item &amp;&amp; item.id) || ''
             if (id === 'setting') {
                 this.useSetting = !this.useSetting
             }
@@ -192,9 +239,9 @@ export default {
         },
     },
 }
-</script>
+&lt;/script>
 
-<style scoped>
+&lt;style scoped>
 .vue-flow__panel {
   position: absolute;
   z-index: 5;
@@ -203,4 +250,29 @@ export default {
 .vue-flow__panel--top-right { top: 10px; right: 10px; }
 .vue-flow__panel--bottom-left { bottom: 10px; left: 10px; }
 .vue-flow__panel--bottom-right { bottom: 10px; right: 10px; }
-</style>
+&lt;/style>
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+    
+    
+</div>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 4.0.5</a> on Sat Aug 22 2026 22:01:02 GMT+0800 (台北標準時間) using the <a href="https://github.com/clenemt/docdash">docdash</a> theme.
+</footer>
+
+<script>prettyPrint();</script>
+<script src="scripts/polyfill.js"></script>
+<script src="scripts/linenumber.js"></script>
+
+
+
+</body>
+</html>

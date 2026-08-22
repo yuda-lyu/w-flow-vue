@@ -111,8 +111,7 @@
 
     <Controls
       :locked="locked"
-      :menu-y-shift="menuYShiftInp"
-      position="top-left"
+      :menu="menuInp"
       @zoom-in="zoomIn"
       @zoom-out="zoomOut"
       @fit-view="fitView"
@@ -167,11 +166,11 @@ import { NODE_DEFAULTS, CONN_DEFAULTS } from '../js/defaults'
  * @prop {string}   [opt.boxSelectionKeyCode='Shift']     Key to hold for box selection (drag on canvas)
  * @prop {string}   [opt.multiSelectionKeyCode='Shift']   Key to hold for Shift+Click add/remove selection
  * @prop {boolean}  [opt.zoomOnScroll=true]               Zoom with mouse wheel
+ * @prop {number}   [opt.zoom=1]                  Initial viewport zoom level
  * @prop {number}   [opt.zoomMin=0.5]                     Minimum zoom level (fitView may go below it; wheel zoom then keeps the current level as its lower bound instead of jumping back)
  * @prop {number}   [opt.zoomMax=2]                       Maximum zoom level
- * @prop {boolean}  [opt.panOnDrag=true]                  Pan canvas by dragging background
  * @prop {Array}    [opt.center=[0,0]]            Initial viewport center [x, y]
- * @prop {number}   [opt.zoom=1]                  Initial viewport zoom level
+ * @prop {boolean}  [opt.panOnDrag=true]                  Pan canvas by dragging background
  * @prop {Array}    [opt.panLimits=null]                  Pan limits [[minX,minY],[maxX,maxY]]
  * @prop {boolean}  [opt.snapToGrid=false]                Snap node positions to grid
  * @prop {number}   [opt.snapGridSize=20]                  Grid cell size (px, used for both drag snap and resize snap)
@@ -182,6 +181,42 @@ import { NODE_DEFAULTS, CONN_DEFAULTS } from '../js/defaults'
  * @prop {number}   [opt.platformBackgroundPatternSize=1]                Pattern element size
  * @prop {string}   [opt.platformBackgroundPatternColor='#81818a'] Pattern color
  * @prop {string}   [opt.platformBackgroundColor='#fff']          Canvas background color
+ *
+ * ─── Menu ──────────────────────────────────────────────────────────────
+ * Top-left toolbar. Every option is opt-in: omit them all and the toolbar is identical to before.
+ * Any value of the wrong type (or an empty string) falls back to the default listed here.
+ * @prop {boolean}  [opt.useMenu=true]                    Show the whole toolbar
+ * @prop {string}   [opt.menuPosition='top-left']         Toolbar corner: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right'
+ * @prop {number}   [opt.menuYShift=0]                    Toolbar vertical shift (px); positive moves it away from its anchored edge (down for top-*, up for bottom-*)
+ * @prop {boolean}  [opt.useSetting=true]                 Initial expanded state (afterwards toggled via the gear button)
+ * @prop {string}   [opt.menuSettingIcon=mdiCogOutline]   Gear (collapse/expand) button icon, SVG path string
+ * @prop {string}   [opt.menuSettingTooltip='Settings']   Gear button tooltip
+ * @prop {boolean}  [opt.useMenuItemZoomIn=true]          Show zoom-in button
+ * @prop {string}   [opt.menuZoomInIcon=mdiMagnifyPlusOutline]   Zoom-in icon, SVG path string
+ * @prop {string}   [opt.menuZoomInTooltip='Zoom In']     Zoom-in tooltip
+ * @prop {boolean}  [opt.useMenuItemZoomOut=true]         Show zoom-out button
+ * @prop {string}   [opt.menuZoomOutIcon=mdiMagnifyMinusOutline] Zoom-out icon, SVG path string
+ * @prop {string}   [opt.menuZoomOutTooltip='Zoom Out']   Zoom-out tooltip
+ * @prop {boolean}  [opt.useMenuItemFitView=true]         Show fit-view button
+ * @prop {string}   [opt.menuFitViewIcon=mdiFitToPageOutline]    Fit-view icon, SVG path string
+ * @prop {string}   [opt.menuFitViewTooltip='Fit View']   Fit-view tooltip
+ * @prop {boolean}  [opt.useMenuItemLock=true]            Show lock button
+ * @prop {string}   [opt.menuLockIcon=mdiLockOpenVariantOutline] Lock button icon while unlocked
+ * @prop {string}   [opt.menuLockTooltip='Lock']          Lock button tooltip while unlocked (names the action the click performs)
+ * @prop {string}   [opt.menuLockIconLocked=mdiLockOutline]      Lock button icon while locked
+ * @prop {string}   [opt.menuLockTooltipLocked='Unlock']  Lock button tooltip while locked
+ * @prop {string}   [opt.menuIconColor='#555']            Toolbar icon color
+ * @prop {string}   [opt.menuIconColorHover='#222']       Toolbar icon color on hover
+ * @prop {string}   [opt.menuIconColorFocus='#222']       Toolbar icon color on focus
+ * @prop {number}   [opt.menuIconSize=22]                 Toolbar icon size (px)
+ * @prop {string}   [opt.menuBackgroundColor='#fefefe']   Toolbar button background
+ * @prop {string}   [opt.menuBackgroundColorHover='#f0f0f0']     Toolbar button background on hover
+ * @prop {string}   [opt.menuBackgroundColorFocus='#f0f0f0']     Toolbar button background on focus
+ * @prop {string}   [opt.menuSeparatorColor='#e6e6e6']    Toolbar separator line color
+ * @prop {boolean}  [opt.menuShadow=true]                 Toolbar drop shadow
+ * @prop {string}   [opt.menuTooltipTextColor='white']    Toolbar tooltip text color
+ * @prop {string}   [opt.menuTooltipTextFontSize='0.7rem']       Toolbar tooltip font size
+ * @prop {string}   [opt.menuTooltipBackgroundColor='rgba(60,60,60,0.75)'] Toolbar tooltip background
  *
  * ─── Settings Popup ────────────────────────────────────────────────────
  * @prop {string}   [opt.settingsPopupBackgroundColor='#fff'] Settings popup background
@@ -370,9 +405,59 @@ export default {
         nodesDraggable() {
             return this.opt.nodesDraggable !== undefined ? this.opt.nodesDraggable : true
         },
-        menuYShiftInp() {
-            //垂直選單向下偏移量, 由宿主經opt設定(如宿主於左上角另置變更儲存鈕時, 令選單下移避讓)
-            return typeof this.opt.menuYShift === 'number' ? this.opt.menuYShift : 0
+        menuInp() {
+            //垂直選單之全部設定, 自opt原樣取出後交Controls解析; 各項未給或型別不符即由Controls回退預設,
+            //故此處不套預設值, 預設值統一定義於Controls.vue之menuDef(icon預設需用到@mdi/js之常數)
+            let o = this.opt
+            return {
+
+                //整體
+                useMenu: o.useMenu,
+                menuPosition: o.menuPosition,
+                menuYShift: o.menuYShift,
+                useSetting: o.useSetting,
+
+                //設定鈕(收合/展開)
+                menuSettingIcon: o.menuSettingIcon,
+                menuSettingTooltip: o.menuSettingTooltip,
+
+                //放大
+                useMenuItemZoomIn: o.useMenuItemZoomIn,
+                menuZoomInIcon: o.menuZoomInIcon,
+                menuZoomInTooltip: o.menuZoomInTooltip,
+
+                //縮小
+                useMenuItemZoomOut: o.useMenuItemZoomOut,
+                menuZoomOutIcon: o.menuZoomOutIcon,
+                menuZoomOutTooltip: o.menuZoomOutTooltip,
+
+                //全圖
+                useMenuItemFitView: o.useMenuItemFitView,
+                menuFitViewIcon: o.menuFitViewIcon,
+                menuFitViewTooltip: o.menuFitViewTooltip,
+
+                //鎖定(雙態: 無後綴為未鎖態, Locked後綴為已鎖態)
+                useMenuItemLock: o.useMenuItemLock,
+                menuLockIcon: o.menuLockIcon,
+                menuLockTooltip: o.menuLockTooltip,
+                menuLockIconLocked: o.menuLockIconLocked,
+                menuLockTooltipLocked: o.menuLockTooltipLocked,
+
+                //樣式
+                menuIconColor: o.menuIconColor,
+                menuIconColorHover: o.menuIconColorHover,
+                menuIconColorFocus: o.menuIconColorFocus,
+                menuIconSize: o.menuIconSize,
+                menuBackgroundColor: o.menuBackgroundColor,
+                menuBackgroundColorHover: o.menuBackgroundColorHover,
+                menuBackgroundColorFocus: o.menuBackgroundColorFocus,
+                menuSeparatorColor: o.menuSeparatorColor,
+                menuShadow: o.menuShadow,
+                menuTooltipTextColor: o.menuTooltipTextColor,
+                menuTooltipTextFontSize: o.menuTooltipTextFontSize,
+                menuTooltipBackgroundColor: o.menuTooltipBackgroundColor,
+
+            }
         },
         nodesConnectable() {
             return this.opt.nodesConnectable !== undefined ? this.opt.nodesConnectable : true
