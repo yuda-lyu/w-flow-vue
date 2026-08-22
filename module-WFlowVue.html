@@ -29,7 +29,7 @@
 <nav >
     
     
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-WFlowVue.html">WFlowVue</a></li></ul><h3>Global</h3><ul><li><a href="global.html#NODE_DEFAULTS">NODE_DEFAULTS</a></li><li><a href="global.html#buildRoundedPath">buildRoundedPath</a></li><li><a href="global.html#clampPosition">clampPosition</a></li><li><a href="global.html#fixSvgNs">fixSvgNs</a></li><li><a href="global.html#generateId">generateId</a></li><li><a href="global.html#getBezierPath">getBezierPath</a></li><li><a href="global.html#getControlOffset">getControlOffset</a></li><li><a href="global.html#getDiamondEdgePoint">getDiamondEdgePoint</a></li><li><a href="global.html#getEllipseEdgePoint">getEllipseEdgePoint</a></li><li><a href="global.html#getHandlePosition">getHandlePosition</a></li><li><a href="global.html#getOverlappingNodes">getOverlappingNodes</a></li><li><a href="global.html#getSmoothStepPath">getSmoothStepPath</a></li><li><a href="global.html#getStepPath">getStepPath</a></li><li><a href="global.html#getStraightPath">getStraightPath</a></li><li><a href="global.html#getTriangleEdgePoint">getTriangleEdgePoint</a></li><li><a href="global.html#isValidConnection">isValidConnection</a></li><li><a href="global.html#labelAtHalfLength">labelAtHalfLength</a></li><li><a href="global.html#lookupRoute">lookupRoute</a></li><li><a href="global.html#normalizeConnPoints">normalizeConnPoints</a></li><li><a href="global.html#orthogonalizeThroughPoints">orthogonalizeThroughPoints</a></li><li><a href="global.html#rectsOverlap">rectsOverlap</a></li><li><a href="global.html#segmentFallback">segmentFallback</a></li><li><a href="global.html#snapPosition">snapPosition</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-WFlowVue.html">WFlowVue</a></li></ul><h3>Global</h3><ul><li><a href="global.html#NODE_DEFAULTS">NODE_DEFAULTS</a></li><li><a href="global.html#buildRoundedPath">buildRoundedPath</a></li><li><a href="global.html#clampPosition">clampPosition</a></li><li><a href="global.html#fixSvgNs">fixSvgNs</a></li><li><a href="global.html#generateId">generateId</a></li><li><a href="global.html#getBezierPath">getBezierPath</a></li><li><a href="global.html#getControlOffset">getControlOffset</a></li><li><a href="global.html#getDiamondEdgePoint">getDiamondEdgePoint</a></li><li><a href="global.html#getEllipseEdgePoint">getEllipseEdgePoint</a></li><li><a href="global.html#getHandlePosition">getHandlePosition</a></li><li><a href="global.html#getOverlappingNodes">getOverlappingNodes</a></li><li><a href="global.html#getSmoothStepPath">getSmoothStepPath</a></li><li><a href="global.html#getStepPath">getStepPath</a></li><li><a href="global.html#getStraightPath">getStraightPath</a></li><li><a href="global.html#getTriangleEdgePoint">getTriangleEdgePoint</a></li><li><a href="global.html#isValidConnection">isValidConnection</a></li><li><a href="global.html#labelAtHalfLength">labelAtHalfLength</a></li><li><a href="global.html#lookupRoute">lookupRoute</a></li><li><a href="global.html#normalizeConnPoints">normalizeConnPoints</a></li><li><a href="global.html#orthogonalizeThroughPoints">orthogonalizeThroughPoints</a></li><li><a href="global.html#pickMenuValue">pickMenuValue</a></li><li><a href="global.html#rectsOverlap">rectsOverlap</a></li><li><a href="global.html#segmentFallback">segmentFallback</a></li><li><a href="global.html#snapPosition">snapPosition</a></li></ul>
     
 </nav>
 
@@ -78,7 +78,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="components_WFlowVue.vue.html">components/WFlowVue.vue</a>, <a href="components_WFlowVue.vue.html#line109">line 109</a>
+        <a href="components_WFlowVue.vue.html">components/WFlowVue.vue</a>, <a href="components_WFlowVue.vue.html#line145">line 145</a>
     </li></ul></dd>
     
 
@@ -948,6 +948,44 @@
 
         <tr>
             
+                <td class="name"><code>zoom</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">number</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>1</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Initial viewport zoom level</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
                 <td class="name"><code>zoomMin</code></td>
             
 
@@ -1024,44 +1062,6 @@
 
         <tr>
             
-                <td class="name"><code>panOnDrag</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">boolean</span>
-
-
-
-            
-            </td>
-
-            
-                <td class="attributes">
-                
-                    &lt;optional><br>
-                
-
-                
-                </td>
-            
-
-            
-                <td class="default">
-                
-                    <code>true</code>
-                
-                </td>
-            
-
-            <td class="description last"><p>Pan canvas by dragging background</p></td>
-        </tr>
-
-    
-
-        <tr>
-            
                 <td class="name"><code>center</code></td>
             
 
@@ -1100,13 +1100,13 @@
 
         <tr>
             
-                <td class="name"><code>zoom</code></td>
+                <td class="name"><code>panOnDrag</code></td>
             
 
             <td class="type">
             
                 
-<span class="param-type">number</span>
+<span class="param-type">boolean</span>
 
 
 
@@ -1126,12 +1126,12 @@
             
                 <td class="default">
                 
-                    <code>1</code>
+                    <code>true</code>
                 
                 </td>
             
 
-            <td class="description last"><p>Initial viewport zoom level</p></td>
+            <td class="description last"><p>Pan canvas by dragging background</p></td>
         </tr>
 
     
@@ -1437,6 +1437,1225 @@
             
 
             <td class="description last"><p>Canvas background color</p>
+<p>─── Menu ──────────────────────────────────────────────────────────────
+Top-left toolbar. Every option is opt-in: omit them all and the toolbar is identical to before.
+Any value of the wrong type (or an empty string) falls back to the default listed here.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>useMenu</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">boolean</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>true</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Show the whole toolbar</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>menuPosition</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>'top-left'</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Toolbar corner: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right'</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>menuYShift</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">number</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>0</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Toolbar vertical shift (px); positive moves it away from its anchored edge (down for top-<em>, up for bottom-</em>)</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>useSetting</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">boolean</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>true</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Initial expanded state (afterwards toggled via the gear button)</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>menuSettingIcon</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>mdiCogOutline</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Gear (collapse/expand) button icon, SVG path string</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>menuSettingTooltip</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>'Settings'</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Gear button tooltip</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>useMenuItemZoomIn</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">boolean</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>true</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Show zoom-in button</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>menuZoomInIcon</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>mdiMagnifyPlusOutline</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Zoom-in icon, SVG path string</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>menuZoomInTooltip</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>'Zoom In'</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Zoom-in tooltip</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>useMenuItemZoomOut</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">boolean</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>true</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Show zoom-out button</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>menuZoomOutIcon</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>mdiMagnifyMinusOutline</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Zoom-out icon, SVG path string</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>menuZoomOutTooltip</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>'Zoom Out'</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Zoom-out tooltip</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>useMenuItemFitView</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">boolean</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>true</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Show fit-view button</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>menuFitViewIcon</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>mdiFitToPageOutline</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Fit-view icon, SVG path string</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>menuFitViewTooltip</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>'Fit View'</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Fit-view tooltip</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>useMenuItemLock</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">boolean</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>true</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Show lock button</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>menuLockIcon</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>mdiLockOpenVariantOutline</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Lock button icon while unlocked</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>menuLockTooltip</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>'Lock'</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Lock button tooltip while unlocked (names the action the click performs)</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>menuLockIconLocked</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>mdiLockOutline</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Lock button icon while locked</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>menuLockTooltipLocked</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>'Unlock'</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Lock button tooltip while locked</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>menuIconColor</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>'#555'</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Toolbar icon color</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>menuIconColorHover</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>'#222'</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Toolbar icon color on hover</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>menuIconColorFocus</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>'#222'</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Toolbar icon color on focus</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>menuIconSize</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">number</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>22</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Toolbar icon size (px)</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>menuBackgroundColor</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>'#fefefe'</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Toolbar button background</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>menuBackgroundColorHover</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>'#f0f0f0'</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Toolbar button background on hover</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>menuBackgroundColorFocus</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>'#f0f0f0'</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Toolbar button background on focus</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>menuSeparatorColor</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>'#e6e6e6'</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Toolbar separator line color</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>menuShadow</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">boolean</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>true</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Toolbar drop shadow</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>menuTooltipTextColor</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>'white'</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Toolbar tooltip text color</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>menuTooltipTextFontSize</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>'0.7rem'</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Toolbar tooltip font size</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>menuTooltipBackgroundColor</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>'rgba(60,60,60,0.75)'</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Toolbar tooltip background</p>
 <p>─── Settings Popup ────────────────────────────────────────────────────</p></td>
         </tr>
 
@@ -2967,7 +4186,7 @@
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 4.0.5</a> on Fri Aug 21 2026 12:25:39 GMT+0800 (台北標準時間) using the <a href="https://github.com/clenemt/docdash">docdash</a> theme.
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 4.0.5</a> on Sat Aug 22 2026 22:01:02 GMT+0800 (台北標準時間) using the <a href="https://github.com/clenemt/docdash">docdash</a> theme.
 </footer>
 
 <script>prettyPrint();</script>

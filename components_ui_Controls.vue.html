@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    
+    <meta charset="utf-8">
+    <title>components/ui/Controls.vue - Documentation</title>
+    
+    
+    <script src="scripts/prettify/prettify.js"></script>
+    <script src="scripts/prettify/lang-css.js"></script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc.css">
+    <script src="scripts/nav.js" defer></script>
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body>
+
+<input type="checkbox" id="nav-trigger" class="nav-trigger" />
+<label for="nav-trigger" class="navicon-button x">
+  <div class="navicon"></div>
+</label>
+
+<label for="nav-trigger" class="overlay"></label>
+
+<nav >
+    
+    
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-WFlowVue.html">WFlowVue</a></li></ul><h3>Global</h3><ul><li><a href="global.html#NODE_DEFAULTS">NODE_DEFAULTS</a></li><li><a href="global.html#buildRoundedPath">buildRoundedPath</a></li><li><a href="global.html#clampPosition">clampPosition</a></li><li><a href="global.html#fixSvgNs">fixSvgNs</a></li><li><a href="global.html#generateId">generateId</a></li><li><a href="global.html#getBezierPath">getBezierPath</a></li><li><a href="global.html#getControlOffset">getControlOffset</a></li><li><a href="global.html#getDiamondEdgePoint">getDiamondEdgePoint</a></li><li><a href="global.html#getEllipseEdgePoint">getEllipseEdgePoint</a></li><li><a href="global.html#getHandlePosition">getHandlePosition</a></li><li><a href="global.html#getOverlappingNodes">getOverlappingNodes</a></li><li><a href="global.html#getSmoothStepPath">getSmoothStepPath</a></li><li><a href="global.html#getStepPath">getStepPath</a></li><li><a href="global.html#getStraightPath">getStraightPath</a></li><li><a href="global.html#getTriangleEdgePoint">getTriangleEdgePoint</a></li><li><a href="global.html#isValidConnection">isValidConnection</a></li><li><a href="global.html#labelAtHalfLength">labelAtHalfLength</a></li><li><a href="global.html#lookupRoute">lookupRoute</a></li><li><a href="global.html#normalizeConnPoints">normalizeConnPoints</a></li><li><a href="global.html#orthogonalizeThroughPoints">orthogonalizeThroughPoints</a></li><li><a href="global.html#pickMenuValue">pickMenuValue</a></li><li><a href="global.html#rectsOverlap">rectsOverlap</a></li><li><a href="global.html#segmentFallback">segmentFallback</a></li><li><a href="global.html#snapPosition">snapPosition</a></li></ul>
+    
+</nav>
+
+<div id="main">
+    
+    <h1 class="page-title">components/ui/Controls.vue</h1>
+    
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>&lt;template>
+  &lt;!-- 垂直選單: 改用w-threejs-vue同款組件WGroupIconCheck(:dir='vertical'), 最頂為設定鈕, 收合時僅顯示設定鈕, 展開才顯示其餘按鈕 -->
+  &lt;div
+    v-if="cfg.useMenu"
+    :class="['vue-flow__panel', `vue-flow__panel--${cfg.menuPosition}`]"
+    :style="panelStyle"
+  >
+    &lt;!-- 淺色系配色(w-flow-vue圖台為白底, 沿用原Controls之#fefefe白底/深灰icon風格; iconSize預設22, 按鈕寬=22+左右padding8=30px與w-threejs-vue選單一致) -->
+    &lt;!-- 全數為一般動作鈕(不用active態): 鎖頭點擊即切換上鎖/解鎖並換icon(比照fitView等), 不留固定灰底; value恆空故無任一鈕呈active, 故不開放*ColorActive類選項 -->
+    &lt;WGroupIconCheck
+      :items="useItems"
+      :dir="'vertical'"
+      :iconColor="cfg.menuIconColor"
+      :iconColorHover="cfg.menuIconColorHover"
+      :iconColorFocus="cfg.menuIconColorFocus"
+      :iconSize="cfg.menuIconSize"
+      :backgroundColor="cfg.menuBackgroundColor"
+      :backgroundColorHover="cfg.menuBackgroundColorHover"
+      :backgroundColorFocus="cfg.menuBackgroundColorFocus"
+      :seplineColor="cfg.menuSeparatorColor"
+      :shadow="cfg.menuShadow"
+      :tooltipTextColor="cfg.menuTooltipTextColor"
+      :tooltipTextFontSize="cfg.menuTooltipTextFontSize"
+      :tooltipBackgroundColor="cfg.menuTooltipBackgroundColor"
+      :value="[]"
+      @click="onClickItem"
+    >&lt;/WGroupIconCheck>
+  &lt;/div>
+&lt;/template>
+
+&lt;script>
+import WGroupIconCheck from 'w-component-vue/src/components/WGroupIconCheck.vue'
+import { mdiCogOutline, mdiMagnifyPlusOutline, mdiMagnifyMinusOutline, mdiFitToPageOutline, mdiLockOutline, mdiLockOpenVariantOutline } from '@mdi/js/mdi.js'
+
+//menuDef, 選單各項之預設值, 未被opt覆寫者沿用之
+//注意: menuIconSize, menuTooltipTextColor, menuTooltipBackgroundColor原為WGroupIconCheck之預設值,
+//因w-component-vue為浮動相依(^2.5.2), 子套件改預設會靜默改變本套件外觀, 故於此明寫鎖住現值
+let menuDef = {
+
+    //整體
+    useMenu: true,
+    menuPosition: 'top-left',
+    menuYShift: 0,
+    useSetting: true,
+
+    //設定鈕(收合/展開)
+    menuSettingIcon: mdiCogOutline,
+    menuSettingTooltip: 'Settings',
+
+    //放大
+    useMenuItemZoomIn: true,
+    menuZoomInIcon: mdiMagnifyPlusOutline,
+    menuZoomInTooltip: 'Zoom In',
+
+    //縮小
+    useMenuItemZoomOut: true,
+    menuZoomOutIcon: mdiMagnifyMinusOutline,
+    menuZoomOutTooltip: 'Zoom Out',
+
+    //全圖
+    useMenuItemFitView: true,
+    menuFitViewIcon: mdiFitToPageOutline,
+    menuFitViewTooltip: 'Fit View',
+
+    //鎖定(雙態: 無後綴為未鎖態, Locked後綴為已鎖態)
+    useMenuItemLock: true,
+    menuLockIcon: mdiLockOpenVariantOutline,
+    menuLockTooltip: 'Lock',
+    menuLockIconLocked: mdiLockOutline,
+    menuLockTooltipLocked: 'Unlock',
+
+    //樣式
+    menuIconColor: '#555',
+    menuIconColorHover: '#222',
+    menuIconColorFocus: '#222',
+    menuIconSize: 22,
+    menuBackgroundColor: '#fefefe',
+    menuBackgroundColorHover: '#f0f0f0',
+    menuBackgroundColorFocus: '#f0f0f0',
+    menuSeparatorColor: '#e6e6e6',
+    menuShadow: true,
+    menuTooltipTextColor: 'white',
+    menuTooltipTextFontSize: '0.7rem',
+    menuTooltipBackgroundColor: 'rgba(60,60,60,0.75)',
+
+}
+
+//menuPositions, menuPosition之允許值, 不在其中者回退預設
+let menuPositions = ['top-left', 'top-right', 'bottom-left', 'bottom-right']
+
+/**
+ * 取單項設定值, 型別與menuDef同型且有效才採用, 否則回退menuDef
+ */
+function pickMenuValue(k, v) {
+    let d = menuDef[k]
+    if (typeof d === 'string') {
+        return (typeof v === 'string' &amp;&amp; v !== '') ? v : d
+    }
+    if (typeof d === 'boolean') {
+        return (typeof v === 'boolean') ? v : d
+    }
+    if (typeof d === 'number') {
+        return (typeof v === 'number' &amp;&amp; isFinite(v)) ? v : d
+    }
+    return d
+}
+
+export default {
+    name: 'FlowControls',
+    components: { WGroupIconCheck },
+    props: {
+        //選單設定物件, 鍵值同menuDef, 由WFlowVue自opt原樣取出後傳入; 各鍵未給或型別不符即回退menuDef
+        menu: { type: Object, default: () => ({}) },
+        locked: { type: Boolean, default: false },
+    },
+    data() {
+        return {
+            //設定鈕展開狀態(收合時僅顯示設定鈕, 展開才顯示其餘按鈕), 比照w-threejs-vue; 初值取menu.useSetting
+            useSetting: pickMenuValue('useSetting', (this.menu || {}).useSetting),
+        }
+    },
+    computed: {
+        cfg() {
+            let m = this.menu || {}
+            let r = {}
+            for (let k in menuDef) {
+                r[k] = pickMenuValue(k, m[k])
+            }
+            //menuPosition另檢核列舉值
+            if (menuPositions.indexOf(r.menuPosition) &lt; 0) {
+                r.menuPosition = menuDef.menuPosition
+            }
+            return r
+        },
+        allItems() {
+            let c = this.cfg
+            let rs = [
+                { id: 'setting', icon: c.menuSettingIcon, tooltip: c.menuSettingTooltip },
+            ]
+            if (c.useMenuItemZoomIn) {
+                rs.push({ id: 'zoomIn', icon: c.menuZoomInIcon, tooltip: c.menuZoomInTooltip })
+            }
+            if (c.useMenuItemZoomOut) {
+                rs.push({ id: 'zoomOut', icon: c.menuZoomOutIcon, tooltip: c.menuZoomOutTooltip })
+            }
+            if (c.useMenuItemFitView) {
+                rs.push({ id: 'fitView', icon: c.menuFitViewIcon, tooltip: c.menuFitViewTooltip })
+            }
+            if (c.useMenuItemLock) {
+                rs.push({ id: 'interactive', icon: this.locked ? c.menuLockIconLocked : c.menuLockIcon, tooltip: this.locked ? c.menuLockTooltipLocked : c.menuLockTooltip })
+            }
+            return rs
+        },
+        useItems() {
+            //設定鈕恆在最頂; 收合時僅顯示設定鈕
+            if (this.useSetting) {
+                return this.allItems
+            }
+            return [this.allItems[0]]
+        },
+        panelStyle() {
+            //向下偏移: top-*位置加margin-top, bottom-*位置加margin-bottom(margin於絕對定位元素上等同再位移該側)
+            //故menuYShift之語義為[正值使選單遠離其錨定邊]: top-*向下, bottom-*向上
+            let s = 'z-index:5;'
+            if (this.cfg.menuPosition.indexOf('bottom') >= 0) {
+                s += `margin-bottom:${this.cfg.menuYShift}px;`
+            }
+            else {
+                s += `margin-top:${this.cfg.menuYShift}px;`
+            }
+            return s
+        },
+    },
+    methods: {
+        onClickItem(item) {
+            let id = (item &amp;&amp; item.id) || ''
+            if (id === 'setting') {
+                this.useSetting = !this.useSetting
+            }
+            else if (id === 'zoomIn') {
+                this.$emit('zoom-in')
+            }
+            else if (id === 'zoomOut') {
+                this.$emit('zoom-out')
+            }
+            else if (id === 'fitView') {
+                this.$emit('fit-view')
+            }
+            else if (id === 'interactive') {
+                this.$emit('toggle-interactive')
+            }
+        },
+    },
+}
+&lt;/script>
+
+&lt;style scoped>
+.vue-flow__panel {
+  position: absolute;
+  z-index: 5;
+}
+.vue-flow__panel--top-left { top: 10px; left: 10px; }
+.vue-flow__panel--top-right { top: 10px; right: 10px; }
+.vue-flow__panel--bottom-left { bottom: 10px; left: 10px; }
+.vue-flow__panel--bottom-right { bottom: 10px; right: 10px; }
+&lt;/style>
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+    
+    
+</div>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 4.0.5</a> on Sat Aug 22 2026 22:01:02 GMT+0800 (台北標準時間) using the <a href="https://github.com/clenemt/docdash">docdash</a> theme.
+</footer>
+
+<script>prettyPrint();</script>
+<script src="scripts/polyfill.js"></script>
+<script src="scripts/linenumber.js"></script>
+
+
+
+</body>
+</html>
