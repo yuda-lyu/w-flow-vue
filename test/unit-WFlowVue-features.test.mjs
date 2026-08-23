@@ -122,10 +122,12 @@ describe('ConnSettingsForm', () => {
 })
 
 // 3. Node Resize
+//縮放ghost已由獨立之 resizeOverlay 改為併入 dragPositions 之 per-key 機制(WFlowVue.onNodeResize),
+//斷言意圖不變: 縮放中ghost帶有該次尺寸/座標, 結束或被鎖定時不留ghost
 describe('Node Resize', () => {
     test('onNodeResize sets overlay', () => {
         const w = createWrapper(); w.vm.onNodeResize({ nodeId: '1', width: 200, height: 80, x: 50, y: 50 })
-        expect(w.vm.resizeOverlay).toEqual({ id: '1', width: 200, height: 80, x: 50, y: 50 }); w.destroy()
+        expect(w.vm.dragPositions['1']).toEqual({ x: 50, y: 50, width: 200, height: 80 }); w.destroy()
     })
     test('onNodeResizeEnd updates node', () => {
         const w = createWrapper()
@@ -134,12 +136,12 @@ describe('Node Resize', () => {
         const n = w.vm.nodeById('1')
         expect(n.width).toBe(200); expect(n.height).toBe(80)
         expect(n.position.x).toBe(60); expect(n.position.y).toBe(70)
-        expect(w.vm.resizeOverlay).toBeNull(); w.destroy()
+        expect(w.vm.dragPositions['1']).toBeNull(); w.destroy()
     })
     test('blocked when locked', () => {
         const w = createWrapper(); w.vm.toggleInteractive()
         w.vm.onNodeResize({ nodeId: '1', width: 200, height: 80, x: 50, y: 50 })
-        expect(w.vm.resizeOverlay).toBeNull(); w.destroy()
+        expect(w.vm.dragPositions['1']).toBeFalsy(); w.destroy()
     })
     test('emits nodes-change', () => {
         const w = createWrapper()
@@ -350,8 +352,8 @@ describe('Snap-to-Grid integration', () => {
         const w = createWrapper({ snapToGrid: false })
         // Directly call onNodeResize with non-round values
         w.vm.onNodeResize({ nodeId: '1', width: 137, height: 63, x: 51, y: 49 })
-        expect(w.vm.resizeOverlay.width).toBe(137)
-        expect(w.vm.resizeOverlay.height).toBe(63)
+        expect(w.vm.dragPositions['1'].width).toBe(137)
+        expect(w.vm.dragPositions['1'].height).toBe(63)
         w.destroy()
     })
     test('snapGridSize passed to NodeRenderer', () => {
@@ -434,7 +436,7 @@ describe('onDocMouseMove dispatching', () => {
         const w = createWrapper()
         w.vm.viewport = { x: 0, y: 0, zoom: 1 }
         w.vm.startPan({ clientX: 100, clientY: 100 })
-        w.vm.onDocMouseMove({ clientX: 150, clientY: 120 })
+        w.vm.onDocMouseMove({ clientX: 150, clientY: 120, buttons: 1 })
         expect(w.vm.viewport.x).toBe(50)
         expect(w.vm.viewport.y).toBe(20)
         w.destroy()
@@ -443,7 +445,7 @@ describe('onDocMouseMove dispatching', () => {
         const w = createWrapper()
         w.vm.$refs.canvas = { getContainerRect: () => ({ left: 0, top: 0, width: 800, height: 600 }) }
         w.vm.startSelection({ clientX: 100, clientY: 100 })
-        w.vm.onDocMouseMove({ clientX: 200, clientY: 200 })
+        w.vm.onDocMouseMove({ clientX: 200, clientY: 200, buttons: 1 })
         expect(w.vm.selectionBox.width).toBe(100)
         expect(w.vm.selectionBox.height).toBe(100)
         w.destroy()
@@ -451,7 +453,7 @@ describe('onDocMouseMove dispatching', () => {
     test('does nothing when idle', () => {
         const w = createWrapper()
         w.vm.viewport = { x: 0, y: 0, zoom: 1 }
-        w.vm.onDocMouseMove({ clientX: 200, clientY: 200 })
+        w.vm.onDocMouseMove({ clientX: 200, clientY: 200, buttons: 1 })
         expect(w.vm.viewport.x).toBe(0)
         w.destroy()
     })

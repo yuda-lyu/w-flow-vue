@@ -1,6 +1,5 @@
 import { mount } from '@vue/test-utils'
 import EdgeWrapper from '../src/components/edges/EdgeWrapper.vue'
-import EdgeLabel from '../src/components/edges/EdgeLabel.vue'
 import EdgeMarkerDefs from '../src/components/edges/EdgeMarkerDefs.vue'
 
 describe('EdgeWrapper', () => {
@@ -17,7 +16,6 @@ describe('EdgeWrapper', () => {
     test('renders svg group', () => {
         const wrapper = mount(EdgeWrapper, {
             propsData: baseProps,
-            stubs: { EdgeLabel: true },
         })
         expect(wrapper.element.tagName.toLowerCase()).toBe('g')
     })
@@ -25,7 +23,6 @@ describe('EdgeWrapper', () => {
     test('renders path with d attribute', () => {
         const wrapper = mount(EdgeWrapper, {
             propsData: baseProps,
-            stubs: { EdgeLabel: true },
         })
         const paths = wrapper.findAll('path')
         expect(paths.length).toBeGreaterThanOrEqual(1)
@@ -36,7 +33,6 @@ describe('EdgeWrapper', () => {
     test('applies selected class', () => {
         const wrapper = mount(EdgeWrapper, {
             propsData: { ...baseProps, selected: true },
-            stubs: { EdgeLabel: true },
         })
         expect(wrapper.classes()).toContain('vue-flow__edge--selected')
     })
@@ -47,7 +43,6 @@ describe('EdgeWrapper', () => {
                 ...baseProps,
                 conn: { ...baseProps.conn, animated: true },
             },
-            stubs: { EdgeLabel: true },
         })
         expect(wrapper.classes()).toContain('vue-flow__edge--animated')
     })
@@ -72,7 +67,6 @@ describe('EdgeWrapper', () => {
     test('emits conn-click on click', () => {
         const wrapper = mount(EdgeWrapper, {
             propsData: baseProps,
-            stubs: { EdgeLabel: true },
         })
         const interactionPath = wrapper.find('.vue-flow__edge-interaction')
         interactionPath.trigger('click')
@@ -88,8 +82,7 @@ describe('EdgeWrapper', () => {
                     ...baseProps,
                     conn: { ...baseProps.conn, type },
                 },
-                stubs: { EdgeLabel: true },
-            })
+                })
             const visiblePath = wrapper.findAll('path').wrappers.find(
                 p => !p.classes().includes('vue-flow__edge-interaction')
             )
@@ -100,12 +93,29 @@ describe('EdgeWrapper', () => {
     })
 })
 
-describe('EdgeLabel', () => {
-    test('renders name text', () => {
-        const wrapper = mount(EdgeLabel, {
-            propsData: { name: 'hello', x: 100, y: 50 },
+//EdgeLabel.vue 已併入 EdgeWrapper(以 .vue-flow__edge-label 直接渲染 conn.name),
+//故原「連線名稱有被渲染」之斷言改由 EdgeWrapper 驗證
+describe('連線名稱標籤', () => {
+    //baseProps 定義於 EdgeWrapper 之 describe 內, 此處自備一份
+    const props = {
+        sourceX: 100, sourceY: 50, targetX: 300, targetY: 250,
+        sourcePosition: 'bottom', targetPosition: 'top',
+    }
+
+    test('conn.name 渲染於 .vue-flow__edge-label', () => {
+        const wrapper = mount(EdgeWrapper, {
+            propsData: { ...props, conn: { id: 'e1', source: '1', target: '2', name: 'hello' } },
         })
-        expect(wrapper.text()).toContain('hello')
+        const label = wrapper.find('.vue-flow__edge-label')
+        expect(label.exists()).toBe(true)
+        expect(label.text()).toContain('hello')
+    })
+
+    test('無 conn.name 時不渲染標籤', () => {
+        const wrapper = mount(EdgeWrapper, {
+            propsData: { ...props, conn: { id: 'e1', source: '1', target: '2' } },
+        })
+        expect(wrapper.find('.vue-flow__edge-label').exists()).toBe(false)
     })
 })
 

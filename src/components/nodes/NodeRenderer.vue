@@ -21,6 +21,7 @@
       :snap-grid-size="snapGridSize"
       :settings-enabled="settingsEnabled"
       :settings-excludes="settingsExcludes"
+      @drag-prepare="$emit('drag-prepare', $event)"
       @drag-start="$emit('drag-start', $event)"
       @node-click="$emit('node-click', $event)"
       @node-double-click="$emit('node-double-click', $event)"

@@ -7,7 +7,9 @@ import FlowCanvas from '../src/components/canvas/FlowCanvas.vue'
 describe('ViewportTransform', () => {
     test('applies transform style', () => {
         const wrapper = mount(ViewportTransform, {
-            propsData: { x: 100, y: 50, zoom: 1.5 },
+            //ViewportTransform 已改收單一 viewport 物件(取代 x/y/zoom 三個純量),
+            //目的為令宿主 render 僅讀取穩定物件參考; 斷言意圖(transform 樣式)不變
+            propsData: { viewport: { x: 100, y: 50, zoom: 1.5 } },
             slots: { default: '<div class="child">content</div>' },
         })
         expect(wrapper.attributes('style')).toContain('translate(100px, 50px) scale(1.5)')

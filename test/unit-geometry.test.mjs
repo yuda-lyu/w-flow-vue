@@ -1,8 +1,9 @@
+//getDiamondEdgePoint / getEllipseEdgePoint / getTriangleEdgePoint / rectsOverlap 現為 geometry.mjs 之內部函式
+//(仍存在且仍被使用, 只是不再 export), 故改由公開入口 getHandlePosition / getOverlappingNodes 驗證其行為
 import {
     getHandlePosition,
-    getDiamondEdgePoint, getEllipseEdgePoint, getTriangleEdgePoint,
     getOverlappingNodes,
-    clampPosition, snapPosition, rectsOverlap
+    clampPosition, snapPosition
 } from '../src/js/geometry'
 
 describe('geometry', () => {
@@ -98,99 +99,110 @@ describe('geometry', () => {
         })
     })
 
-    describe('getDiamondEdgePoint', () => {
-        test('ratio 0 returns left vertex for top side', () => {
-            const p = getDiamondEdgePoint(0, 0, 100, 100, 'top', 0)
-            expect(p.x).toBeCloseTo(0, 0)
-            expect(p.y).toBeCloseTo(50, 0)
+    //以下四組原本直接呼叫已內部化之 getDiamondEdgePoint / getEllipseEdgePoint /
+    //getTriangleEdgePoint / rectsOverlap, 改為經公開入口驗證同一批行為。
+    //註: 舊測試之 ratio 0 與 ratio 1 為公開 API 無法產生之值
+    //(getHandlePosition 僅產生 0.5, 或 sameSide 時之 0.33/0.67), 該兩組斷言不可達, 故不保留。
+
+    describe('getHandlePosition — diamond same-side (內部 getDiamondEdgePoint)', () => {
+        //diamond 需 sameSide(type='basic' 且 toPosition===fromPosition)才會走菱形邊緣運算
+        const diamond = {
+            id: 'd', shape: 'diamond', type: 'basic',
+            position: { x: 0, y: 0 }, width: 100, height: 100,
+            toPosition: 'top', fromPosition: 'top',
+        }
+
+        test('target 與 source 落在同側之不同點', () => {
+            const pt = getHandlePosition(diamond, 'top', {}, 'target')
+            const ps = getHandlePosition(diamond, 'top', {}, 'source')
+            expect(pt).not.toEqual(ps)
         })
 
-        test('ratio 0.5 returns top vertex for top side', () => {
-            const p = getDiamondEdgePoint(0, 0, 100, 100, 'top', 0.5)
-            expect(p.x).toBeCloseTo(50, 0)
-            expect(p.y).toBeCloseTo(0, 0)
-        })
-
-        test('ratio 1 returns right vertex for top side', () => {
-            const p = getDiamondEdgePoint(0, 0, 100, 100, 'top', 1)
-            expect(p.x).toBeCloseTo(100, 0)
-            expect(p.y).toBeCloseTo(50, 0)
+        test('兩點皆落在菱形邊上(到中心之曼哈頓距離為定值)', () => {
+            //菱形邊之方程式: |x-cx|/(w/2) + |y-cy|/(h/2) = 1
+            const onEdge = (p) => Math.abs(p.x - 50) / 50 + Math.abs(p.y - 50) / 50
+            expect(onEdge(getHandlePosition(diamond, 'top', {}, 'target'))).toBeCloseTo(1, 5)
+            expect(onEdge(getHandlePosition(diamond, 'top', {}, 'source'))).toBeCloseTo(1, 5)
         })
     })
 
-    describe('getEllipseEdgePoint', () => {
-        test('top side ratio 0.5 returns top vertex', () => {
-            const p = getEllipseEdgePoint(0, 0, 200, 100, 'top', 0.5)
+    describe('getHandlePosition — ellipse (內部 getEllipseEdgePoint)', () => {
+        const ellipse = { id: 'e', shape: 'ellipse', position: { x: 0, y: 0 }, width: 200, height: 100 }
+
+        test('top 為橢圓頂點', () => {
+            const p = getHandlePosition(ellipse, 'top', {})
             expect(p.x).toBeCloseTo(100, 0)
             expect(p.y).toBeCloseTo(0, 0)
         })
 
-        test('right side ratio 0.5 returns right vertex', () => {
-            const p = getEllipseEdgePoint(0, 0, 200, 100, 'right', 0.5)
+        test('right 為橢圓右頂點', () => {
+            const p = getHandlePosition(ellipse, 'right', {})
             expect(p.x).toBeCloseTo(200, 0)
             expect(p.y).toBeCloseTo(50, 0)
         })
 
-        test('returns point on ellipse boundary', () => {
+        test('各方位之點皆落在橢圓邊界上', () => {
+            //橢圓方程式: ((x-cx)/rx)^2 + ((y-cy)/ry)^2 = 1
             const cx = 100; const cy = 50; const rx = 100; const ry = 50
-            const p = getEllipseEdgePoint(0, 0, 200, 100, 'top', 0.3)
-            const dx = (p.x - cx) / rx
-            const dy = (p.y - cy) / ry
-            expect(dx * dx + dy * dy).toBeCloseTo(1, 1)
+            ;['top', 'bottom', 'left', 'right'].forEach((side) => {
+                const p = getHandlePosition(ellipse, side, {})
+                const dx = (p.x - cx) / rx
+                const dy = (p.y - cy) / ry
+                expect(dx * dx + dy * dy).toBeCloseTo(1, 1)
+            })
         })
     })
 
-    describe('getTriangleEdgePoint', () => {
-        test('apex side ratio 0.5 returns apex for triangle-up', () => {
-            const p = getTriangleEdgePoint(0, 0, 100, 100, 'top', 0.5, 'triangle')
+    describe('getHandlePosition — triangle 各朝向 (內部 getTriangleEdgePoint)', () => {
+        const tri = (shape) => ({ id: 't', shape, position: { x: 0, y: 0 }, width: 100, height: 100 })
+
+        test('triangle(朝上): top 側為頂點', () => {
+            const p = getHandlePosition(tri('triangle'), 'top', {})
             expect(p.x).toBeCloseTo(50, 0)
             expect(p.y).toBeCloseTo(0, 0)
         })
 
-        test('base side returns linear interpolation', () => {
-            const p0 = getTriangleEdgePoint(0, 0, 100, 100, 'bottom', 0, 'triangle')
-            const p1 = getTriangleEdgePoint(0, 0, 100, 100, 'bottom', 1, 'triangle')
-            expect(p0.x).toBeCloseTo(0, 0)
-            expect(p1.x).toBeCloseTo(100, 0)
-            expect(p0.y).toBe(p1.y)
-        })
-
-        test('triangle-right apex is at right edge', () => {
-            const p = getTriangleEdgePoint(0, 0, 100, 100, 'right', 0.5, 'triangle-right')
-            expect(p.x).toBeCloseTo(100, 0)
-            expect(p.y).toBeCloseTo(50, 0)
-        })
-
-        test('triangle-down apex is at bottom center', () => {
-            const p = getTriangleEdgePoint(0, 0, 100, 100, 'bottom', 0.5, 'triangle-down')
+        test('triangle(朝上): bottom 側為底邊中點', () => {
+            const p = getHandlePosition(tri('triangle'), 'bottom', {})
             expect(p.x).toBeCloseTo(50, 0)
             expect(p.y).toBeCloseTo(100, 0)
         })
 
-        test('triangle-left apex is at left edge', () => {
-            const p = getTriangleEdgePoint(0, 0, 100, 100, 'left', 0.5, 'triangle-left')
+        test('triangle-right: right 側為右頂點', () => {
+            const p = getHandlePosition(tri('triangle-right'), 'right', {})
+            expect(p.x).toBeCloseTo(100, 0)
+            expect(p.y).toBeCloseTo(50, 0)
+        })
+
+        test('triangle-down: bottom 側為下頂點', () => {
+            const p = getHandlePosition(tri('triangle-down'), 'bottom', {})
+            expect(p.x).toBeCloseTo(50, 0)
+            expect(p.y).toBeCloseTo(100, 0)
+        })
+
+        test('triangle-left: left 側為左頂點', () => {
+            const p = getHandlePosition(tri('triangle-left'), 'left', {})
             expect(p.x).toBeCloseTo(0, 0)
             expect(p.y).toBeCloseTo(50, 0)
         })
     })
 
-    describe('rectsOverlap', () => {
-        test('overlapping rects return true', () => {
-            const a = { x: 0, y: 0, width: 100, height: 100 }
-            const b = { x: 50, y: 50, width: 100, height: 100 }
-            expect(rectsOverlap(a, b)).toBe(true)
+    describe('矩形重疊判定 (內部 rectsOverlap, 經 getOverlappingNodes 驗證)', () => {
+        const nodeAt = (x, y, w, h) => ({ id: 'n', position: { x, y }, width: w, height: h })
+
+        test('相交者回傳該節點', () => {
+            const rect = { x: 50, y: 50, width: 100, height: 100 }
+            expect(getOverlappingNodes(rect, [nodeAt(0, 0, 100, 100)], {})).toHaveLength(1)
         })
 
-        test('non-overlapping rects return false', () => {
-            const a = { x: 0, y: 0, width: 50, height: 50 }
-            const b = { x: 100, y: 100, width: 50, height: 50 }
-            expect(rectsOverlap(a, b)).toBe(false)
+        test('不相交者不回傳', () => {
+            const rect = { x: 100, y: 100, width: 50, height: 50 }
+            expect(getOverlappingNodes(rect, [nodeAt(0, 0, 50, 50)], {})).toHaveLength(0)
         })
 
-        test('touching rects (edge) return false', () => {
-            const a = { x: 0, y: 0, width: 50, height: 50 }
-            const b = { x: 50, y: 0, width: 50, height: 50 }
-            expect(rectsOverlap(a, b)).toBe(false)
+        test('僅邊緣相接不算重疊', () => {
+            const rect = { x: 50, y: 0, width: 50, height: 50 }
+            expect(getOverlappingNodes(rect, [nodeAt(0, 0, 50, 50)], {})).toHaveLength(0)
         })
     })
 

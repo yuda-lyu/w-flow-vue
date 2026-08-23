@@ -258,14 +258,25 @@ describe('WFlowVue', () => {
     })
 
     describe('node drag', () => {
-        test('onNodeDragStart selects the node', () => {
+        //選取已移至onNodeDragPrepare(節點mousedown當下), 使拖曳延後啟動不影響選取時機
+        test('onNodeDragPrepare selects the node', () => {
+            const wrapper = createWrapper()
+            const node = wrapper.vm.nodeById('1')
+            wrapper.vm.onNodeDragPrepare({ node })
+            expect(wrapper.vm.selectedNodes).toContain('1')
+            expect(wrapper.emitted('node-drag-start')).toBeFalsy()
+            wrapper.destroy()
+        })
+
+        test('onNodeDragStart starts the drag and emits node-drag-start', () => {
             const wrapper = createWrapper()
             const node = wrapper.vm.nodeById('1')
             wrapper.vm.onNodeDragStart({
                 node,
                 event: { clientX: 100, clientY: 100 },
             })
-            expect(wrapper.vm.selectedNodes).toContain('1')
+            expect(wrapper.vm.isDraggingNode).toBe(true)
+            expect(wrapper.vm.draggingNodeId).toBe('1')
             expect(wrapper.emitted('node-drag-start')).toBeTruthy()
             wrapper.destroy()
         })
@@ -348,7 +359,7 @@ describe('WFlowVue', () => {
             const wrapper = createWrapper()
             wrapper.vm.toggleInteractive()
             wrapper.vm.onNodeResize({ nodeId: '1', width: 200, height: 100, x: 0, y: 0 })
-            expect(wrapper.vm.resizeOverlay).toBeNull()
+            expect(wrapper.vm.dragPositions['1']).toBeFalsy()
             wrapper.destroy()
         })
 

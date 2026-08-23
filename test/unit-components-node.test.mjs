@@ -154,16 +154,38 @@ describe('NodeWrapper', () => {
         expect(wrapper.emitted('node-click')[0][0].node.id).toBe('1')
     })
 
-    test('emits drag-start on mousedown when draggable', () => {
+    //拖曳延後至跨越2px位移門檻才啟動: mousedown當下只發drag-prepare(供宿主先行選取),
+    //drag-start要有實際位移才發, 否則純點擊會走完endDrag→emit update:nodes而使宿主誤判有未儲存變更
+    test('emits drag-prepare (not drag-start) on mousedown when draggable', () => {
         const wrapper = mount(NodeWrapper, { propsData: { node, draggable: true } })
-        wrapper.trigger('mousedown')
-        expect(wrapper.emitted('drag-start')).toBeTruthy()
+        wrapper.trigger('mousedown', { clientX: 0, clientY: 0, button: 0 })
+        expect(wrapper.emitted('drag-prepare')).toBeTruthy()
+        expect(wrapper.emitted('drag-start')).toBeFalsy()
+        wrapper.destroy()
     })
 
-    test('does not emit drag-start when not draggable', () => {
+    test('emits drag-start once movement crosses the threshold', async () => {
+        const wrapper = mount(NodeWrapper, { propsData: { node, draggable: true } })
+        wrapper.trigger('mousedown', { clientX: 0, clientY: 0, button: 0 })
+        document.dispatchEvent(new MouseEvent('mousemove', { clientX: 20, clientY: 0, buttons: 1 }))
+        await wrapper.vm.$nextTick()
+        expect(wrapper.emitted('drag-start')).toHaveLength(1)
+        wrapper.destroy()
+    })
+
+    test('does not emit drag-prepare or drag-start when not draggable', () => {
         const wrapper = mount(NodeWrapper, { propsData: { node, draggable: false } })
-        wrapper.trigger('mousedown')
+        wrapper.trigger('mousedown', { clientX: 0, clientY: 0, button: 0 })
+        expect(wrapper.emitted('drag-prepare')).toBeFalsy()
         expect(wrapper.emitted('drag-start')).toBeFalsy()
+        wrapper.destroy()
+    })
+
+    test('does not emit drag-prepare on non-primary button', () => {
+        const wrapper = mount(NodeWrapper, { propsData: { node, draggable: true } })
+        wrapper.trigger('mousedown', { clientX: 0, clientY: 0, button: 2 })
+        expect(wrapper.emitted('drag-prepare')).toBeFalsy()
+        wrapper.destroy()
     })
 
     test('applies zIndex from node', () => {

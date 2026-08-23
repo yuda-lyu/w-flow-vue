@@ -208,6 +208,12 @@ export default {
     updated() {
         this.reportDimensions()
     },
+    beforeDestroy() {
+        //拖曳/縮放進行中被銷毀時, 掛在document上的監聽器與插入document.head之全域游標樣式
+        //都不會自行移除, 於此一併收尾
+        this.endMouseGesture(false)
+        this.endResizeGesture(false)
+    },
     methods: {
         reportDimensions() {
             if (!this.$el) return
@@ -218,10 +224,54 @@ export default {
             this.cachedH = h
             this.$emit('dimensions', { nodeId: this.node.id, width: w, height: h })
         },
+        //收掉本次mousedown手勢之document監聽與暫存態; restorePopup=false供beforeDestroy使用(元件將銷毀不需再排程還原)
+        endMouseGesture(restorePopup = true) {
+            const g = this._mouseGesture
+            if (!g) return
+            this._mouseGesture = null
+            this._mouseDownPos = null
+            document.removeEventListener('mousemove', g.onDragMove)
+            document.removeEventListener('mouseup', g.onDragEnd)
+            window.removeEventListener('blur', g.onDragEnd)
+            if (restorePopup && !this.infoPopupEditable) {
+                setTimeout(() => {
+                    this.infoPopupEditable = true
+                }, 0)
+            }
+        },
+        //收掉本次resize手勢之document監聽與插入document.head之全域游標樣式;
+        //回傳是否確實收到一個進行中之手勢(供onMouseUp判斷該不該再發node-resize-end)
+        //why: 全域樣式為`* { cursor: X !important; }`, 若因元件銷毀或視窗外放開而未移除,
+        //     整頁每個元素都會卡在該游標直到重新整理(已於jsdom確定性重現: 銷毀後樣式仍留在head)
+        endResizeGesture(restorePopup = true) {
+            const g = this._resizeGesture
+            if (!g) return false
+            this._resizeGesture = null
+            document.removeEventListener('mousemove', g.onMouseMove)
+            document.removeEventListener('mouseup', g.onMouseUp)
+            window.removeEventListener('blur', g.onMouseUp)
+            if (g.cursorStyle && g.cursorStyle.parentNode) {
+                g.cursorStyle.parentNode.removeChild(g.cursorStyle)
+            }
+            if (restorePopup) {
+                setTimeout(() => {
+                    this.infoPopupEditable = true
+                }, 0)
+            }
+            return true
+        },
         onMouseDown(event) {
+            //新手勢開始前先收掉上一次殘留者(如上次mouseup落在視窗外未送達document), 避免監聽器疊加
+            this.endMouseGesture()
             //點設定齒輪(及其popup錨區)不啟動節點拖曳/點擊: 齒輪刻意不用@mousedown.stop(stopPropagation會擋掉window層WPopup互斥協調),
             //故於此明確排除, 使點齒輪只開設定popup、不移動節點座標(避免尚未變更設定就先改到座標→誤觸發變更儲存)
             if (event.target.closest && event.target.closest('.vue-flow__node-settings-anchor')) {
+                this._mouseDownPos = null
+                return
+            }
+            //非主鍵(右鍵/中鍵)不啟動拖曳與點擊: 判準對齊畫布平移之onCanvasMouseDown(event.button === 0),
+            //使同套件內「按下開始拖動」採同一套判準; contextmenu走@contextmenu.stop另一條路徑不受影響
+            if (event.button !== 0) {
                 this._mouseDownPos = null
                 return
             }
@@ -232,26 +282,40 @@ export default {
                 if (!handle) return
             }
             this.infoPopupShow = false
-            this.$emit('drag-start', { node: this.node, event })
+            //選取仍於mousedown完成(與修正前一致): 拖曳延後但選取不可延後,
+            //否則按住節點未移動時, 原本立即出現的選取回饋會拖到mouseup才出現
+            this.$emit('drag-prepare', { node: this.node, event })
             const startX = event.clientX
             const startY = event.clientY
-            const onDragMove = (e) => {
+            const gesture = { crossed: false, onDragMove: null, onDragEnd: null }
+            gesture.onDragMove = (e) => {
+                //mouseup落在視窗外時不會送達document, 監聽器會殘留;
+                //此處確認主鍵仍按著, 否則於無按鍵狀態下跨門檻會誤啟動拖曳(幽靈拖曳)
+                if ((e.buttons & 1) === 0) {
+                    this.endMouseGesture()
+                    return
+                }
+                if (gesture.crossed) return
                 if (Math.abs(e.clientX - startX) > 2 || Math.abs(e.clientY - startY) > 2) {
+                    gesture.crossed = true
                     this.infoPopupEditable = false
-                    document.removeEventListener('mousemove', onDragMove)
+                    //拖曳延後至跨越位移門檻才啟動
+                    //why: 若於mousedown即emit drag-start, 無位移之純點擊於mouseup仍會走endDrag→回寫座標→emit update:nodes,
+                    //     宿主收到未變更之全量節點而誤判有未儲存變更
+                    //event傳原始mousedown事件, 使WFlowVue之dragStartPos取按下當下座標(改傳本次mousemove會少算門檻位移);
+                    //moveEvent供WFlowVue於啟動當下立即補跑一次doDrag, 否則跨門檻後立刻放開會完全沒有位移
+                    this.$emit('drag-start', { node: this.node, event, moveEvent: e })
                 }
+                //刻意不移除mousemove: 後續仍需靠它做buttons清理, crossed旗標已保證不會重複啟動
             }
-            const onDragEnd = () => {
-                document.removeEventListener('mousemove', onDragMove)
-                document.removeEventListener('mouseup', onDragEnd)
-                if (!this.infoPopupEditable) {
-                    setTimeout(() => {
-                        this.infoPopupEditable = true
-                    }, 0)
-                }
+            gesture.onDragEnd = () => {
+                this.endMouseGesture()
             }
-            document.addEventListener('mousemove', onDragMove)
-            document.addEventListener('mouseup', onDragEnd)
+            this._mouseGesture = gesture
+            document.addEventListener('mousemove', gesture.onDragMove)
+            document.addEventListener('mouseup', gesture.onDragEnd)
+            //視窗失焦後收不到mouseup, 本地監聽與popup態同樣需收尾(WFlowVue之onWindowBlur只收父層狀態)
+            window.addEventListener('blur', gesture.onDragEnd)
         },
         onMouseUp(event) {
             if (!this._mouseDownPos) return
@@ -376,12 +440,7 @@ export default {
             let lastY = startPosY
 
             const onMouseUp = () => {
-                document.removeEventListener('mousemove', onMouseMove)
-                document.removeEventListener('mouseup', onMouseUp)
-                document.head.removeChild(cursorStyle)
-                setTimeout(() => {
-                    this.infoPopupEditable = true
-                }, 0)
+                if (!this.endResizeGesture()) return
                 this.$emit('node-resize-end', {
                     nodeId: this.node.id,
                     width: lastW,
@@ -391,8 +450,11 @@ export default {
                 })
             }
 
+            this._resizeGesture = { onMouseMove, onMouseUp, cursorStyle }
             document.addEventListener('mousemove', onMouseMove)
             document.addEventListener('mouseup', onMouseUp)
+            //視窗失焦後收不到mouseup, 全域游標樣式與監聽器同樣需收尾
+            window.addEventListener('blur', onMouseUp)
         },
     },
 }

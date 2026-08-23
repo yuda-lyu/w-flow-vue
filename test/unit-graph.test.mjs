@@ -1,4 +1,6 @@
-import { isValidConnection, generateId, resetIdCounter } from '../src/js/graph'
+//resetIdCounter 已自 graph.mjs 移除; generateId 以 Date.now()+內部counter+random 組成,
+//唯一性不依賴 counter 歸零, 故原斷言仍有效, 僅移除該前置
+import { isValidConnection, generateId } from '../src/js/graph'
 
 describe('graph', () => {
     const conns = [
@@ -57,8 +59,6 @@ describe('graph', () => {
     })
 
     describe('generateId', () => {
-        beforeEach(() => resetIdCounter())
-
         test('generates unique ids', () => {
             const id1 = generateId()
             const id2 = generateId()
