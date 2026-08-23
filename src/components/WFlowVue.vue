@@ -59,6 +59,7 @@
         ref="nodeRenderer"
         :nodes="nodes"
         :selected-node-ids="selectedNodes"
+        :dragging-node-map="isDraggingNode ? dragNodeStartPositions : null"
         :nodes-draggable="nodesDraggable"
         :nodes-connectable="nodesConnectable"
         :locked="locked"

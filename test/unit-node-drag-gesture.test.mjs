@@ -252,3 +252,125 @@ describe('resize 手勢收尾: 全域游標樣式不得殘留', () => {
         w.destroy()
     })
 })
+
+describe('拖曳態 class(缺陷 E: dragging 由父層下傳)', () => {
+    //why: 原本 NodeWrapper 之本地 isDragging 為死旗標(定義了、綁上了、有 CSS, 就是沒有寫入點)。
+    //改由 WFlowVue 之 dragNodeStartPositions 下傳, 使 (a)父層拒絕之手勢不會誤標拖曳態
+    //(b)多選整組拖曳時全部節點都標上, 而非只有被滑鼠抓住的那顆。
+    const hasDragClass = (w, id) => nodeEl(w, id).classes().includes('vue-flow__node--dragging')
+
+    //跨門檻當下父層會同步跑第一次 doDrag, 此時 DOM 尚未更新, 故取樣一律等一次 nextTick
+    const crossThreshold = async (w, id, x = 140) => {
+        mouseDownOn(nodeEl(w, id), { x: 100, y: 100 })
+        mouseMoveDoc({ x, y: 100 })
+        await w.vm.$nextTick()
+    }
+
+    test('跨門檻後被拖節點掛上 --dragging', async () => {
+        const w = createWrapper()
+        expect(hasDragClass(w, '1')).toBe(false)
+        await crossThreshold(w, '1')
+        expect(hasDragClass(w, '1')).toBe(true)
+        w.destroy()
+    })
+
+    test('未跨門檻之純點擊全程不得出現 --dragging', async () => {
+        const w = createWrapper()
+        mouseDownOn(nodeEl(w, '1'), { x: 100, y: 100 })
+        mouseMoveDoc({ x: 102, y: 100 })
+        await w.vm.$nextTick()
+        expect(hasDragClass(w, '1')).toBe(false)
+        mouseUpOn(nodeEl(w, '1'), { x: 102, y: 100 })
+        await w.vm.$nextTick()
+        expect(hasDragClass(w, '1')).toBe(false)
+        w.destroy()
+    })
+
+    test('放開後移除 --dragging', async () => {
+        const w = createWrapper()
+        await crossThreshold(w, '1')
+        expect(hasDragClass(w, '1')).toBe(true)
+        mouseUpOn(nodeEl(w, '1'), { x: 140, y: 100 })
+        await w.vm.$nextTick()
+        expect(hasDragClass(w, '1')).toBe(false)
+        w.destroy()
+    })
+
+    test('視窗失焦後移除 --dragging', async () => {
+        const w = createWrapper()
+        await crossThreshold(w, '1')
+        expect(hasDragClass(w, '1')).toBe(true)
+        window.dispatchEvent(new Event('blur'))
+        await w.vm.$nextTick()
+        expect(hasDragClass(w, '1')).toBe(false)
+        w.destroy()
+    })
+
+    test('locked=true: 跨門檻亦不得出現 --dragging', async () => {
+        const w = createWrapper({ locked: true })
+        await crossThreshold(w, '1')
+        expect(hasDragClass(w, '1')).toBe(false)
+        w.destroy()
+    })
+
+    //坑一: 本地旗標方案在此組合下會誤標(NodeWrapper 只擋 draggable 不擋 nodesDraggable)
+    test('nodesDraggable=false + node.draggable=true: 父層拒絕, 不得出現假 --dragging', async () => {
+        const w = mount(WFlowVue, {
+            propsData: {
+                opt: {
+                    nodes: [{ id: '1', type: 'input', name: 'N1', position: { x: 50, y: 50 }, width: 100, height: 40, draggable: true }],
+                    conns: [],
+                    nodesDraggable: false,
+                },
+            },
+            attachTo: document.body,
+        })
+        const x0 = w.vm.opt.nodes[0].position.x
+        await crossThreshold(w, '1')
+        expect(w.vm.isDraggingNode).toBe(false)
+        expect(hasDragClass(w, '1')).toBe(false)
+        expect(w.vm.opt.nodes[0].position.x).toBe(x0)
+        w.destroy()
+    })
+
+    //坑二: 多選為整組移動, 本地旗標只會套到被抓住的那顆
+    test('多選整組拖曳: 參與移動之節點全部掛上 --dragging', async () => {
+        const w = createWrapper()
+        w.vm.setSelectedNodes(['1', '2'])
+        //按住多選鍵, 否則 drag-prepare 會把選取收斂成單顆
+        w.vm.keysPressed = { ...w.vm.keysPressed, Shift: true }
+        await crossThreshold(w, '1')
+        //先確認選取未被 drag-prepare 收斂成單顆, 否則下面的斷言會變成假通過
+        expect(Object.keys(w.vm.dragNodeStartPositions).sort()).toEqual(['1', '2'])
+        expect(hasDragClass(w, '1')).toBe(true)
+        expect(hasDragClass(w, '2')).toBe(true)
+        w.destroy()
+    })
+
+    //坑三: 舊 CSS 之 z-index:1000 !important 會把自訂較高層級之節點反向降級
+    test('自訂 zIndex=5000 之節點, 拖曳前後皆維持 5000(不得被降級)', async () => {
+        const w = mount(WFlowVue, {
+            propsData: {
+                opt: {
+                    nodes: [{ id: '1', type: 'input', name: 'N1', position: { x: 50, y: 50 }, width: 100, height: 40, zIndex: 5000 }],
+                    conns: [],
+                },
+            },
+            attachTo: document.body,
+        })
+        expect(nodeEl(w, '1').element.style.zIndex).toBe('5000')
+        await crossThreshold(w, '1')
+        expect(hasDragClass(w, '1')).toBe(true)
+        expect(nodeEl(w, '1').element.style.zIndex).toBe('5000')
+        w.destroy()
+    })
+
+    test('resize 不得誤標為拖曳態', async () => {
+        const w = createWrapper()
+        const nw = w.findComponent({ name: 'NodeWrapper' })
+        nw.vm.onResizeStart({ clientX: 0, clientY: 0, preventDefault() {}, stopPropagation() {} }, 'bottom-right')
+        await w.vm.$nextTick()
+        expect(hasDragClass(w, '1')).toBe(false)
+        w.destroy()
+    })
+})

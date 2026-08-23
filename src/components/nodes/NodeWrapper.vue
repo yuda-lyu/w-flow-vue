@@ -102,6 +102,11 @@ export default {
         connectable: { type: Boolean, default: true },
         resizable: { type: Boolean, default: true },
         locked: { type: Boolean, default: false },
+        //拖曳態: 由WFlowVue下傳(其dragNodeStartPositions之成員), 代表父層已真正接受此次拖曳。
+        //不用NodeWrapper本地旗標: 本地只擋draggable不擋nodesDraggable, 於
+        //nodesDraggable=false + node.draggable=true 時會誤判為拖曳中(父層其實拒絕);
+        //且多選拖曳為整組移動, 本地旗標只會套到被滑鼠抓住的那一顆
+        dragging: { type: Boolean, default: false },
         settingsPopupBackgroundColor: { type: String, default: '#fff' },
         settingsPopupTextColor: { type: String, default: '#333' },
         settingsPopupTextFontSize: { type: String, default: '12px' },
@@ -141,7 +146,7 @@ export default {
                 ...nodeClasses,
                 {
                     'vue-flow__node--selected': this.selected,
-                    'vue-flow__node--dragging': this.isDragging,
+                    'vue-flow__node--dragging': this.dragging,
                     'vue-flow__node--locked': this.locked,
                     'vue-flow__node--diamond': this.isDiamond,
                     'vue-flow__node--ellipse': this.isEllipse,
@@ -185,7 +190,6 @@ export default {
     },
     data() {
         return {
-            isDragging: false,
             hovered: false,
             infoPopupShow: false,
             infoPopupEditable: true,
@@ -485,9 +489,11 @@ export default {
 .vue-flow__node--selected:hover {
   box-shadow: 0 0 8px 2px rgba(220, 38, 38, 0.5);
 }
+/* 拖曳中僅改變游標, 刻意不提升z-index: 節點層級由node.zIndex/node.style決定(見:163),
+   固定的1000 !important會把自訂較高層級之節點反向降級, 且1000亦壓不過另一顆自訂5000之節點,
+   故不提供[拖曳置頂], 疊放順序維持既有規則 */
 .vue-flow__node--dragging {
   cursor: grabbing;
-  z-index: 1000 !important;
 }
 
 /* Settings icon anchor (positioning only) */

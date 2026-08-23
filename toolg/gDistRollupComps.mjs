@@ -10,10 +10,7 @@ rollupFiles({
     fdSrc,
     fdTar,
     format: 'umd',
-    //nameDistType: 'kebabCase',
-    hookNameDist: () => {
-        return 'w-flow-vue'
-    },
+    nameDistType: 'kebabCase',
     globals: {
     },
     external: [

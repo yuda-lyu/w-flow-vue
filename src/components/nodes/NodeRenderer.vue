@@ -6,6 +6,7 @@
       :key="node.id"
       :node="node"
       :selected="isSelected(node.id)"
+      :dragging="isDragging(node.id)"
       :draggable="isDraggable(node)"
       :connectable="isConnectable(node)"
       :resizable="isResizable(node)"
@@ -52,6 +53,9 @@ export default {
     props: {
         nodes: { type: Array, default: () => [] },
         selectedNodeIds: { type: Array, default: () => [] },
+        //拖曳中節點之集合(鍵為nodeId), 由WFlowVue於真正接受拖曳後下傳其dragNodeStartPositions;
+        //未接受(locked/nodesDraggable=false)或未拖曳時為null
+        draggingNodeMap: { type: Object, default: null },
         nodesDraggable: { type: Boolean, default: true },
         nodesConnectable: { type: Boolean, default: true },
         nodesResizable: { type: Boolean, default: true },
@@ -76,6 +80,10 @@ export default {
     methods: {
         isSelected(id) {
             return this.selectedNodeIds.includes(id)
+        },
+        //以自有鍵判定, 不看值之truthiness(起點座標可能為{x:0,y:0}), 亦不誤取原型上之同名屬性
+        isDragging(id) {
+            return !!this.draggingNodeMap && Object.prototype.hasOwnProperty.call(this.draggingNodeMap, id)
         },
         isDraggable(node) {
             return node.draggable !== undefined ? node.draggable : this.nodesDraggable
