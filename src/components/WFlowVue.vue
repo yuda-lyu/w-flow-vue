@@ -394,6 +394,9 @@ export default {
         document.removeEventListener('mousemove', this.onDocMouseMove)
         document.removeEventListener('mouseup', this.onDocMouseUp)
         window.removeEventListener('blur', this.onWindowBlur)
+        //建線進行中被銷毀: 插入document.head之全域樣式不會自行移除, 且該樣式含opacity:0與pointer-events:none,
+        //殘留會使整頁齒輪與縮放把手隱形且不可點, 直到重新整理; 此處不發connect-end(元件已在銷毀流程中)
+        this.removeConnectCursorStyle()
     },
     computed: {
         widthInp() {
@@ -829,7 +832,13 @@ export default {
             //按鍵已放開卻仍處於進行中狀態: 代表收尾事件未送達(於瀏覽器視窗外放開/視窗失焦/手勢被原生拖曳接管),
             //此時須主動走既有收尾路徑清除狀態; 只return不清狀態無效, 旗標續留為真下次移動仍會誤判
             if ((event.buttons & 1) === 0) {
-                if (this.isPanning || this.isDraggingNode || this.isConnecting || this.isSelecting) {
+                //建線不併入onDocMouseUp: endConnect以事件座標做drop落點判定, 而此處是「回到文件後的第一次移動」,
+                //其座標已非放開當下位置, 交給endConnect會把途經之target handle誤判為落點, 建立使用者從未放開過的連線
+                //(已重現: 回來後第一次mousemove落在另一節點之target handle即產生conn並發update:conns)
+                if (this.isConnecting) {
+                    this.cancelConnect(event)
+                }
+                if (this.isPanning || this.isDraggingNode || this.isSelecting) {
                     this.onDocMouseUp(event)
                 }
                 return
@@ -861,6 +870,11 @@ export default {
             //框選同樣須收尾: 殘留之isSelecting會於回到視窗後與新手勢並存, mouseup時再次以過期框覆寫選取
             if (this.isSelecting) {
                 this.cancelSelection()
+            }
+            //建線同樣須收尾: 否則isConnecting殘留為true且全域樣式續留document.head(已重現: 失焦後兩者皆不變),
+            //失焦無「放開當下」之有效座標, 故走取消路徑不做落點判定亦不建立連線
+            if (this.isConnecting) {
+                this.cancelConnect(event)
             }
             this.keysPressed = {}
         },
@@ -1012,6 +1026,13 @@ export default {
             if (this.locked || !this.nodesConnectable) return
             //建線只能自source(連出)型handle出發: target(連入)型handle拖曳不啟動建線, 維持方向語義
             if (payload.handleType !== 'source') return
+            //重入守衛: Handle.onMouseDown不判event.button, 故拉線途中對另一source handle按右鍵/中鍵會再次觸發本函式,
+            //若重跑啟動流程則_connectCursorStyle被新樣式覆寫, 舊樣式失去參照而永久滯留document.head(已重現: 放開與銷毀後皆殘留)
+            if (this.isConnecting) return
+            //節點不存在即不啟動: 此檢查須先於狀態與樣式之設定, 否則早退會留下isConnecting與已插入之全域樣式
+            const node = this.nodeById(payload.nodeId)
+            if (!node) return
+
             this.isConnecting = true
             this.connectingFrom = payload
             // Lock cursor to default during connecting, only handles show crosshair
@@ -1019,8 +1040,6 @@ export default {
             this._connectCursorStyle.textContent = '* { cursor: default !important; } .vue-flow__handle { cursor: crosshair !important; } .vue-flow__node-settings, .vue-flow__edge-settings, .vue-flow__resize { opacity: 0 !important; pointer-events: none !important; }'
             document.head.appendChild(this._connectCursorStyle)
 
-            const node = this.nodeById(payload.nodeId)
-            if (!node) return
             const pos = getHandlePosition(
                 node, payload.handlePosition,
                 this.nodeInternals[payload.nodeId] || {}
@@ -1087,10 +1106,24 @@ export default {
             this.$emit('connect-end', event)
             this.isConnecting = false
             this.connectingFrom = null
-            if (this._connectCursorStyle) {
-                document.head.removeChild(this._connectCursorStyle)
-                this._connectCursorStyle = null
+            this.removeConnectCursorStyle()
+        },
+        //移除建線期間插入document.head之全域樣式; 以parentNode判定而非旗標, 故重複呼叫亦安全
+        //(原本直接document.head.removeChild, 若該樣式已被移除會拋NotFoundError)
+        removeConnectCursorStyle() {
+            if (this._connectCursorStyle && this._connectCursorStyle.parentNode) {
+                this._connectCursorStyle.parentNode.removeChild(this._connectCursorStyle)
             }
+            this._connectCursorStyle = null
+        },
+        //取消建線: 不做落點判定亦不建立連線, 供視窗失焦與buttons補收尾使用——二者皆無「放開當下」之有效座標,
+        //交由endConnect會以錯誤座標做drop hit-test; 仍發connect-end使宿主能收尾自身UI(與endDrag於失焦時照發node-drag-stop同理)
+        cancelConnect(event) {
+            if (!this.isConnecting) return
+            this.isConnecting = false
+            this.connectingFrom = null
+            this.removeConnectCursorStyle()
+            this.$emit('connect-end', event)
         },
 
         // --- Selection ---
