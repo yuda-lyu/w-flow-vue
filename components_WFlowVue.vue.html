@@ -356,6 +356,7 @@ export default {
 
             // UI state
             selectionBox: null,
+            selectionCrossedThreshold: false,
             nodeInternals: {},
 
             // Interactive lock state (opt.locked sets the initial value only;
@@ -767,10 +768,16 @@ export default {
         // --- Canvas events ---
         onCanvasClick(event) {
             if (event.target.closest('.vue-flow__popup')) return
-            if (!event.target.closest('.vue-flow__node') &amp;&amp; !event.target.closest('.vue-flow__edge')) {
-                this.clearSelection()
+            if (this.isCanvasInteractiveTarget(event)) return
+            //本次手勢已是框選(於mousedown鎖定)者不清空選取: 是否提交新選取交由endSelection依門檻決定
+            //why: canvas-click由FlowCanvas元素層mouseup同步emit, 必先於document層之onDocMouseUp→endSelection,
+            //     此處若逕自clearSelection, 框選手勢中途放開會先清掉既有選取
+            if (this.isSelecting) {
                 this.$emit('pane-click', event)
+                return
             }
+            this.clearSelection()
+            this.$emit('pane-click', event)
         },
         onCanvasContextMenu(event) {
             this.$emit('pane-context-menu', event)
@@ -791,13 +798,35 @@ export default {
                 clientY: event.clientY,
             })
         },
+        //畫布層手勢(框選/平移)之目標排除: 按在節點, 連線, 連接點, 縮放把手, 齒輪錨區, 轉折點, 控制選單上時不啟動
+        //why: 這些元素各有自己的手勢語義(拖節點/拉連線/縮放/開設定/拖轉折點/操作選單), 畫布層再搶一個手勢會互相干擾;
+        //     它們刻意不用@mousedown.stop(stopPropagation會擋掉window層WPopup互斥協調), 故mousedown必定冒泡至此
+        isCanvasInteractiveTarget(event) {
+            const t = event &amp;&amp; event.target
+            if (!t || !t.closest) return false
+            return !!t.closest([
+                '.vue-flow__node',
+                '.vue-flow__edge',
+                '.vue-flow__handle',
+                '.vue-flow__resize',
+                '.vue-flow__node-settings',
+                '.vue-flow__node-settings-anchor',
+                '.vue-flow__edge-settings',
+                '.vue-flow__edge-waypoint',
+                '.vue-flow__panel',
+            ].join(','))
+        },
         onCanvasMouseDown(event) {
             if (event.target.closest &amp;&amp; event.target.closest('.vue-flow__popup')) return
-            if (!this.locked &amp;&amp; this.isBoxSelectPressed) {
-                this.startSelection(event)
+            //非主鍵不啟動任何畫布層手勢: 判準對齊NodeWrapper.onMouseDown之event.button !== 0
+            if (event.button !== 0) return
+            if (!this.locked &amp;&amp; this.elementsSelectable &amp;&amp; this.isBoxSelectPressed) {
+                if (!this.isCanvasInteractiveTarget(event)) {
+                    this.startSelection(event)
+                }
                 return
             }
-            if (this.panOnDrag &amp;&amp; event.button === 0) {
+            if (this.panOnDrag) {
                 const target = event.target
                 const isOnNode = target.closest &amp;&amp; target.closest('.vue-flow__node')
                 const isOnHandle = target.closest &amp;&amp; target.closest('.vue-flow__handle')
@@ -874,6 +903,10 @@ export default {
             if (this.isDraggingNode) {
                 this.endDrag(event)
             }
+            //框選同樣須收尾: 殘留之isSelecting會於回到視窗後與新手勢並存, mouseup時再次以過期框覆寫選取
+            if (this.isSelecting) {
+                this.cancelSelection()
+            }
             this.keysPressed = {}
         },
         onDocMouseUp(event) {
@@ -926,27 +959,34 @@ export default {
         //守衛與選取條件皆與修正前之onNodeDragStart一致, 故選取時機不因拖曳延後而改變。
         onNodeDragPrepare({ node }) {
             if (this.locked || !this.nodesDraggable) return
-            if (this.selectNodesOnDrag &amp;&amp; !this.isMultiSelectPressed) {
+            //已在選取集合內者不塌陷選取, 否則框選一組後直接拖其中一顆會只搬動該顆
+            //(單純點擊仍由onNodeClick收斂為單選, 故單擊改選這顆之行為不變)
+            if (this.selectNodesOnDrag &amp;&amp; !this.isMultiSelectPressed &amp;&amp; !this.selectedNodes.includes(node.id)) {
                 this.setSelectedNodes([node.id])
                 this.setSelectedConns([])
             }
         },
         onNodeDragStart({ node, event, moveEvent }) {
             if (this.locked || !this.nodesDraggable) return
-            this.isDraggingNode = true
-            this.draggingNodeId = node.id
-            this.dragStartPos = { x: event.clientX, y: event.clientY }
 
             // Cache start positions for drag
+            //拖曳成員過濾: hidden(未渲染)與draggable:false之節點不得被同組節點連帶搬走, 否則該旗標語義被破壞
+            //(過濾與早退須在設isDraggingNode之前, 否則早退會留下isDraggingNode為真之黏住狀態)
+            const canMove = (n) => !!n &amp;&amp; !n.hidden &amp;&amp; n.draggable !== false
             const starts = {}
             this.selectedNodes.forEach(id => {
                 const n = this.nodeById(id)
-                if (n) starts[id] = { x: n.position.x, y: n.position.y }
+                if (canMove(n)) starts[id] = { x: n.position.x, y: n.position.y }
             })
             if (!starts[node.id]) {
                 const n = this.nodeById(node.id)
-                if (n) starts[node.id] = { x: n.position.x, y: n.position.y }
+                if (canMove(n)) starts[node.id] = { x: n.position.x, y: n.position.y }
             }
+            if (!starts[node.id]) return
+
+            this.isDraggingNode = true
+            this.draggingNodeId = node.id
+            this.dragStartPos = { x: event.clientX, y: event.clientY }
             this.dragNodeStartPositions = starts
 
             //啟用被拖節點之ghost(per-key賦值, 僅通知讀該鍵之元件), 之後每步僅原地改x/y
@@ -1165,19 +1205,13 @@ export default {
         },
         onConnClick({ conn, event }) {
             if (!this.elementsSelectable) return
+            //連線不參與多選鍵之複選: 按住多選鍵點連線時不變更任何選取(不加入亦不移除), 單擊路徑維持原樣
             if (this.isMultiSelectPressed) {
-                const idx = this.selectedConns.indexOf(conn.id)
-                if (idx === -1) {
-                    this.selectedConns.push(conn.id)
-                }
-                else {
-                    this.selectedConns.splice(idx, 1)
-                }
+                this.$emit('conn-click', { conn, event })
+                return
             }
-            else {
-                this.setSelectedConns([conn.id])
-                this.setSelectedNodes([])
-            }
+            this.setSelectedConns([conn.id])
+            this.setSelectedNodes([])
             this.emitSelectionChange()
 
             this.$emit('conn-click', { conn, event })
@@ -1212,9 +1246,10 @@ export default {
         },
 
         startSelection(event) {
-            this.isSelecting = true
             const rect = this.$refs.canvas.getContainerRect()
-            if (!rect) return
+            if (!rect) return //rect取不到即不進入框選態, 否則留下isSelecting為真之殘留狀態
+            this.isSelecting = true
+            this.selectionCrossedThreshold = false
             this.selectionStartPos = {
                 x: event.clientX - rect.left,
                 y: event.clientY - rect.top,
@@ -1228,17 +1263,30 @@ export default {
         },
         doSelection(event) {
             const rect = this.$refs.canvas.getContainerRect()
-            if (!rect) return
+            if (!rect || !this.selectionStartPos) return
             const currentX = event.clientX - rect.left
             const currentY = event.clientY - rect.top
-            const x = Math.min(this.selectionStartPos.x, currentX)
-            const y = Math.min(this.selectionStartPos.y, currentY)
             const width = Math.abs(currentX - this.selectionStartPos.x)
             const height = Math.abs(currentY - this.selectionStartPos.y)
+            //跨過門檻即鎖住: 供endSelection判定本次是真的拉了框, 或只是原地按放(後者不得覆寫既有選取)
+            if (width >= 3 || height >= 3) {
+                this.selectionCrossedThreshold = true
+            }
+            const x = Math.min(this.selectionStartPos.x, currentX)
+            const y = Math.min(this.selectionStartPos.y, currentY)
             this.selectionBox = { x, y, width, height }
         },
+        //只清框選手勢狀態, 不提交選取(供視窗失焦與未跨門檻之收尾)
+        cancelSelection() {
+            this.isSelecting = false
+            this.selectionStartPos = null
+            this.selectionBox = null
+            this.selectionCrossedThreshold = false
+        },
         endSelection() {
-            if (this.selectionBox) {
+            //未跨門檻(原地按放)不提交選取: 否則零面積框恰落於游標下元素內時會取代既有選取,
+            //使Shift+點擊之累加被覆寫, 且Shift+點空白處會清空整組選取
+            if (this.selectionBox &amp;&amp; this.selectionCrossedThreshold) {
                 const box = this.selectionBox
                 const vp = this.viewport
                 // Convert screen-space box to graph-space
@@ -1248,20 +1296,17 @@ export default {
                     width: box.width / vp.zoom,
                     height: box.height / vp.zoom,
                 }
-                const overlapping = getOverlappingNodes(graphBox, this.nodes, this.nodeInternals)
+                //hidden節點未渲染於畫布, 不應被框選選入
+                const nodesVisible = this.nodes.filter(n => !n.hidden)
+                const overlapping = getOverlappingNodes(graphBox, nodesVisible, this.nodeInternals)
                 const nodeIds = overlapping.map(n => n.id)
                 this.setSelectedNodes(nodeIds)
-                // Auto-select conns whose both ends are within selected nodes
-                let nodeIdSet = new Set(nodeIds)
-                let connIds = this.conns
-                    .filter(c => nodeIdSet.has(c.from) &amp;&amp; nodeIdSet.has(c.to))
-                    .map(c => c.id)
-                this.setSelectedConns(connIds)
+                //連線不參與框選複選: 連線為起訖節點錨點/轉折點/自身設定推得之衍生物, 節點移動時重繪即可,
+                //不視為可被複選之項目, 故此處只清空而不依兩端是否入框自動選取
+                this.setSelectedConns([])
                 this.emitSelectionChange()
             }
-            this.isSelecting = false
-            this.selectionStartPos = null
-            this.selectionBox = null
+            this.cancelSelection()
         },
 
         // --- Delete ---
@@ -1505,7 +1550,7 @@ export default {
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 4.0.5</a> on Sun Aug 23 2026 16:45:56 GMT+0800 (台北標準時間) using the <a href="https://github.com/clenemt/docdash">docdash</a> theme.
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 4.0.5</a> on Sun Aug 23 2026 19:02:43 GMT+0800 (台北標準時間) using the <a href="https://github.com/clenemt/docdash">docdash</a> theme.
 </footer>
 
 <script>prettyPrint();</script>
