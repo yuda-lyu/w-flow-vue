@@ -377,6 +377,7 @@ export default {
         document.addEventListener('keyup', this.onKeyUp)
         document.addEventListener('mousemove', this.onDocMouseMove)
         document.addEventListener('mouseup', this.onDocMouseUp)
+        window.addEventListener('blur', this.onWindowBlur)
     },
     beforeDestroy() {
         if (this._panAnimId) {
@@ -387,6 +388,7 @@ export default {
         document.removeEventListener('keyup', this.onKeyUp)
         document.removeEventListener('mousemove', this.onDocMouseMove)
         document.removeEventListener('mouseup', this.onDocMouseUp)
+        window.removeEventListener('blur', this.onWindowBlur)
     },
     computed: {
         widthInp() {
@@ -766,6 +768,8 @@ export default {
         },
         onCanvasWheel(event) {
             if (!this.zoomOnScroll) return
+            //滾輪縮放亦為viewport寫入者, 先取消程式動畫避免二者互相覆寫
+            this.cancelViewportAnimation()
             const delta = -event.deltaY * 0.001
             const currentZoom = this.viewport.zoom
             // fitView may set zoom below zoomMin; use the current level as the
@@ -789,6 +793,14 @@ export default {
 
         // --- Document-level mouse ---
         onDocMouseMove(event) {
+            //按鍵已放開卻仍處於進行中狀態: 代表收尾事件未送達(於瀏覽器視窗外放開/視窗失焦/手勢被原生拖曳接管),
+            //此時須主動走既有收尾路徑清除狀態; 只return不清狀態無效, 旗標續留為真下次移動仍會誤判
+            if ((event.buttons & 1) === 0) {
+                if (this.isPanning || this.isDraggingNode || this.isConnecting || this.isSelecting) {
+                    this.onDocMouseUp(event)
+                }
+                return
+            }
             if (this.isPanning) {
                 this.doPan(event)
             }
@@ -801,6 +813,13 @@ export default {
             else if (this.isSelecting) {
                 this.doSelection(event)
             }
+        },
+        onWindowBlur() {
+            //視窗失焦後不會再收到mouseup與keyup, 於此統一收尾避免狀態黏住
+            if (this.isPanning) {
+                this.endPan()
+            }
+            this.keysPressed = {}
         },
         onDocMouseUp(event) {
             if (this.isPanning) {
@@ -819,6 +838,8 @@ export default {
 
         // --- Pan ---
         startPan(event) {
+            //手動平移優先於程式動畫, 否則二者同時寫viewport而互相覆寫
+            this.cancelViewportAnimation()
             this.isPanning = true
             this.panStartPos = { x: event.clientX, y: event.clientY }
         },
@@ -1251,6 +1272,19 @@ export default {
         },
         emitViewportChange() {
             this.$emit('viewport-change', { ...this.viewport })
+        },
+        getViewport() {
+            //即時視口: viewport-change僅於手勢結束才發出, 平移途中呼叫端需要當下值時走此方法
+            //(呼叫端若以viewport-change快取之值為基準回寫setViewport, 會於平移途中以過期值覆寫使用者正在進行的平移)
+            let vp = this.viewport
+            return { x: vp.x, y: vp.y, zoom: vp.zoom }
+        },
+        cancelViewportAnimation() {
+            //取消進行中之視口動畫(panToNode), 否則動畫與手動手勢會同時寫入同一個viewport
+            if (this._panAnimId) {
+                cancelAnimationFrame(this._panAnimId)
+                this._panAnimId = null
+            }
         },
         emitSelectionChange() {
             this.$emit('selection-change', this.getSelectedElements())
