@@ -178,22 +178,40 @@ describe('Box Selection', () => {
         w.vm.doSelection({ clientX: 100, clientY: 100 })
         expect(w.vm.selectionBox).toEqual({ x: 100, y: 100, width: 200, height: 200 }); w.destroy()
     })
+    //endSelection 另有 selectionCrossedThreshold 守衛(原地按放之零面積框不提交選取), 故須一併設定
     test('endSelection selects nodes', () => {
         const w = createWrapper()
         w.vm.viewport = { x: 0, y: 0, zoom: 1 }
         w.vm.selectionBox = { x: 40, y: 40, width: 270, height: 160 }
+        w.vm.selectionCrossedThreshold = true
         w.vm.isSelecting = true; w.vm.endSelection()
         expect(w.vm.selectedNodes).toContain('1')
         expect(w.vm.selectedNodes).toContain('3')
         expect(w.vm.isSelecting).toBe(false); w.destroy()
     })
-    test('endSelection auto-selects conns', () => {
+    //規格已變更: 連線不參與框選複選(WFlowVue.vue:1259-1261 之設計註解 —— 連線為節點錨點/轉折點推得之衍生物,
+    //不視為可被複選之項目), 故框選一律清空 selectedConns 而非依兩端是否入框自動選取
+    test('endSelection 不選取連線(連線不參與框選複選)', () => {
         const w = createWrapper()
         w.vm.viewport = { x: 0, y: 0, zoom: 1 }
+        w.vm.setSelectedConns(['e1-3'])
         w.vm.selectionBox = { x: 40, y: 40, width: 270, height: 160 }
+        w.vm.selectionCrossedThreshold = true
         w.vm.isSelecting = true; w.vm.endSelection()
-        expect(w.vm.selectedConns).toContain('e1-3')
-        expect(w.vm.selectedConns).not.toContain('e3-2'); w.destroy()
+        //兩端皆入框之 e1-3 亦不得被選取, 且既有連線選取一併清空
+        expect(w.vm.selectedConns).toEqual([])
+        w.destroy()
+    })
+    test('endSelection 未跨門檻時不提交選取', () => {
+        const w = createWrapper()
+        w.vm.viewport = { x: 0, y: 0, zoom: 1 }
+        w.vm.setSelectedNodes(['2'])
+        w.vm.selectionBox = { x: 40, y: 40, width: 270, height: 160 }
+        w.vm.selectionCrossedThreshold = false
+        w.vm.isSelecting = true; w.vm.endSelection()
+        //零面積框不得取代既有選取
+        expect(w.vm.selectedNodes).toEqual(['2'])
+        w.destroy()
     })
     test('endSelection clears state', () => {
         const w = createWrapper()
@@ -326,13 +344,16 @@ describe('Multi-select', () => {
         expect(w.vm.selectedConns).toEqual(['e1-3'])
         w.destroy()
     })
-    test('shift+click adds conn to selection', () => {
+    //規格已變更: 連線不參與多選鍵之複選(WFlowVue.vue:1163-1167) —— 按住多選鍵點連線時
+    //不加入亦不移除任何選取, 但 conn-click 事件仍照常發出(宿主之檢視功能靠它同步)
+    test('多選鍵點連線: 不變更選取, 但仍發出 conn-click', () => {
         const w = createWrapper()
         w.vm.onConnClick({ conn: { id: 'e1-3' }, event: { clientX: 100, clientY: 100 } })
+        expect(w.vm.selectedConns).toEqual(['e1-3'])
         w.vm.keysPressed = { Shift: true }
         w.vm.onConnClick({ conn: { id: 'e3-2' }, event: { clientX: 100, clientY: 100 } })
-        expect(w.vm.selectedConns).toContain('e1-3')
-        expect(w.vm.selectedConns).toContain('e3-2')
+        expect(w.vm.selectedConns).toEqual(['e1-3'])
+        expect(w.emitted('conn-click')).toHaveLength(2)
         w.destroy()
     })
     test('multiSelectEnabled=false disables shift+click', () => {

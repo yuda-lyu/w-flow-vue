@@ -55,7 +55,8 @@
         <span class="vue-flow__edge-label-group">
           <WPopup
             v-if="hasInfoPopup"
-            v-model="infoPopupShow"
+            :value="infoPopupShow"
+            @input="onInfoPopupInput"
             placement="bottom"
             modeHide="mousedown"
             :editable="infoPopupEditable"
@@ -150,6 +151,8 @@ export default {
         sourceNode: { type: Object, default: null },
         targetNode: { type: Object, default: null },
         selected: { type: Boolean, default: false },
+        //多選鍵是否按下: 由WFlowVue下傳, 判準與NodeWrapper一致
+        multiSelectPressed: { type: Boolean, default: false },
         interactive: { type: Boolean, default: true },
         locked: { type: Boolean, default: false },
         settingsPopupBackgroundColor: { type: String, default: '#fff' },
@@ -357,8 +360,16 @@ export default {
             this.hovered = false
             this.$emit('conn-mouseleave', { conn: this.conn, event })
         },
+        //資訊popup之開關請求由本元件裁決, 判準與NodeWrapper一致(見其onInfoPopupInput之why)
+        onInfoPopupInput(val) {
+            if (val && this.multiSelectPressed) {
+                return
+            }
+            this.infoPopupShow = val
+        },
         onClick(event) {
-            if (this.hasInfoPopup) {
+            //連線之popup另有本地直接開啟路徑(非僅WPopup trigger), 故此處亦須擋
+            if (this.hasInfoPopup && !this.multiSelectPressed) {
                 this.infoPopupShow = true
             }
             this.$emit('conn-click', { conn: this.conn, event })

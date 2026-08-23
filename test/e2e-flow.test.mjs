@@ -650,7 +650,7 @@ const CASES = [
 
     mkCase('E2E-028', 'box-selection', async (page) => {
         await clickMenu(page, 'fitView')
-        //框住節點 5 / 6 / 7 → 其間之連線 e5-6 / e5-7 兩端皆入選, 依 spec 應一併呈選取態
+        //框住節點 5 / 6 / 7; 連線不參與框選複選(WFlowVue.vue:1259-1261), 故其間之 e5-6 / e5-7 不應被選取
         const bs = []
         for (const id of ['5', '6', '7']) bs.push(await nodeBox(page, id))
         const x0 = Math.min(...bs.map(b => b.x)) - 25
@@ -670,10 +670,9 @@ const CASES = [
         const sel = await getSelectedNodes(page)
         expectOk('E2E-028 框內節點被選取', sel.includes('5') && sel.includes('6') && sel.includes('7'), `selectedNodes=${JSON.stringify(sel)}`)
         expectOk('E2E-028 框外節點未被選取', !sel.includes('1'), `selectedNodes=${JSON.stringify(sel)}`)
-        //spec: 框內「連線」亦呈選取態(兩端節點皆入選之連線)
+        //spec: 連線為節點錨點/轉折點推得之衍生物, 不視為可被複選之項目, 故框選一律不選取連線
         const selConns = await evalVm(page, 'return vm.selectedConns.slice()')
-        expectOk('E2E-028 框內連線被選取', selConns.includes('e5-6') && selConns.includes('e5-7'), `selectedConns=${JSON.stringify(selConns)}`)
-        expectOk('E2E-028 框外連線未被選取', !selConns.includes('e1-2'), `selectedConns=${JSON.stringify(selConns)}`)
+        expectOk('E2E-028 框選不選取任何連線', selConns.length === 0, `selectedConns=${JSON.stringify(selConns)}`)
     }),
 
 ]
