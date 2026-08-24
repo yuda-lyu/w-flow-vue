@@ -29,7 +29,7 @@
 <nav >
     
     
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-WFlowVue.html">WFlowVue</a></li></ul><h3>Global</h3><ul><li><a href="global.html#NODE_DEFAULTS">NODE_DEFAULTS</a></li><li><a href="global.html#buildRoundedPath">buildRoundedPath</a></li><li><a href="global.html#clampPosition">clampPosition</a></li><li><a href="global.html#fixSvgNs">fixSvgNs</a></li><li><a href="global.html#generateId">generateId</a></li><li><a href="global.html#getBezierPath">getBezierPath</a></li><li><a href="global.html#getControlOffset">getControlOffset</a></li><li><a href="global.html#getDiamondEdgePoint">getDiamondEdgePoint</a></li><li><a href="global.html#getEllipseEdgePoint">getEllipseEdgePoint</a></li><li><a href="global.html#getHandlePosition">getHandlePosition</a></li><li><a href="global.html#getOverlappingNodes">getOverlappingNodes</a></li><li><a href="global.html#getSmoothStepPath">getSmoothStepPath</a></li><li><a href="global.html#getStepPath">getStepPath</a></li><li><a href="global.html#getStraightPath">getStraightPath</a></li><li><a href="global.html#getTriangleEdgePoint">getTriangleEdgePoint</a></li><li><a href="global.html#isValidConnection">isValidConnection</a></li><li><a href="global.html#labelAtHalfLength">labelAtHalfLength</a></li><li><a href="global.html#lookupRoute">lookupRoute</a></li><li><a href="global.html#normalizeConnPoints">normalizeConnPoints</a></li><li><a href="global.html#orthogonalizeThroughPoints">orthogonalizeThroughPoints</a></li><li><a href="global.html#pickMenuValue">pickMenuValue</a></li><li><a href="global.html#rectsOverlap">rectsOverlap</a></li><li><a href="global.html#segmentFallback">segmentFallback</a></li><li><a href="global.html#snapPosition">snapPosition</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-WFlowVue.html">WFlowVue</a></li></ul><h3>Global</h3><ul><li><a href="global.html#NODE_DEFAULTS">NODE_DEFAULTS</a></li><li><a href="global.html#SOURCE_FALLBACK">SOURCE_FALLBACK</a></li><li><a href="global.html#buildRoundedPath">buildRoundedPath</a></li><li><a href="global.html#clampPosition">clampPosition</a></li><li><a href="global.html#fixSvgNs">fixSvgNs</a></li><li><a href="global.html#generateId">generateId</a></li><li><a href="global.html#getBezierPath">getBezierPath</a></li><li><a href="global.html#getControlOffset">getControlOffset</a></li><li><a href="global.html#getDiamondEdgePoint">getDiamondEdgePoint</a></li><li><a href="global.html#getEllipseEdgePoint">getEllipseEdgePoint</a></li><li><a href="global.html#getHandlePosition">getHandlePosition</a></li><li><a href="global.html#getOverlappingNodes">getOverlappingNodes</a></li><li><a href="global.html#getSmoothStepPath">getSmoothStepPath</a></li><li><a href="global.html#getStepPath">getStepPath</a></li><li><a href="global.html#getStraightPath">getStraightPath</a></li><li><a href="global.html#getTriangleEdgePoint">getTriangleEdgePoint</a></li><li><a href="global.html#isValidConnection">isValidConnection</a></li><li><a href="global.html#labelAtHalfLength">labelAtHalfLength</a></li><li><a href="global.html#lookupRoute">lookupRoute</a></li><li><a href="global.html#nodeSameSide">nodeSameSide</a></li><li><a href="global.html#nodeSourceSide">nodeSourceSide</a></li><li><a href="global.html#nodeTargetSide">nodeTargetSide</a></li><li><a href="global.html#normalizeConnPoints">normalizeConnPoints</a></li><li><a href="global.html#orthogonalizeThroughPoints">orthogonalizeThroughPoints</a></li><li><a href="global.html#pickMenuValue">pickMenuValue</a></li><li><a href="global.html#rectsOverlap">rectsOverlap</a></li><li><a href="global.html#resolveSourceAnchor">resolveSourceAnchor</a></li><li><a href="global.html#resolveTargetAnchor">resolveTargetAnchor</a></li><li><a href="global.html#segmentFallback">segmentFallback</a></li><li><a href="global.html#snapPosition">snapPosition</a></li><li><a href="global.html#sourceHandleSides">sourceHandleSides</a></li><li><a href="global.html#targetHandleSides">targetHandleSides</a></li></ul>
     
 </nav>
 
@@ -181,6 +181,103 @@
 
 <div class="description usertext">
     <p>Default values for node and connection properties.</p>
+</div>
+
+
+
+
+
+
+
+
+        
+            
+<h4 class="name" id="SOURCE_FALLBACK"><span class="type-signature type-signature-constant">(constant) </span>SOURCE_FALLBACK<span class="type-signature"></span></h4>
+
+
+
+
+
+<dl class="details">
+    
+    <dt class="tag-description">Description:</dt>
+    <dd class="tag-description"><ul class="dummy"><li><p>錨點政策(anchor policy)—— 連接點方位語義之單一來源。</p>
+<p>語義分層(Auto/Fixed 中間介面):</p>
+<ul>
+<li>Fixed: conn 自帶 fromPosition/toPosition, 永遠優先(逐邊明確固定)。</li>
+<li>Auto:  conn 不帶該端方位, 動態跟隨 節點設定 → defNode 設定 → 內建預設。</li>
+</ul>
+<p>解析順序(正式契約):
+source 端: conn.fromPosition → sourceNode.toPosition → defNode.toPosition → 'bottom'
+target 端: conn.toPosition   → targetNode.fromPosition → defNode.fromPosition → 'top'</p>
+<p>why 單一來源: 此規則先前散落於 EdgeWrapper / DefaultNode / InputNode / OutputNode / geometry
+五處且彼此不一致(EdgeWrapper 漏看 defNode, 造成 defNodeToPosition 設定下「把手畫在 right、
+邊卻從 bottom 出發」之分家), 規則一變要改五處, 漏一處即為下一個隱性 bug。</p>
+<p>why Auto/Fixed 以「把手綁定」宣告而非「方位比較」推測: 方位相等是結果不是意圖——
+使用者可能明確選了恰好等於預設的方位; 且既有邊全為 Fixed 時預設把手可能不在畫面上,
+「唯一把手=預設」之假設不成立。故由把手自身宣告 binding(預設把手=auto, 逐邊固定把手=fixed),
+建線持久化只看 binding。</p></li></ul></dd>
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="js_anchorPolicy.mjs.html">js/anchorPolicy.mjs</a>, <a href="js_anchorPolicy.mjs.html#line22">line 22</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+<div class="description usertext">
+    <p>錨點政策(anchor policy)—— 連接點方位語義之單一來源。</p>
+<p>語義分層(Auto/Fixed 中間介面):</p>
+<ul>
+<li>Fixed: conn 自帶 fromPosition/toPosition, 永遠優先(逐邊明確固定)。</li>
+<li>Auto:  conn 不帶該端方位, 動態跟隨 節點設定 → defNode 設定 → 內建預設。</li>
+</ul>
+<p>解析順序(正式契約):
+source 端: conn.fromPosition → sourceNode.toPosition → defNode.toPosition → 'bottom'
+target 端: conn.toPosition   → targetNode.fromPosition → defNode.fromPosition → 'top'</p>
+<p>why 單一來源: 此規則先前散落於 EdgeWrapper / DefaultNode / InputNode / OutputNode / geometry
+五處且彼此不一致(EdgeWrapper 漏看 defNode, 造成 defNodeToPosition 設定下「把手畫在 right、
+邊卻從 bottom 出發」之分家), 規則一變要改五處, 漏一處即為下一個隱性 bug。</p>
+<p>why Auto/Fixed 以「把手綁定」宣告而非「方位比較」推測: 方位相等是結果不是意圖——
+使用者可能明確選了恰好等於預設的方位; 且既有邊全為 Fixed 時預設把手可能不在畫面上,
+「唯一把手=預設」之假設不成立。故由把手自身宣告 binding(預設把手=auto, 逐邊固定把手=fixed),
+建線持久化只看 binding。</p>
 </div>
 
 
@@ -402,7 +499,7 @@ HTML元素因而無排版盒(0x0不可見)。</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="js_geometry.mjs.html">js/geometry.mjs</a>, <a href="js_geometry.mjs.html#line207">line 207</a>
+        <a href="js_geometry.mjs.html">js/geometry.mjs</a>, <a href="js_geometry.mjs.html#line210">line 210</a>
     </li></ul></dd>
     
 
@@ -763,7 +860,7 @@ ratio &lt; 0.5: on the first edge, ratio &gt;= 0.5: on the second edge.</p></li>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="js_geometry.mjs.html">js/geometry.mjs</a>, <a href="js_geometry.mjs.html#line51">line 51</a>
+        <a href="js_geometry.mjs.html">js/geometry.mjs</a>, <a href="js_geometry.mjs.html#line54">line 54</a>
     </li></ul></dd>
     
 
@@ -849,7 +946,7 @@ Maps ratio (0..1) to a parametric angle based on the side.</p></li></ul></dd>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="js_geometry.mjs.html">js/geometry.mjs</a>, <a href="js_geometry.mjs.html#line101">line 101</a>
+        <a href="js_geometry.mjs.html">js/geometry.mjs</a>, <a href="js_geometry.mjs.html#line104">line 104</a>
     </li></ul></dd>
     
 
@@ -918,7 +1015,7 @@ Maps ratio (0..1) to a parametric angle based on the side.</p></li></ul></dd>
 
     
 
-    <h4 class="name" id="getHandlePosition"><span class="type-signature"></span>getHandlePosition<span class="signature">()</span><span class="type-signature"></span></h4>
+    <h4 class="name" id="getHandlePosition"><span class="type-signature"></span>getHandlePosition<span class="signature">(defNode<span class="signature-attributes">opt</span>)</span><span class="type-signature"></span></h4>
 
     
 
@@ -934,7 +1031,7 @@ Maps ratio (0..1) to a parametric angle based on the side.</p></li></ul></dd>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="js_geometry.mjs.html">js/geometry.mjs</a>, <a href="js_geometry.mjs.html#line4">line 4</a>
+        <a href="js_geometry.mjs.html">js/geometry.mjs</a>, <a href="js_geometry.mjs.html#line8">line 8</a>
     </li></ul></dd>
     
 
@@ -979,6 +1076,69 @@ Maps ratio (0..1) to a parametric angle based on the side.</p></li></ul></dd>
 
 
 
+
+
+    <h5 class="h5-parameters">Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+        <th>Attributes</th>
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>defNode</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Object</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"><p>節點層級預設(opt.defNode*); same-side 判定併入 defNode 層,
+與把手/邊之錨點解析(anchorPolicy)同一基準</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
 
 
 
@@ -1019,7 +1179,7 @@ Maps ratio (0..1) to a parametric angle based on the side.</p></li></ul></dd>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="js_geometry.mjs.html">js/geometry.mjs</a>, <a href="js_geometry.mjs.html#line177">line 177</a>
+        <a href="js_geometry.mjs.html">js/geometry.mjs</a>, <a href="js_geometry.mjs.html#line180">line 180</a>
     </li></ul></dd>
     
 
@@ -1417,7 +1577,7 @@ Supports 4 directions: triangle (up), triangle-right, triangle-down, triangle-le
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="js_geometry.mjs.html">js/geometry.mjs</a>, <a href="js_geometry.mjs.html#line131">line 131</a>
+        <a href="js_geometry.mjs.html">js/geometry.mjs</a>, <a href="js_geometry.mjs.html#line134">line 134</a>
     </li></ul></dd>
     
 
@@ -1675,6 +1835,262 @@ Returns waypoint array or null (fallback needed).</p></li></ul></dd>
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
         <a href="js_stepRouting.mjs.html">js/stepRouting.mjs</a>, <a href="js_stepRouting.mjs.html#line96">line 96</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="nodeSameSide"><span class="type-signature"></span>nodeSameSide<span class="signature">()</span><span class="type-signature"></span></h4>
+
+    
+
+
+
+
+<dl class="details">
+    
+    <dt class="tag-description">Description:</dt>
+    <dd class="tag-description"><ul class="dummy"><li><p>basic 節點之出入點是否落在同一側(供 geometry 之 same-side 錯開佈局)。
+併入 defNode 層, 與把手/邊解析同一基準(修正先前 geometry 只看 node 層之不一致)。</p></li></ul></dd>
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="js_anchorPolicy.mjs.html">js/anchorPolicy.mjs</a>, <a href="js_anchorPolicy.mjs.html#line117">line 117</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="nodeSourceSide"><span class="type-signature"></span>nodeSourceSide<span class="signature">()</span><span class="type-signature"></span></h4>
+
+    
+
+
+
+
+<dl class="details">
+    
+    <dt class="tag-description">Description:</dt>
+    <dd class="tag-description"><ul class="dummy"><li><p>節點之有效 source 方位(Auto 邊之出發側; 不含 conn 層)</p></li></ul></dd>
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="js_anchorPolicy.mjs.html">js/anchorPolicy.mjs</a>, <a href="js_anchorPolicy.mjs.html#line26">line 26</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="nodeTargetSide"><span class="type-signature"></span>nodeTargetSide<span class="signature">()</span><span class="type-signature"></span></h4>
+
+    
+
+
+
+
+<dl class="details">
+    
+    <dt class="tag-description">Description:</dt>
+    <dd class="tag-description"><ul class="dummy"><li><p>節點之有效 target 方位(Auto 邊之進入側; 不含 conn 層)</p></li></ul></dd>
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="js_anchorPolicy.mjs.html">js/anchorPolicy.mjs</a>, <a href="js_anchorPolicy.mjs.html#line33">line 33</a>
     </li></ul></dd>
     
 
@@ -2022,7 +2438,7 @@ Inserts at most one corner between consecutive points; skips zero-length segment
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="js_geometry.mjs.html">js/geometry.mjs</a>, <a href="js_geometry.mjs.html#line195">line 195</a>
+        <a href="js_geometry.mjs.html">js/geometry.mjs</a>, <a href="js_geometry.mjs.html#line198">line 198</a>
     </li></ul></dd>
     
 
@@ -2083,6 +2499,214 @@ Inserts at most one corner between consecutive points; skips zero-length segment
 
 
 
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="resolveSourceAnchor"><span class="type-signature"></span>resolveSourceAnchor<span class="signature">()</span><span class="type-signature"> &rarr; {Object}</span></h4>
+
+    
+
+
+
+
+<dl class="details">
+    
+    <dt class="tag-description">Description:</dt>
+    <dd class="tag-description"><ul class="dummy"><li><p>解析一條邊之 source 端錨點。</p></li></ul></dd>
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="js_anchorPolicy.mjs.html">js/anchorPolicy.mjs</a>, <a href="js_anchorPolicy.mjs.html#line43">line 43</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5 class="h5-returns">Returns:</h5>
+
+        
+
+
+<dl class="param-type">
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Object</span>
+
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="resolveTargetAnchor"><span class="type-signature"></span>resolveTargetAnchor<span class="signature">()</span><span class="type-signature"> &rarr; {Object}</span></h4>
+
+    
+
+
+
+
+<dl class="details">
+    
+    <dt class="tag-description">Description:</dt>
+    <dd class="tag-description"><ul class="dummy"><li><p>解析一條邊之 target 端錨點。</p></li></ul></dd>
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="js_anchorPolicy.mjs.html">js/anchorPolicy.mjs</a>, <a href="js_anchorPolicy.mjs.html#line63">line 63</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5 class="h5-returns">Returns:</h5>
+
+        
+
+
+<dl class="param-type">
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Object</span>
+
+
+
+    </dd>
+</dl>
+
+    
 
 
 
@@ -2193,7 +2817,7 @@ Used when nodes are too close for OrthConnector (tooShort).</p></li></ul></dd>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="js_geometry.mjs.html">js/geometry.mjs</a>, <a href="js_geometry.mjs.html#line220">line 220</a>
+        <a href="js_geometry.mjs.html">js/geometry.mjs</a>, <a href="js_geometry.mjs.html#line223">line 223</a>
     </li></ul></dd>
     
 
@@ -2335,6 +2959,198 @@ Used when nodes are too close for OrthConnector (tooShort).</p></li></ul></dd>
 
 
         
+            
+
+    
+
+    <h4 class="name" id="sourceHandleSides"><span class="type-signature"></span>sourceHandleSides<span class="signature">()</span><span class="type-signature"> &rarr; {Array.&lt;{side: string, binding: ('auto'|'fixed')}>}</span></h4>
+
+    
+
+
+
+
+<dl class="details">
+    
+    <dt class="tag-description">Description:</dt>
+    <dd class="tag-description"><ul class="dummy"><li><p>節點應顯示之 source 把手集合。
+規則: 預設 Auto 把手永遠存在且排最前(否則既有邊全為 Fixed 時, 使用者無把手可拉 Auto 邊);
+各出邊之 Fixed 錨點(≠預設側)為附加之 fixed 把手;
+Fixed 錨點恰為預設側時共用同一把手(視覺同位, 新拖出的邊仍為 Auto)。</p></li></ul></dd>
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="js_anchorPolicy.mjs.html">js/anchorPolicy.mjs</a>, <a href="js_anchorPolicy.mjs.html#line86">line 86</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5 class="h5-returns">Returns:</h5>
+
+        
+
+
+<dl class="param-type">
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Array.&lt;{side: string, binding: ('auto'|'fixed')}></span>
+
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="targetHandleSides"><span class="type-signature"></span>targetHandleSides<span class="signature">()</span><span class="type-signature"></span></h4>
+
+    
+
+
+
+
+<dl class="details">
+    
+    <dt class="tag-description">Description:</dt>
+    <dd class="tag-description"><ul class="dummy"><li><p>節點應顯示之 target 把手集合(規則對稱 sourceHandleSides)</p></li></ul></dd>
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="js_anchorPolicy.mjs.html">js/anchorPolicy.mjs</a>, <a href="js_anchorPolicy.mjs.html#line100">line 100</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
     
 
     
@@ -2354,7 +3170,7 @@ Used when nodes are too close for OrthConnector (tooShort).</p></li></ul></dd>
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 4.0.5</a> on Mon Aug 24 2026 19:27:28 GMT+0800 (台北標準時間) using the <a href="https://github.com/clenemt/docdash">docdash</a> theme.
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 4.0.5</a> on Mon Aug 24 2026 22:11:21 GMT+0800 (台北標準時間) using the <a href="https://github.com/clenemt/docdash">docdash</a> theme.
 </footer>
 
 <script>prettyPrint();</script>
