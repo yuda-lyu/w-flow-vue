@@ -316,6 +316,9 @@ const CASES = [
         //對宿主發出的是 update:nodes(node-resize-end 僅為 NodeRenderer→WFlowVue 之內部事件, 見 WFlowVue.onNodeResizeEnd)
         const ev = await emitted(page)
         expectOk('E2E-006 發出 update:nodes', ev.includes('update:nodes'), `events=${JSON.stringify(ev)}`)
+        //spec: 縮放為元素專屬操作, 該節點成為唯一選取(active)
+        const sel6 = await getSelectedNodes(page)
+        expectOk('E2E-006 縮放後該節點為唯一選取', sel6.length === 1 && sel6[0] === '1', `selectedNodes=${JSON.stringify(sel6)}`)
         const b2 = await nodeBox(page, '1')
         await shot(page, 'flow-E2E-006-node-resized', { clip: clipAround(b2, PAD) })
     }),
@@ -388,6 +391,9 @@ const CASES = [
         expectOk('E2E-011 節點座標不變',
             after.position.x === before.position.x && after.position.y === before.position.y,
             `before=${JSON.stringify(before.position)} after=${JSON.stringify(after.position)}`)
+        //spec: 點齒輪=元素專屬操作, 該節點成為唯一選取(active)
+        const sel11 = await getSelectedNodes(page)
+        expectOk('E2E-011 點齒輪後該節點為唯一選取', sel11.length === 1 && sel11[0] === '1', `selectedNodes=${JSON.stringify(sel11)}`)
         await shot(page, 'flow-E2E-011-node-settings-form', { parkMouse: false })
     }),
 
@@ -673,6 +679,68 @@ const CASES = [
         //spec: 連線為節點錨點/轉折點推得之衍生物, 不視為可被複選之項目, 故框選一律不選取連線
         const selConns = await evalVm(page, 'return vm.selectedConns.slice()')
         expectOk('E2E-028 框選不選取任何連線', selConns.length === 0, `selectedConns=${JSON.stringify(selConns)}`)
+    }),
+
+    //E2E-029/030 共用前置(setup 階段, 未走 UI): 注入宿主環境 CSS(user-select:text)與 dragstart/選取偵測器。
+    //why: 症狀來自宿主端把節點文字設為可選; 本 demo 無此 CSS, 以 addStyleTag 重現宿主環境屬環境準備非 act。
+    mkCase('E2E-029', 'textdrag-preselected', async (page) => {
+        await page.addStyleTag({ content: '.vue-flow__node, .vue-flow__node * { user-select: text !important; -webkit-user-select: text !important; }' })
+        await page.evaluate(() => {
+            window.__dragstart = 0
+            document.addEventListener('dragstart', () => { window.__dragstart++ }, true)
+        })
+        //setup(未走 UI): 以 Range 預先選取節點 1 之 label 文字, 模擬「先前互動殘留之選取」——
+        //修正後拖曳不再形成選取(E2E-030), 故此前置無法以真 UI 產生, 只能程式化建立最壞情境
+        await page.evaluate(() => {
+            const el = document.querySelector('.vue-flow__node[data-id="1"] .vue-flow__node-label')
+            const r = document.createRange()
+            r.selectNodeContents(el)
+            const sel = window.getSelection()
+            sel.removeAllRanges()
+            sel.addRange(r)
+        })
+        const before = await getNode(page, '1')
+        const lb = await (await page.$('.vue-flow__node[data-id="1"] .vue-flow__node-label')).boundingBox()
+        //act(真滑鼠): 自選取文字中心按下並拖曳
+        await page.mouse.move(lb.x + lb.width / 2, lb.y + lb.height / 2)
+        await page.mouse.down()
+        await page.mouse.move(lb.x + lb.width / 2 + 80, lb.y + lb.height / 2 + 60, { steps: 10 })
+        await page.mouse.up()
+        await page.waitForTimeout(400)
+        const after = await getNode(page, '1')
+        //spec: 節點照常移動至目標位置(修正前僅移 8px 即凍結)
+        expectOk('E2E-029 節點照常移動(位移=拖曳量)',
+            after.position.x === before.position.x + 80 && after.position.y === before.position.y + 60,
+            `before=${JSON.stringify(before.position)} after=${JSON.stringify(after.position)}`)
+        //spec: 原生文字層 drag 不得接管
+        const ds = await page.evaluate(() => window.__dragstart)
+        expectOk('E2E-029 原生 dragstart 未觸發', ds === 0, `dragstart=${ds}`)
+        await page.mouse.move(0, 0)
+        const b2 = await nodeBox(page, '1')
+        await shot(page, 'flow-E2E-029-textdrag-preselected', { clip: clipAround(b2, PAD) })
+    }),
+
+    mkCase('E2E-030', 'textdrag-no-selection-forms', async (page) => {
+        await page.addStyleTag({ content: '.vue-flow__node, .vue-flow__node * { user-select: text !important; -webkit-user-select: text !important; }' })
+        const before = await getNode(page, '1')
+        const lb = await (await page.$('.vue-flow__node[data-id="1"] .vue-flow__node-label')).boundingBox()
+        //act(真滑鼠): 無既有選取, 自文字中心按下並拖曳
+        await page.mouse.move(lb.x + lb.width / 2, lb.y + lb.height / 2)
+        await page.mouse.down()
+        await page.mouse.move(lb.x + lb.width / 2 + 80, lb.y + lb.height / 2 + 60, { steps: 10 })
+        await page.mouse.up()
+        await page.waitForTimeout(400)
+        const after = await getNode(page, '1')
+        //spec: 節點照常移動
+        expectOk('E2E-030 節點照常移動(位移=拖曳量)',
+            after.position.x === before.position.x + 80 && after.position.y === before.position.y + 60,
+            `before=${JSON.stringify(before.position)} after=${JSON.stringify(after.position)}`)
+        //spec: 拖曳過程不形成文字選取(殘留選取=下一次拖曳觸發 E2E-029 病徵之來源)
+        const selText = await page.evaluate(() => String(window.getSelection()))
+        expectOk('E2E-030 拖曳不形成文字選取', selText === '', `selection="${selText.slice(0, 30)}"`)
+        await page.mouse.move(0, 0)
+        const b2 = await nodeBox(page, '1')
+        await shot(page, 'flow-E2E-030-textdrag-no-selection-forms', { clip: clipAround(b2, PAD) })
     }),
 
 ]

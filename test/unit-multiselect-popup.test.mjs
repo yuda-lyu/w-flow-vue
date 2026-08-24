@@ -7,8 +7,9 @@
  * - 以 WPopup 之 :value + @input 取代 v-model, 於 handler 攔截開啟請求;
  *   WPopup 非 isolated 時 trigger 只 $emit 請求, 實際開啟權在 v-model 擁有者。
  * - 不可改用 editable 抑制: editable 會連 evHide 與外部點擊關閉一併擋掉, 使已開之 popup 關不掉。
- * - 多選鍵狀態由 WFlowVue 之 isMultiSelectPressed 下傳, 不於子元件讀 event.shiftKey,
- *   否則宿主改 opt.multiSelectionKeyCode 後兩處判準會分岔。
+ * - 多選鍵狀態由 WFlowVue 以 getMultiSelectActive getter 注入(inject), 不於子元件讀 event.shiftKey,
+ *   否則宿主改 opt.multiSelectionKeyCode 後兩處判準會分岔;
+ *   用 getter 而非 prop——此值只影響行為不影響渲染輸出, prop 會使按/放複選鍵時全部 wrapper 白重渲染一輪。
  */
 import { mount } from '@vue/test-utils'
 import WFlowVue from '../src/components/WFlowVue.vue'
@@ -62,7 +63,7 @@ describe('節點資訊 popup 之多選抑制', () => {
         const w = createWrapper()
         await pressMultiSelect(w, true)
         const nw = nodeWrapperOf(w, '1')
-        expect(nw.vm.multiSelectPressed).toBe(true)
+        expect(nw.vm.getMultiSelectActive()).toBe(true)
         popupRequest(nw, true)
         expect(nw.vm.infoPopupShow).toBe(false)
         w.destroy()
@@ -95,7 +96,7 @@ describe('節點資訊 popup 之多選抑制', () => {
         popupRequest(nw, true)
         expect(nw.vm.infoPopupShow).toBe(false)
         await pressMultiSelect(w, false)
-        expect(nw.vm.multiSelectPressed).toBe(false)
+        expect(nw.vm.getMultiSelectActive()).toBe(false)
         popupRequest(nw, true)
         expect(nw.vm.infoPopupShow).toBe(true)
         w.destroy()
@@ -149,7 +150,7 @@ describe('多選鍵判準來自 opt, 不寫死 Shift', () => {
         //按 Shift 不應觸發抑制(判準已改為 Control)
         w.vm.keysPressed = { Shift: true }
         await w.vm.$nextTick()
-        expect(nw.vm.multiSelectPressed).toBe(false)
+        expect(nw.vm.getMultiSelectActive()).toBe(false)
         popupRequest(nw, true)
         expect(nw.vm.infoPopupShow).toBe(true)
 
@@ -157,7 +158,7 @@ describe('多選鍵判準來自 opt, 不寫死 Shift', () => {
         popupRequest(nw, false)
         w.vm.keysPressed = { Control: true }
         await w.vm.$nextTick()
-        expect(nw.vm.multiSelectPressed).toBe(true)
+        expect(nw.vm.getMultiSelectActive()).toBe(true)
         popupRequest(nw, true)
         expect(nw.vm.infoPopupShow).toBe(false)
         w.destroy()
@@ -167,7 +168,7 @@ describe('多選鍵判準來自 opt, 不寫死 Shift', () => {
         const w = createWrapper({ multiSelectEnabled: false })
         await pressMultiSelect(w, true)
         const nw = nodeWrapperOf(w, '1')
-        expect(nw.vm.multiSelectPressed).toBe(false)
+        expect(nw.vm.getMultiSelectActive()).toBe(false)
         popupRequest(nw, true)
         expect(nw.vm.infoPopupShow).toBe(true)
         w.destroy()

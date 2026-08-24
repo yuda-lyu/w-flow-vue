@@ -17,24 +17,24 @@ const pathFunctions = {
 export default {
     name: 'ConnectionLine',
     props: {
-        active: { type: Boolean, default: false },
-        sourceX: { type: Number, default: 0 },
-        sourceY: { type: Number, default: 0 },
-        sourcePosition: { type: String, default: 'bottom' },
-        targetX: { type: Number, default: 0 },
-        targetY: { type: Number, default: 0 },
+        //建線視覺狀態容器(WFlowVue之connectionVisual, 容器identity穩定): 本元件自行依賴其欄位,
+        //拉線每步只有本元件重渲染, WFlowVue主模板不因每幀更新而重渲染(細粒度模式, 同SelectionBox)
+        state: { type: Object, required: true }, // { active, fromX, fromY, fromPosition, toX, toY }
         type: { type: String, default: 'bezier' },
         lineStyle: { type: Object, default: null },
     },
     computed: {
+        active() {
+            return this.state.active
+        },
         pathD() {
             const fn = pathFunctions[this.type] || pathFunctions.bezier
             const result = fn({
-                sourceX: this.sourceX,
-                sourceY: this.sourceY,
-                sourcePosition: this.sourcePosition,
-                targetX: this.targetX,
-                targetY: this.targetY,
+                sourceX: this.state.fromX,
+                sourceY: this.state.fromY,
+                sourcePosition: this.state.fromPosition,
+                targetX: this.state.toX,
+                targetY: this.state.toY,
                 targetPosition: 'top',
             })
             return result.path

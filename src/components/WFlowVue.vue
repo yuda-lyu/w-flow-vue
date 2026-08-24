@@ -29,7 +29,7 @@
         :nodes="nodes"
         :node-internals="nodeInternals"
         :selected-conn-ids="selectedConns"
-        :multi-select-active="isMultiSelectActive"
+        :popup-slot-fn="$scopedSlots['conn-popup'] || null"
         :interactive="elementsSelectable"
         :locked="locked"
         :settings-popup-background-color="settingsPopupBackgroundColor"
@@ -50,18 +50,15 @@
         @conn-settings-click="onConnSettingsClick"
         @conn-settings-update="onConnSettingsUpdate"
         @conn-settings-delete="onConnSettingsDelete"
-      >
-        <template v-if="$scopedSlots['conn-popup']" v-slot:conn-popup="scope">
-          <slot name="conn-popup" v-bind="scope" />
-        </template>
-      </EdgeRenderer>
+        @conn-activate="onConnActivate"
+      />
 
       <NodeRenderer
         ref="nodeRenderer"
         :nodes="nodes"
         :selected-node-ids="selectedNodes"
         :dragging-node-map="isDraggingNode ? dragNodeStartPositions : null"
-        :multi-select-active="isMultiSelectActive"
+        :popup-slot-fn="$scopedSlots['node-popup'] || null"
         :nodes-draggable="nodesDraggable"
         :nodes-connectable="nodesConnectable"
         :locked="locked"
@@ -91,19 +88,11 @@
         @dimensions="onNodeDimensions"
         @node-resize="onNodeResize"
         @node-resize-end="onNodeResizeEnd"
-      >
-        <template v-if="$scopedSlots['node-popup']" v-slot:node-popup="scope">
-          <slot name="node-popup" v-bind="scope" />
-        </template>
-      </NodeRenderer>
+        @node-activate="onNodeActivate"
+      />
 
       <ConnectionLine
-        :active="isConnecting"
-        :source-x="connLineFromX"
-        :source-y="connLineFromY"
-        :source-position="connLineFromPosition"
-        :target-x="connLineToX"
-        :target-y="connLineToY"
+        :state="connectionVisual"
         :type="defConnCreatingType"
         :line-style="defConnCreatingStyle"
       />
@@ -111,7 +100,7 @@
       <slot name="viewport-overlay" />
     </ViewportTransform>
 
-    <SelectionBox :box="selectionBox" />
+    <SelectionBox :state="selectionVisual" />
 
     <Controls
       :locked="locked"
@@ -178,6 +167,12 @@ import { NODE_DEFAULTS, CONN_DEFAULTS } from '../js/defaults'
  * @prop {Array}    [opt.panLimits=null]                  Pan limits [[minX,minY],[maxX,maxY]]
  * @prop {boolean}  [opt.snapToGrid=false]                Snap node positions to grid
  * @prop {number}   [opt.snapGridSize=20]                  Grid cell size (px, used for both drag snap and resize snap)
+ *
+ * Node-surface input contract: dragging on a node moves the node — text selection and native
+ * HTML5 drag are suppressed there (a formed selection would let the browser's text-layer drag
+ * take over the gesture and freeze the node). Interactive elements (input/textarea/select/button/
+ * a[href]/label/contenteditable) and any region marked with the `vue-flow__nodrag` class opt out:
+ * native behavior (focus/click/text selection) is preserved and node dragging never starts there.
  *
  * ─── Platform ────────────────────────────────────────────────────────
  * @prop {string}   [opt.platformBackgroundPatternType='dots']        Background pattern: 'dots' | 'lines' | 'cross'
@@ -296,6 +291,9 @@ export default {
             getDragGhost: (id) => {
                 return this.dragPositions[id] || null
             },
+            //複選鍵是否生效(行為判準, 非渲染狀態): 供Node/EdgeWrapper之事件handler呼叫;
+            //以getter注入而非prop下傳——此值只影響行為不影響渲染輸出, prop形式會使按/放複選鍵時全部wrapper白重渲染一輪
+            getMultiSelectActive: () => this.isMultiSelectActive,
         }
     },
     data() {
@@ -310,7 +308,9 @@ export default {
             selectedConns: [],
 
             // UI state
-            selectionBox: null,
+            //框選視覺狀態容器: 容器本身永不替換, 只改box欄位——主模板只讀容器參照,
+            //SelectionBox自行依賴box, 拉框每步僅該元件重渲染, WFlowVue不重渲染(與dragPositions同一細粒度模式)
+            selectionVisual: { box: null },
             selectionCrossedThreshold: false,
             nodeInternals: {},
 
@@ -332,13 +332,17 @@ export default {
             panStartPos: null,
 
             // Connection state
-            isConnecting: false,
+            //建線視覺狀態容器: 同selectionVisual之細粒度模式, active兼作邏輯旗標(單一事實來源,
+            //經computed isConnecting供既有守衛/測試讀取); 欄位全數預宣告, 只改欄位不換容器
+            connectionVisual: {
+                active: false,
+                fromX: 0,
+                fromY: 0,
+                fromPosition: 'bottom',
+                toX: 0,
+                toY: 0,
+            },
             connectingFrom: null,
-            connLineFromX: 0,
-            connLineFromY: 0,
-            connLineFromPosition: 'bottom',
-            connLineToX: 0,
-            connLineToY: 0,
 
             // Selection state
             isSelecting: false,
@@ -655,6 +659,11 @@ export default {
         isMultiSelectActive() {
             return this.multiSelectEnabled && !this.locked && !!this.keysPressed[this.multiSelectionKeyCode]
         },
+        //建線進行中旗標: 單一事實來源為connectionVisual.active(渲染由ConnectionLine細粒度讀取);
+        //此computed供既有守衛與外部測試以原名讀取, 不建立主模板渲染依賴
+        isConnecting() {
+            return this.connectionVisual.active
+        },
     },
     methods: {
     // --- Helpers (replace store methods) ---
@@ -716,12 +725,19 @@ export default {
 
         // --- Key handling ---
         onKeyDown(e) {
-            this.keysPressed = { ...this.keysPressed, [e.key]: true }
+            //key-repeat不重建keysPressed: 按住修飾鍵時OS以repeat連發keydown(Windows之Shift亦repeat),
+            //每次重建物件會使依賴它之computed失效而重渲染(實測80節點+90邊場景, 20次repeat=全樹渲染20輪);
+            //僅首次按下才更新物件; 不early return——Delete長按之連刪語義須保留
+            if (!this.keysPressed[e.key]) {
+                this.keysPressed = { ...this.keysPressed, [e.key]: true }
+            }
             if (!this.locked && this.deleteKeyEnabled && (e.key === this.deleteKeyCode || e.key === 'Delete')) {
                 this.deleteSelectedElements()
             }
         },
         onKeyUp(e) {
+            //無此鍵即不重建(如視窗外按下回到視窗才放開), 避免多餘之全樹渲染
+            if (!(e.key in this.keysPressed)) return
             const copy = { ...this.keysPressed }
             delete copy[e.key]
             this.keysPressed = copy
@@ -1037,7 +1053,7 @@ export default {
             const node = this.nodeById(payload.nodeId)
             if (!node) return
 
-            this.isConnecting = true
+            this.connectionVisual.active = true
             this.connectingFrom = payload
             // Lock cursor to default during connecting, only handles show crosshair
             this._connectCursorStyle = document.createElement('style')
@@ -1048,11 +1064,11 @@ export default {
                 node, payload.handlePosition,
                 this.nodeInternals[payload.nodeId] || {}
             )
-            this.connLineFromX = pos.x
-            this.connLineFromY = pos.y
-            this.connLineFromPosition = payload.handlePosition
-            this.connLineToX = pos.x
-            this.connLineToY = pos.y
+            this.connectionVisual.fromX = pos.x
+            this.connectionVisual.fromY = pos.y
+            this.connectionVisual.fromPosition = payload.handlePosition
+            this.connectionVisual.toX = pos.x
+            this.connectionVisual.toY = pos.y
 
             this.$emit('connect-start', {
                 nodeId: payload.nodeId,
@@ -1064,8 +1080,8 @@ export default {
             const rect = this.$refs.canvas.getContainerRect()
             if (!rect) return
             const vp = this.viewport
-            this.connLineToX = (event.clientX - rect.left - vp.x) / vp.zoom
-            this.connLineToY = (event.clientY - rect.top - vp.y) / vp.zoom
+            this.connectionVisual.toX = (event.clientX - rect.left - vp.x) / vp.zoom
+            this.connectionVisual.toY = (event.clientY - rect.top - vp.y) / vp.zoom
         },
         endConnect(event) {
             // Find handle element under cursor
@@ -1108,7 +1124,7 @@ export default {
             }
 
             this.$emit('connect-end', event)
-            this.isConnecting = false
+            this.connectionVisual.active = false
             this.connectingFrom = null
             this.removeConnectCursorStyle()
         },
@@ -1124,7 +1140,7 @@ export default {
         //交由endConnect會以錯誤座標做drop hit-test; 仍發connect-end使宿主能收尾自身UI(與endDrag於失焦時照發node-drag-stop同理)
         cancelConnect(event) {
             if (!this.isConnecting) return
-            this.isConnecting = false
+            this.connectionVisual.active = false
             this.connectingFrom = null
             this.removeConnectCursorStyle()
             this.$emit('connect-end', event)
@@ -1238,6 +1254,27 @@ export default {
             this.$emit('conn-settings-delete', { conn })
         },
 
+        // --- Activate(單元素active轉移) ---
+        //齒輪/縮放把手等「元素專屬操作」使該元素成為唯一選取(active)
+        //why: 此類操作之作用對象只有該元素, 不沿用拖曳之「已選不塌陷」——沿用會使視覺選取(A+B)與
+        //     實際作用對象(B)不一致, 且已在集合內時不發事件, 宿主據以同步之外部清單將停留在舊項目;
+        //     按住多選鍵時控制項語義優先, 仍單選不做toggle
+        onNodeActivate({ node }) {
+            if (!this.elementsSelectable) return
+            //已是唯一選取即不重發: 重複點同一齒輪不應連發selection-change
+            if (this.selectedNodes.length === 1 && this.selectedNodes[0] === node.id && this.selectedConns.length === 0) return
+            this.setSelectedNodes([node.id])
+            this.setSelectedConns([])
+            this.emitSelectionChange()
+        },
+        onConnActivate({ conn }) {
+            if (!this.elementsSelectable) return
+            if (this.selectedConns.length === 1 && this.selectedConns[0] === conn.id && this.selectedNodes.length === 0) return
+            this.setSelectedConns([conn.id])
+            this.setSelectedNodes([])
+            this.emitSelectionChange()
+        },
+
         startSelection(event) {
             const rect = this.$refs.canvas.getContainerRect()
             if (!rect) return //rect取不到即不進入框選態, 否則留下isSelecting為真之殘留狀態
@@ -1247,7 +1284,7 @@ export default {
                 x: event.clientX - rect.left,
                 y: event.clientY - rect.top,
             }
-            this.selectionBox = {
+            this.selectionVisual.box = {
                 x: this.selectionStartPos.x,
                 y: this.selectionStartPos.y,
                 width: 0,
@@ -1267,20 +1304,20 @@ export default {
             }
             const x = Math.min(this.selectionStartPos.x, currentX)
             const y = Math.min(this.selectionStartPos.y, currentY)
-            this.selectionBox = { x, y, width, height }
+            this.selectionVisual.box = { x, y, width, height }
         },
         //只清框選手勢狀態, 不提交選取(供視窗失焦與未跨門檻之收尾)
         cancelSelection() {
             this.isSelecting = false
             this.selectionStartPos = null
-            this.selectionBox = null
+            this.selectionVisual.box = null
             this.selectionCrossedThreshold = false
         },
         endSelection() {
             //未跨門檻(原地按放)不提交選取: 否則零面積框恰落於游標下元素內時會取代既有選取,
             //使Shift+點擊之累加被覆寫, 且Shift+點空白處會清空整組選取
-            if (this.selectionBox && this.selectionCrossedThreshold) {
-                const box = this.selectionBox
+            if (this.selectionVisual.box && this.selectionCrossedThreshold) {
+                const box = this.selectionVisual.box
                 const vp = this.viewport
                 // Convert screen-space box to graph-space
                 const graphBox = {

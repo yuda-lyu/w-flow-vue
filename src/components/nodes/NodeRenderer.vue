@@ -7,7 +7,7 @@
       :node="node"
       :selected="isSelected(node.id)"
       :dragging="isDragging(node.id)"
-      :multi-select-active="multiSelectActive"
+      :popup-slot-fn="popupSlotFn"
       :draggable="isDraggable(node)"
       :connectable="isConnectable(node)"
       :resizable="isResizable(node)"
@@ -37,11 +37,8 @@
       @dimensions="$emit('dimensions', $event)"
       @node-resize="$emit('node-resize', $event)"
       @node-resize-end="$emit('node-resize-end', $event)"
-    >
-      <template v-if="$scopedSlots['node-popup']" v-slot:node-popup="scope">
-        <slot name="node-popup" v-bind="scope" />
-      </template>
-    </NodeWrapper>
+      @node-activate="$emit('node-activate', $event)"
+    />
   </div>
 </template>
 
@@ -57,7 +54,8 @@ export default {
         //拖曳中節點之集合(鍵為nodeId), 由WFlowVue於真正接受拖曳後下傳其dragNodeStartPositions;
         //未接受(locked/nodesDraggable=false)或未拖曳時為null
         draggingNodeMap: { type: Object, default: null },
-        multiSelectActive: { type: Boolean, default: false },
+        //宿主自訂popup內容之scoped slot函式, 原樣下傳NodeWrapper(取代條件式slot轉發, 見SlotOutlet之why)
+        popupSlotFn: { type: Function, default: null },
         nodesDraggable: { type: Boolean, default: true },
         nodesConnectable: { type: Boolean, default: true },
         nodesResizable: { type: Boolean, default: true },

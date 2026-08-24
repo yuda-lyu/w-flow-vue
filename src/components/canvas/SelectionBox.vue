@@ -10,9 +10,14 @@
 export default {
     name: 'SelectionBox',
     props: {
-        box: { type: Object, default: null }, // { x, y, width, height }
+        //框選視覺狀態容器(WFlowVue之selectionVisual, 容器identity穩定): 本元件自行依賴state.box,
+        //拉框每步只有本元件重渲染, WFlowVue主模板不因每幀更新而重渲染(細粒度模式, 同dragPositions)
+        state: { type: Object, required: true }, // { box: { x, y, width, height } | null }
     },
     computed: {
+        box() {
+            return this.state.box
+        },
         boxStyle() {
             if (!this.box) return {}
             return {

@@ -74,7 +74,9 @@
               <span v-else class="vue-flow__edge-popup-anchor"></span>
             </template>
             <template v-slot:content>
-              <slot name="conn-popup" :conn="conn">
+              <!-- 宿主自訂popup內容以「普通函式prop」傳入(SlotOutlet), 取代條件式slot轉發鏈(見SlotOutlet之why) -->
+              <SlotOutlet v-if="popupSlotFn" :render="popupSlotFn" :scope="{ conn: conn }" />
+              <slot v-else name="conn-popup" :conn="conn">
                 <div v-if="conn.name || conn.description" style="min-width:120px">
                   <div v-if="conn.name" :style="{ fontSize: inforPopupTitleTextFontSize, color: inforPopupTitleTextColor, fontWeight: 500 }">{{ conn.name }}</div>
                   <div v-if="conn.description" :style="{ fontSize: inforPopupDescriptionTextFontSize, color: inforPopupDescriptionTextColor, marginTop: '4px' }">{{ conn.description }}</div>
@@ -83,7 +85,10 @@
             </template>
           </WPopup>
           <transition name="vue-flow__fade">
-          <span v-if="(hovered || settingsPopupShow) && interactive && !locked && settingsEnabled" class="vue-flow__edge-settings-anchor">
+          <!-- activate掛@click而非@mousedown: mousedown當下改選取會於down與up之間觸發重渲染,
+               foreignObject內元素被patch替換後up落在新元素上, click(popup開啟訊號)根本不發生(已於e2e重現: E2E-012表單數變0);
+               click時WPopup trigger之內層handler先跑(popup先開), 冒泡至此才轉移active -->
+          <span v-if="(hovered || settingsPopupShow) && interactive && !locked && settingsEnabled" class="vue-flow__edge-settings-anchor" @click="onSettingsAnchorClick">
               <WPopup
                 v-model="settingsPopupShow"
                 placement="right-start"
@@ -130,6 +135,7 @@
 import { getBezierPath, getStraightPath, getStepPath, getSmoothStepPath } from '../../js/edgePath'
 import { getHandlePosition } from '../../js/geometry'
 import ConnSettingsForm from '../ui/ConnSettingsForm.vue'
+import SlotOutlet from '../ui/SlotOutlet.vue'
 import WPopup from 'w-component-vue/src/components/WPopup.vue'
 import fixSvgNs from '../../js/fixSvgNs.mjs'
 
@@ -144,15 +150,20 @@ export default {
     name: 'EdgeWrapper',
     //修Vue2 #7330: 本元件位於<svg>內且含foreignObject, 需清除$vnode.ns否則其內HTML元素(含WPopup之slot內容)被建為SVGElement而0x0不可見
     mixins: [fixSvgNs],
-    components: { ConnSettingsForm, WPopup },
-    inject: { getDefConn: { default: () => () => ({}) }, getDragGhost: { default: () => () => null } },
+    components: { ConnSettingsForm, SlotOutlet, WPopup },
+    inject: {
+        getDefConn: { default: () => () => ({}) },
+        getDragGhost: { default: () => () => null },
+        //複選鍵是否生效: getter注入而非prop——只被事件handler讀取, 不進渲染面, 判準與NodeWrapper一致
+        getMultiSelectActive: { default: () => () => false },
+    },
     props: {
         conn: { type: Object, required: true },
         sourceNode: { type: Object, default: null },
         targetNode: { type: Object, default: null },
         selected: { type: Boolean, default: false },
-        //多選鍵是否按下: 由WFlowVue下傳, 判準與NodeWrapper一致
-        multiSelectActive: { type: Boolean, default: false },
+        //宿主自訂popup內容之scoped slot函式(無則null走內建fallback)
+        popupSlotFn: { type: Function, default: null },
         interactive: { type: Boolean, default: true },
         locked: { type: Boolean, default: false },
         settingsPopupBackgroundColor: { type: String, default: '#fff' },
@@ -362,14 +373,14 @@ export default {
         },
         //資訊popup之開關請求由本元件裁決, 判準與NodeWrapper一致(見其onInfoPopupInput之why)
         onInfoPopupInput(val) {
-            if (val && this.multiSelectActive) {
+            if (val && this.getMultiSelectActive()) {
                 return
             }
             this.infoPopupShow = val
         },
         onClick(event) {
             //連線之popup另有本地直接開啟路徑(非僅WPopup trigger), 故此處亦須擋
-            if (this.hasInfoPopup && !this.multiSelectActive) {
+            if (this.hasInfoPopup && !this.getMultiSelectActive()) {
                 this.infoPopupShow = true
             }
             this.$emit('conn-click', { conn: this.conn, event })
@@ -407,6 +418,10 @@ export default {
         },
         onSettingsUpdate(key, value) {
             this.$emit('conn-settings-update', { conn: this.conn, key, value })
+        },
+        //點連線齒輪=元素專屬操作: 該連線成為唯一active(掛@click之時序理由見模板註解; click僅主鍵觸發, 不需判button)
+        onSettingsAnchorClick(event) {
+            this.$emit('conn-activate', { conn: this.conn, event })
         },
         onWaypointMouseDown(i, event) {
             if (!this.interactive || this.locked || !this.settingsEnabled) return

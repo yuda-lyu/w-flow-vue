@@ -162,27 +162,27 @@ describe('Box Selection', () => {
         w.vm.$refs.canvas = { getContainerRect: () => ({ left: 0, top: 0, width: 800, height: 600 }) }
         w.vm.startSelection({ clientX: 100, clientY: 100 })
         expect(w.vm.isSelecting).toBe(true)
-        expect(w.vm.selectionBox).toEqual({ x: 100, y: 100, width: 0, height: 0 }); w.destroy()
+        expect(w.vm.selectionVisual.box).toEqual({ x: 100, y: 100, width: 0, height: 0 }); w.destroy()
     })
     test('doSelection updates box', () => {
         const w = createWrapper()
         w.vm.$refs.canvas = { getContainerRect: () => ({ left: 0, top: 0, width: 800, height: 600 }) }
         w.vm.startSelection({ clientX: 100, clientY: 100 })
         w.vm.doSelection({ clientX: 300, clientY: 250 })
-        expect(w.vm.selectionBox).toEqual({ x: 100, y: 100, width: 200, height: 150 }); w.destroy()
+        expect(w.vm.selectionVisual.box).toEqual({ x: 100, y: 100, width: 200, height: 150 }); w.destroy()
     })
     test('doSelection reverse drag', () => {
         const w = createWrapper()
         w.vm.$refs.canvas = { getContainerRect: () => ({ left: 0, top: 0, width: 800, height: 600 }) }
         w.vm.startSelection({ clientX: 300, clientY: 300 })
         w.vm.doSelection({ clientX: 100, clientY: 100 })
-        expect(w.vm.selectionBox).toEqual({ x: 100, y: 100, width: 200, height: 200 }); w.destroy()
+        expect(w.vm.selectionVisual.box).toEqual({ x: 100, y: 100, width: 200, height: 200 }); w.destroy()
     })
     //endSelection 另有 selectionCrossedThreshold 守衛(原地按放之零面積框不提交選取), 故須一併設定
     test('endSelection selects nodes', () => {
         const w = createWrapper()
         w.vm.viewport = { x: 0, y: 0, zoom: 1 }
-        w.vm.selectionBox = { x: 40, y: 40, width: 270, height: 160 }
+        w.vm.selectionVisual.box = { x: 40, y: 40, width: 270, height: 160 }
         w.vm.selectionCrossedThreshold = true
         w.vm.isSelecting = true; w.vm.endSelection()
         expect(w.vm.selectedNodes).toContain('1')
@@ -195,7 +195,7 @@ describe('Box Selection', () => {
         const w = createWrapper()
         w.vm.viewport = { x: 0, y: 0, zoom: 1 }
         w.vm.setSelectedConns(['e1-3'])
-        w.vm.selectionBox = { x: 40, y: 40, width: 270, height: 160 }
+        w.vm.selectionVisual.box = { x: 40, y: 40, width: 270, height: 160 }
         w.vm.selectionCrossedThreshold = true
         w.vm.isSelecting = true; w.vm.endSelection()
         //兩端皆入框之 e1-3 亦不得被選取, 且既有連線選取一併清空
@@ -206,7 +206,7 @@ describe('Box Selection', () => {
         const w = createWrapper()
         w.vm.viewport = { x: 0, y: 0, zoom: 1 }
         w.vm.setSelectedNodes(['2'])
-        w.vm.selectionBox = { x: 40, y: 40, width: 270, height: 160 }
+        w.vm.selectionVisual.box = { x: 40, y: 40, width: 270, height: 160 }
         w.vm.selectionCrossedThreshold = false
         w.vm.isSelecting = true; w.vm.endSelection()
         //零面積框不得取代既有選取
@@ -215,12 +215,12 @@ describe('Box Selection', () => {
     })
     test('endSelection clears state', () => {
         const w = createWrapper()
-        w.vm.selectionBox = { x: 0, y: 0, width: 0, height: 0 }
+        w.vm.selectionVisual.box = { x: 0, y: 0, width: 0, height: 0 }
         w.vm.isSelecting = true; w.vm.selectionStartPos = { x: 0, y: 0 }
         w.vm.endSelection()
         expect(w.vm.isSelecting).toBe(false)
         expect(w.vm.selectionStartPos).toBeNull()
-        expect(w.vm.selectionBox).toBeNull(); w.destroy()
+        expect(w.vm.selectionVisual.box).toBeNull(); w.destroy()
     })
 })
 
@@ -467,8 +467,8 @@ describe('onDocMouseMove dispatching', () => {
         w.vm.$refs.canvas = { getContainerRect: () => ({ left: 0, top: 0, width: 800, height: 600 }) }
         w.vm.startSelection({ clientX: 100, clientY: 100 })
         w.vm.onDocMouseMove({ clientX: 200, clientY: 200, buttons: 1 })
-        expect(w.vm.selectionBox.width).toBe(100)
-        expect(w.vm.selectionBox.height).toBe(100)
+        expect(w.vm.selectionVisual.box.width).toBe(100)
+        expect(w.vm.selectionVisual.box.height).toBe(100)
         w.destroy()
     })
     test('does nothing when idle', () => {
@@ -495,7 +495,7 @@ describe('onDocMouseUp dispatching', () => {
         w.vm.$refs.canvas = { getContainerRect: () => ({ left: 0, top: 0, width: 800, height: 600 }) }
         w.vm.startSelection({ clientX: 100, clientY: 100 })
         expect(w.vm.isSelecting).toBe(true)
-        w.vm.selectionBox = { x: 0, y: 0, width: 10, height: 10 }
+        w.vm.selectionVisual.box = { x: 0, y: 0, width: 10, height: 10 }
         w.vm.onDocMouseUp({})
         expect(w.vm.isSelecting).toBe(false)
         w.destroy()

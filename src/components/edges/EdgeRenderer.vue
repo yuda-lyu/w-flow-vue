@@ -9,7 +9,7 @@
       :source-node="nodeMap[conn.from]"
       :target-node="nodeMap[conn.to]"
       :selected="isSelected(conn.id)"
-      :multi-select-active="multiSelectActive"
+      :popup-slot-fn="popupSlotFn"
       :all-nodes="nodes"
       :node-internals="nodeInternals"
       :interactive="interactive"
@@ -32,11 +32,8 @@
       @conn-settings-click="$emit('conn-settings-click', $event)"
       @conn-settings-update="$emit('conn-settings-update', $event)"
       @conn-settings-delete="$emit('conn-settings-delete', $event)"
-    >
-      <template v-if="$scopedSlots['conn-popup']" v-slot:conn-popup="scope">
-        <slot name="conn-popup" v-bind="scope" />
-      </template>
-    </EdgeWrapper>
+      @conn-activate="$emit('conn-activate', $event)"
+    />
   </svg>
 </template>
 
@@ -52,7 +49,8 @@ export default {
         nodes: { type: Array, default: () => [] },
         nodeInternals: { type: Object, default: () => ({}) },
         selectedConnIds: { type: Array, default: () => [] },
-        multiSelectActive: { type: Boolean, default: false },
+        //宿主自訂popup內容之scoped slot函式, 原樣下傳EdgeWrapper(取代條件式slot轉發, 見SlotOutlet之why)
+        popupSlotFn: { type: Function, default: null },
         interactive: { type: Boolean, default: true },
         locked: { type: Boolean, default: false },
         settingsPopupBackgroundColor: { type: String, default: '#fff' },

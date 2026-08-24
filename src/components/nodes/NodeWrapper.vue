@@ -10,6 +10,7 @@
     @mouseleave="onMouseLeave"
     @dblclick.stop="onDoubleClick"
     @contextmenu.stop="onContextMenu"
+    @dragstart="onNativeDragStart"
   >
     <WPopup
       :value="infoPopupShow"
@@ -40,7 +41,10 @@
         />
       </template>
       <template v-slot:content>
-        <slot name="node-popup" :node="node">
+        <!-- 宿主自訂popup內容以「普通函式prop」傳入(SlotOutlet呼叫), 取代條件式slot轉發鏈
+             why: v-if slot轉發使本元件$stable=false, 上游每次re-render都強制全部wrapper重渲染(實測10/10 vs 0/10) -->
+        <SlotOutlet v-if="popupSlotFn" :render="popupSlotFn" :scope="{ node: node }" />
+        <slot v-else name="node-popup" :node="node">
           <div v-if="node.name || node.description" style="min-width:120px">
             <div v-if="node.name" :style="{ fontSize: inforPopupTitleTextFontSize, color: inforPopupTitleTextColor, fontWeight: 500 }">{{ node.name }}</div>
             <div v-if="node.description" :style="{ fontSize: inforPopupDescriptionTextFontSize, color: inforPopupDescriptionTextColor, marginTop: '4px' }">{{ node.description }}</div>
@@ -49,8 +53,11 @@
       </template>
     </WPopup>
     <!-- Settings popup -->
+    <!-- activate掛@click而非@mousedown: mousedown當下改選取會於down與up之間觸發重渲染,
+         元素若被patch替換, up落在新元素上使click(popup開啟訊號)根本不發生(已於e2e重現於edge齒輪);
+         click時WPopup trigger之內層handler先跑(popup先開), 冒泡至此才轉移active, 同一手勢內完成且不掛@show -->
     <transition name="vue-flow__fade">
-    <div v-if="(hovered || settingsPopupShow) && draggable && !locked && settingsEnabled" class="vue-flow__node-settings-anchor">
+    <div v-if="(hovered || settingsPopupShow) && draggable && !locked && settingsEnabled" class="vue-flow__node-settings-anchor" @click="onSettingsAnchorClick">
       <WPopup
         v-model="settingsPopupShow"
         placement="right-start"
@@ -90,12 +97,18 @@
 <script>
 import NodeBody from './NodeBody.vue'
 import NodeSettingsForm from '../ui/NodeSettingsForm.vue'
+import SlotOutlet from '../ui/SlotOutlet.vue'
 import WPopup from 'w-component-vue/src/components/WPopup.vue'
 
 export default {
     name: 'NodeWrapper',
-    components: { NodeBody, NodeSettingsForm, WPopup },
-    inject: { getDefNode: { default: () => () => ({}) }, getDragGhost: { default: () => () => null } },
+    components: { NodeBody, NodeSettingsForm, SlotOutlet, WPopup },
+    inject: {
+        getDefNode: { default: () => () => ({}) },
+        getDragGhost: { default: () => () => null },
+        //複選鍵是否生效: getter注入而非prop——只被事件handler讀取, 不進渲染面, 按/放複選鍵時不觸發重渲染
+        getMultiSelectActive: { default: () => () => false },
+    },
     props: {
         node: { type: Object, required: true },
         selected: { type: Boolean, default: false },
@@ -108,9 +121,8 @@ export default {
         //nodesDraggable=false + node.draggable=true 時會誤判為拖曳中(父層其實拒絕);
         //且多選拖曳為整組移動, 本地旗標只會套到被滑鼠抓住的那一顆
         dragging: { type: Boolean, default: false },
-        //複選鍵是否生效: 由WFlowVue下傳(其isMultiSelectActive已依opt.multiSelectionKeyCode解析, 並含鎖定/multiSelectEnabled之判定),
-        //不於此讀event.shiftKey, 否則使用者改設定鍵後兩處判準會分岔
-        multiSelectActive: { type: Boolean, default: false },
+        //宿主自訂popup內容之scoped slot函式(無則null走內建fallback), 由WFlowVue經Renderer原樣下傳
+        popupSlotFn: { type: Function, default: null },
         settingsPopupBackgroundColor: { type: String, default: '#fff' },
         settingsPopupTextColor: { type: String, default: '#333' },
         settingsPopupTextFontSize: { type: String, default: '12px' },
@@ -289,6 +301,17 @@ export default {
                 const handle = event.target.closest(this.node.dragHandle)
                 if (!handle) return
             }
+            //互動元素與明確opt-out區域(.vue-flow__nodrag): 不武裝拖曳手勢, 保留原生行為(輸入聚焦/點連結/選字);
+            //點擊仍經onMouseUp發node-click, 選取不受影響
+            //why: 若只免除下方preventDefault而仍武裝手勢, 於輸入框內選字移動超過2px門檻會連節點一起拖走
+            if (event.target.closest && event.target.closest('input, textarea, select, button, a[href], label, [contenteditable=""], [contenteditable="true"], .vue-flow__nodrag')) {
+                return
+            }
+            //節點面上拖曳=移動節點: 阻止原生預設行為(形成文字選取/自既有選取啟動原生drag)
+            //why: 宿主節點內容若可選字(user-select:text), 拖曳中會形成選取且殘留; 之後mousedown落在選取上
+            //     即啟動原生文字層drag接管事件流, mousemove斷流使節點於門檻跨越後凍結
+            //     (真瀏覽器實測: mousemove 11→2次, dragstart=1, 節點僅移8px後卡住)
+            event.preventDefault()
             this.infoPopupShow = false
             //選取仍於mousedown完成(與修正前一致): 拖曳延後但選取不可延後,
             //否則按住節點未移動時, 原本立即出現的選取回饋會拖到mouseup才出現
@@ -325,6 +348,10 @@ export default {
             //視窗失焦後收不到mouseup, 本地監聽與popup態同樣需收尾(WFlowVue之onWindowBlur只收父層狀態)
             window.addEventListener('blur', gesture.onDragEnd)
         },
+        //點齒輪=元素專屬操作: 該節點成為唯一active(掛@click之時序理由見模板註解)
+        onSettingsAnchorClick(event) {
+            this.$emit('node-activate', { node: this.node, event })
+        },
         onMouseUp(event) {
             if (!this._mouseDownPos) return
             const dx = event.clientX - this._mouseDownPos.x
@@ -342,13 +369,20 @@ export default {
         //     判準用multiSelectActive而非「鍵被按下」——選取不可用時(鎖定/檢視模式)該鍵無複選語義, 點擊仍應照常開popup;
         //     關閉請求一律放行, 且不可改用editable抑制——editable會連evHide與外部點擊關閉一併擋掉, 使已開之popup關不掉
         onInfoPopupInput(val) {
-            if (val && this.multiSelectActive) {
+            if (val && this.getMultiSelectActive()) {
                 return
             }
             this.infoPopupShow = val
         },
         openInfoPopup() {
             this.infoPopupShow = true
+        },
+        //手勢武裝中阻止原生HTML5 drag(拖曳選取文字/圖片/連結): 原生drag一旦接管, mousemove事件流被drag事件流取代;
+        //未武裝時(齒輪/nodrag區/非主鍵/未按下)不干涉, 宿主自訂拖放不受影響
+        onNativeDragStart(event) {
+            if (this._mouseGesture) {
+                event.preventDefault()
+            }
         },
         onContextMenu(event) {
             this.$emit('node-context-menu', { node: this.node, event })
@@ -371,6 +405,8 @@ export default {
             this.$emit('node-settings-delete', { node: this.node })
         },
         onResizeStart(event, edge) {
+            //縮放=元素專屬操作: 該節點成為唯一active(elementsSelectable守衛在WFlowVue.onNodeActivate)
+            this.$emit('node-activate', { node: this.node, event })
             this.infoPopupShow = false
             this.$nextTick(() => {
                 this.infoPopupEditable = false

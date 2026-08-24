@@ -33,7 +33,8 @@ describe('ViewportTransform', () => {
 describe('SelectionBox', () => {
     test('renders when box is provided', () => {
         const wrapper = mount(SelectionBox, {
-            propsData: { box: { x: 10, y: 20, width: 100, height: 50 } },
+            //SelectionBox 已改收穩定容器 state(細粒度渲染: 拉框每步僅本元件重渲染); 斷言意圖(定位樣式)不變
+            propsData: { state: { box: { x: 10, y: 20, width: 100, height: 50 } } },
         })
         const el = wrapper.find('.vue-flow__selection-box')
         expect(el.exists()).toBe(true)
@@ -45,7 +46,7 @@ describe('SelectionBox', () => {
 
     test('does not render when box is null', () => {
         const wrapper = mount(SelectionBox, {
-            propsData: { box: null },
+            propsData: { state: { box: null } },
         })
         expect(wrapper.find('.vue-flow__selection-box').exists()).toBe(false)
     })
