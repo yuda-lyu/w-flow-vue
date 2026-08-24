@@ -108,9 +108,9 @@ export default {
         //nodesDraggable=false + node.draggable=true 時會誤判為拖曳中(父層其實拒絕);
         //且多選拖曳為整組移動, 本地旗標只會套到被滑鼠抓住的那一顆
         dragging: { type: Boolean, default: false },
-        //多選鍵是否按下: 由WFlowVue下傳(其isMultiSelectPressed已依opt.multiSelectionKeyCode解析),
+        //複選鍵是否生效: 由WFlowVue下傳(其isMultiSelectActive已依opt.multiSelectionKeyCode解析, 並含鎖定/multiSelectEnabled之判定),
         //不於此讀event.shiftKey, 否則使用者改設定鍵後兩處判準會分岔
-        multiSelectPressed: { type: Boolean, default: false },
+        multiSelectActive: { type: Boolean, default: false },
         settingsPopupBackgroundColor: { type: String, default: '#fff' },
         settingsPopupTextColor: { type: String, default: '#333' },
         settingsPopupTextFontSize: { type: String, default: '12px' },
@@ -338,10 +338,11 @@ export default {
             this.$emit('node-double-click', { node: this.node, event })
         },
         //資訊popup之開關請求由本元件裁決(WPopup之isolated為預設false, 故trigger點擊只是$emit請求, 實際狀態由v-model擁有者決定)
-        //why: 按住多選鍵時點擊之語義為複選, 不應同時彈出資訊卡遮擋畫面並干擾連續點選;
+        //why: 多選鍵生效時點擊之語義為複選, 不應同時彈出資訊卡遮擋畫面並干擾連續點選;
+        //     判準用multiSelectActive而非「鍵被按下」——選取不可用時(鎖定/檢視模式)該鍵無複選語義, 點擊仍應照常開popup;
         //     關閉請求一律放行, 且不可改用editable抑制——editable會連evHide與外部點擊關閉一併擋掉, 使已開之popup關不掉
         onInfoPopupInput(val) {
-            if (val && this.multiSelectPressed) {
+            if (val && this.multiSelectActive) {
                 return
             }
             this.infoPopupShow = val

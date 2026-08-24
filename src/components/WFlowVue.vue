@@ -29,7 +29,7 @@
         :nodes="nodes"
         :node-internals="nodeInternals"
         :selected-conn-ids="selectedConns"
-        :multi-select-pressed="isMultiSelectPressed"
+        :multi-select-active="isMultiSelectActive"
         :interactive="elementsSelectable"
         :locked="locked"
         :settings-popup-background-color="settingsPopupBackgroundColor"
@@ -61,7 +61,7 @@
         :nodes="nodes"
         :selected-node-ids="selectedNodes"
         :dragging-node-map="isDraggingNode ? dragNodeStartPositions : null"
-        :multi-select-pressed="isMultiSelectPressed"
+        :multi-select-active="isMultiSelectActive"
         :nodes-draggable="nodesDraggable"
         :nodes-connectable="nodesConnectable"
         :locked="locked"
@@ -645,11 +645,15 @@ export default {
         //(效能重構)拖曳/縮放ghost改由getDragGhost細粒度提供(per-node反應式鍵), 不再整包重建nodes陣列
         //why: 舊renderNodes每步mousemove產新陣列+新物件prop, 使兩Renderer與全部Node/EdgeWrapper(含WPopup/WTooltip子樹)
         //     每步全量重渲染(84節點+95邊實測~128ms/步); 細粒度後僅被拖節點與其相連邊重渲染
-        isBoxSelectPressed() {
-            return this.multiSelectEnabled && !!this.keysPressed[this.boxSelectionKeyCode]
+        //「複選鍵生效中」而非單純「鍵被按下」: 鎖定 或 宿主關閉multiSelectEnabled 時, 該鍵不具複選語義, 等同沒按
+        //why: 單選之active有對應效果(開資訊popup, 宿主據node-click同步外部清單之目前項目), 檢視模式本就該保留;
+        //     複選之active則無任何對應效果——選了不能整組拖曳/刪除, 只是一片亮起的框, 反而使人誤認功能故障.
+        //     故此處只擋複選與框選, 不動單選; 且該鍵無效時點擊須完整退回單選路徑(照常取得active與popup)
+        isBoxSelectActive() {
+            return this.multiSelectEnabled && !this.locked && !!this.keysPressed[this.boxSelectionKeyCode]
         },
-        isMultiSelectPressed() {
-            return this.multiSelectEnabled && !!this.keysPressed[this.multiSelectionKeyCode]
+        isMultiSelectActive() {
+            return this.multiSelectEnabled && !this.locked && !!this.keysPressed[this.multiSelectionKeyCode]
         },
     },
     methods: {
@@ -778,7 +782,7 @@ export default {
             if (event.target.closest && event.target.closest('.vue-flow__popup')) return
             //非主鍵不啟動任何畫布層手勢: 判準對齊NodeWrapper.onMouseDown之event.button !== 0
             if (event.button !== 0) return
-            if (!this.locked && this.elementsSelectable && this.isBoxSelectPressed) {
+            if (this.elementsSelectable && this.isBoxSelectActive) {
                 if (!this.isCanvasInteractiveTarget(event)) {
                     this.startSelection(event)
                 }
@@ -930,7 +934,7 @@ export default {
             if (this.locked || !this.nodesDraggable) return
             //已在選取集合內者不塌陷選取, 否則框選一組後直接拖其中一顆會只搬動該顆
             //(單純點擊仍由onNodeClick收斂為單選, 故單擊改選這顆之行為不變)
-            if (this.selectNodesOnDrag && !this.isMultiSelectPressed && !this.selectedNodes.includes(node.id)) {
+            if (this.selectNodesOnDrag && !this.isMultiSelectActive && !this.selectedNodes.includes(node.id)) {
                 this.setSelectedNodes([node.id])
                 this.setSelectedConns([])
             }
@@ -1133,7 +1137,8 @@ export default {
             //(涵蓋「跨門檻拖出後又移回原點放開」之情形——該情形最終位移為0, 僅靠距離判準無法辨識)
             if (this.isDraggingNode) return
             if (!this.elementsSelectable) return
-            if (this.isMultiSelectPressed) {
+            //複選鍵未生效時(含鎖定/宿主關閉複選)一律走單選路徑: 該節點取得active, 宿主據node-click同步外部清單
+            if (this.isMultiSelectActive) {
                 const idx = this.selectedNodes.indexOf(node.id)
                 if (idx === -1) {
                     this.selectedNodes.push(node.id)
@@ -1194,7 +1199,7 @@ export default {
         onConnClick({ conn, event }) {
             if (!this.elementsSelectable) return
             //連線不參與多選鍵之複選: 按住多選鍵點連線時不變更任何選取(不加入亦不移除), 單擊路徑維持原樣
-            if (this.isMultiSelectPressed) {
+            if (this.isMultiSelectActive) {
                 this.$emit('conn-click', { conn, event })
                 return
             }

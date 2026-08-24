@@ -152,7 +152,7 @@ export default {
         targetNode: { type: Object, default: null },
         selected: { type: Boolean, default: false },
         //多選鍵是否按下: 由WFlowVue下傳, 判準與NodeWrapper一致
-        multiSelectPressed: { type: Boolean, default: false },
+        multiSelectActive: { type: Boolean, default: false },
         interactive: { type: Boolean, default: true },
         locked: { type: Boolean, default: false },
         settingsPopupBackgroundColor: { type: String, default: '#fff' },
@@ -362,14 +362,14 @@ export default {
         },
         //資訊popup之開關請求由本元件裁決, 判準與NodeWrapper一致(見其onInfoPopupInput之why)
         onInfoPopupInput(val) {
-            if (val && this.multiSelectPressed) {
+            if (val && this.multiSelectActive) {
                 return
             }
             this.infoPopupShow = val
         },
         onClick(event) {
             //連線之popup另有本地直接開啟路徑(非僅WPopup trigger), 故此處亦須擋
-            if (this.hasInfoPopup && !this.multiSelectPressed) {
+            if (this.hasInfoPopup && !this.multiSelectActive) {
                 this.infoPopupShow = true
             }
             this.$emit('conn-click', { conn: this.conn, event })

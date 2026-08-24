@@ -9,7 +9,7 @@
       :source-node="nodeMap[conn.from]"
       :target-node="nodeMap[conn.to]"
       :selected="isSelected(conn.id)"
-      :multi-select-pressed="multiSelectPressed"
+      :multi-select-active="multiSelectActive"
       :all-nodes="nodes"
       :node-internals="nodeInternals"
       :interactive="interactive"
@@ -52,7 +52,7 @@ export default {
         nodes: { type: Array, default: () => [] },
         nodeInternals: { type: Object, default: () => ({}) },
         selectedConnIds: { type: Array, default: () => [] },
-        multiSelectPressed: { type: Boolean, default: false },
+        multiSelectActive: { type: Boolean, default: false },
         interactive: { type: Boolean, default: true },
         locked: { type: Boolean, default: false },
         settingsPopupBackgroundColor: { type: String, default: '#fff' },

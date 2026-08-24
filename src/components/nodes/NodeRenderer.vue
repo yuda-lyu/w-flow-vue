@@ -7,7 +7,7 @@
       :node="node"
       :selected="isSelected(node.id)"
       :dragging="isDragging(node.id)"
-      :multi-select-pressed="multiSelectPressed"
+      :multi-select-active="multiSelectActive"
       :draggable="isDraggable(node)"
       :connectable="isConnectable(node)"
       :resizable="isResizable(node)"
@@ -57,7 +57,7 @@ export default {
         //拖曳中節點之集合(鍵為nodeId), 由WFlowVue於真正接受拖曳後下傳其dragNodeStartPositions;
         //未接受(locked/nodesDraggable=false)或未拖曳時為null
         draggingNodeMap: { type: Object, default: null },
-        multiSelectPressed: { type: Boolean, default: false },
+        multiSelectActive: { type: Boolean, default: false },
         nodesDraggable: { type: Boolean, default: true },
         nodesConnectable: { type: Boolean, default: true },
         nodesResizable: { type: Boolean, default: true },
