@@ -650,6 +650,9 @@ const CASES = [
         expectOk('E2E-027 新連線之 from/to 正確', added.from === '2' && added.to === '9', `added=${JSON.stringify(added)}`)
         const ev = await emitted(page)
         expectOk('E2E-027 發出 update:conns', ev.includes('update:conns'), `events=${JSON.stringify(ev)}`)
+        //spec: 自預設(Auto)把手拉出之邊不烙印逐邊錨點, 動態跟隨節點之 To/From Handle 設定
+        const anchors = await evalVm(page, 'const c = vm.conns[vm.conns.length - 1];return { hasFrom: "fromPosition" in c, hasTo: "toPosition" in c }')
+        expectOk('E2E-027 新連線為 Auto(不烙印錨點)', !anchors.hasFrom && !anchors.hasTo, `anchors=${JSON.stringify(anchors)}`)
         await page.mouse.move(0, 0)
         await shot(page, 'flow-E2E-027-conn-created', { clip: await getCanvasClip(page) })
     }),
@@ -741,6 +744,47 @@ const CASES = [
         await page.mouse.move(0, 0)
         const b2 = await nodeBox(page, '1')
         await shot(page, 'flow-E2E-030-textdrag-no-selection-forms', { clip: clipAround(b2, PAD) })
+    }),
+
+    mkCase('E2E-031', 'tohandle-right', async (page) => {
+        //前置確認: demo 節點 1 之出邊為 Auto(無逐邊錨點), 修正前之病即「有邊時 To Handle 失效」
+        const pre = await evalVm(page, `
+            const cs = vm.conns.filter(c => c.from === '1')
+            return { n: cs.length, fixed: cs.filter(c => c.fromPosition).length }
+        `)
+        expectOk('E2E-031 前置: 節點1有 Auto 出邊', pre.n > 0 && pre.fixed === 0, `pre=${JSON.stringify(pre)}`)
+        const dBefore = await getConnPathD(page, 'e1-2')
+
+        //act(真 UI): 開節點1設定表單, 於 To Handle 下拉選 Right
+        await hoverNode(page, '1')
+        await page.locator('.vue-flow__node[data-id="1"] .vue-flow__node-settings').first().click()
+        await page.waitForTimeout(600)
+        const sel = page.locator('.vue-flow__settings-form label:has-text("To Handle") select')
+        await sel.waitFor({ state: 'visible', timeout: 5000 })
+        await sel.selectOption('right')
+        await page.waitForTimeout(500)
+
+        //spec: source 把手移至右側
+        const side = await page.evaluate(() => {
+            const h = document.querySelector('.vue-flow__node[data-id="1"] .vue-flow__handle[data-handle-type="source"]')
+            return h ? h.dataset.handlePosition : null
+        })
+        expectOk('E2E-031 source 把手移至 right', side === 'right', `side=${side}`)
+        //spec: Auto 出邊之出發端跟隨改道
+        const dAfter = await getConnPathD(page, 'e1-2')
+        expectOk('E2E-031 Auto 出邊路徑跟隨改變', !!dBefore && !!dAfter && dBefore !== dAfter, `d 未改變`)
+        //spec: 邊資料不被烙印錨點
+        const post = await evalVm(page, `return vm.conns.filter(c => c.from === '1' && c.fromPosition).length`)
+        expectOk('E2E-031 邊資料未被烙印錨點', post === 0, `fixed=${post}`)
+
+        //關閉popup後拍節點與其出邊之區域
+        await page.mouse.move(5, 5)
+        await page.mouse.down()
+        await page.mouse.up()
+        await page.waitForTimeout(400)
+        await page.mouse.move(0, 0)
+        const b = await nodeBox(page, '1')
+        await shot(page, 'flow-E2E-031-tohandle-right', { clip: clipAround(b, PAD * 2) })
     }),
 
 ]

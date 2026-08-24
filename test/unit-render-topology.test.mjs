@@ -158,4 +158,39 @@ describe('R4 宿主自訂 popup slot 之行為不變', () => {
         expect(nw2.vm.popupSlotFn).toBeNull()
         w.destroy()
     })
+
+    test('無 name/description 但宿主有 conn-popup slot 之連線: 仍具資訊 popup(hasInfoPopup 須認得 popupSlotFn)', async () => {
+        //why: slot轉發鏈改函式prop後, EdgeWrapper之$scopedSlots不再有宿主slot;
+        //     hasInfoPopup缺popupSlotFn判斷時, 此類連線之WPopup整個不渲染, 宿主自訂popup無聲消失
+        const opt = {
+            nodes: [
+                { id: 'a', name: 'A', position: { x: 0, y: 0 }, width: 100, height: 40 },
+                { id: 'b', name: 'B', position: { x: 300, y: 0 }, width: 100, height: 40 },
+            ],
+            conns: [{ id: 'eab', from: 'a', to: 'b' }], //刻意無 name / description
+        }
+        const Host = {
+            components: { WFlowVue },
+            data: () => ({ opt }),
+            template: `<div><WFlowVue :opt="opt"><template #conn-popup="{ conn }"><em class="host-conn-popup">HOSTCONN-{{ conn.id }}</em></template></WFlowVue></div>`,
+        }
+        const h = mount(Host, { attachTo: document.body })
+        await h.vm.$nextTick()
+        const ew = h.findAllComponents(EdgeWrapper).at(0)
+        expect(ew.vm.hasInfoPopup).toBe(true)
+        //點擊可開啟, 且渲染的是宿主內容
+        ew.vm.onClick({ clientX: 0, clientY: 0 })
+        await h.vm.$nextTick()
+        await h.vm.$nextTick()
+        expect(ew.vm.infoPopupShow).toBe(true)
+        expect(document.body.innerHTML).toContain('HOSTCONN-eab')
+        h.destroy()
+
+        //對照: 無 slot 且無 name/description → 無資訊 popup(維持既有行為)
+        const w2 = mount(WFlowVue, { propsData: { opt: JSON.parse(JSON.stringify(opt)) }, attachTo: document.body })
+        await w2.vm.$nextTick()
+        const ew2 = w2.findAllComponents(EdgeWrapper).at(0)
+        expect(ew2.vm.hasInfoPopup).toBe(false)
+        w2.destroy()
+    })
 })

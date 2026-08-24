@@ -55,6 +55,12 @@
         <option value="left">Left</option>
       </select>
     </label>
+    <!-- 固定錨點揭示: 逐邊固定(Fixed)之入邊不跟隨 From Handle, 明示數量並提供批次改回 Auto;
+         不默默清除——既有資料無法辨識「舊版自動烙印」與「使用者刻意固定」 -->
+    <div v-if="!isEx('fromPosition') && (node.type === 'output' || node.type === 'basic') && fixedInCount > 0" class="vue-flow__anchor-hint">
+      <span>{{ fixedInCount }} 條入邊為固定錨點,不跟隨此設定</span>
+      <button class="vue-flow__anchor-unfix-btn" @click="$emit('unfix-anchors', 'target')">改為 Auto</button>
+    </div>
     <label v-if="!isEx('toPosition') && (node.type === 'input' || node.type === 'basic')">To Handle
       <select :value="node.toPosition || defNode.toPosition" @input="$emit('update', 'toPosition', $event.target.value)">
         <option value="top">Top</option>
@@ -63,6 +69,10 @@
         <option value="left">Left</option>
       </select>
     </label>
+    <div v-if="!isEx('toPosition') && (node.type === 'input' || node.type === 'basic') && fixedOutCount > 0" class="vue-flow__anchor-hint">
+      <span>{{ fixedOutCount }} 條出邊為固定錨點,不跟隨此設定</span>
+      <button class="vue-flow__anchor-unfix-btn" @click="$emit('unfix-anchors', 'source')">改為 Auto</button>
+    </div>
     <div class="vue-flow__delete-area">
       <button v-if="!confirmDelete" class="vue-flow__delete-btn" @click="confirmDelete = true">刪除節點</button>
       <template v-else>
@@ -86,6 +96,9 @@ export default {
         defNode: { type: Object, required: true },
         textFontSize: { type: String, default: '' },
         excludes: { type: Array, default: () => [] },
+        //固定錨點(Fixed)之出/入邊數量(由 NodeWrapper 統計), 供 To/From Handle 揭示
+        fixedOutCount: { type: Number, default: 0 },
+        fixedInCount: { type: Number, default: 0 },
     },
     data() {
         return { confirmDelete: false }
@@ -148,6 +161,29 @@ export default {
   border: 1px solid #ccc;
   cursor: pointer;
   flex-shrink: 0;
+}
+/* 固定錨點揭示列: 沿用表單既有樣式語言(11px 提示字 + cancel 鈕之中性配色) */
+.vue-flow__anchor-hint {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  color: #888;
+  margin-top: -4px;
+}
+.vue-flow__anchor-unfix-btn {
+  padding: 1px 8px;
+  font-size: 11px;
+  border: 1px solid #ccc;
+  border-radius: 3px;
+  color: #666;
+  background: #fff;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.vue-flow__anchor-unfix-btn:hover {
+  background: #f5f5f5;
 }
 .vue-flow__delete-area {
   margin-top: 4px;

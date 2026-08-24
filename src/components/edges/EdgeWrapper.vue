@@ -134,6 +134,7 @@
 <script>
 import { getBezierPath, getStraightPath, getStepPath, getSmoothStepPath } from '../../js/edgePath'
 import { getHandlePosition } from '../../js/geometry'
+import { resolveSourceAnchor, resolveTargetAnchor } from '../../js/anchorPolicy.mjs'
 import ConnSettingsForm from '../ui/ConnSettingsForm.vue'
 import SlotOutlet from '../ui/SlotOutlet.vue'
 import WPopup from 'w-component-vue/src/components/WPopup.vue'
@@ -153,6 +154,8 @@ export default {
     components: { ConnSettingsForm, SlotOutlet, WPopup },
     inject: {
         getDefConn: { default: () => () => ({}) },
+        //defNode 供錨點解析之 defNode 層(anchorPolicy), 與把手渲染同一基準
+        getDefNode: { default: () => () => ({}) },
         getDragGhost: { default: () => () => null },
         //複選鍵是否生效: getter注入而非prop——只被事件handler讀取, 不進渲染面, 判準與NodeWrapper一致
         getMultiSelectActive: { default: () => () => false },
@@ -201,15 +204,21 @@ export default {
             return this.getDefConn()
         },
         hasInfoPopup() {
-            return !!(this.conn.name || this.conn.description || this.$scopedSlots['conn-popup'])
+            //popupSlotFn: 宿主自訂popup內容自slot轉發鏈改為函式prop後, 本元件$scopedSlots不再有宿主slot,
+            //缺此判斷時「無name/description但宿主有給conn-popup」之連線會整個不渲染WPopup(自訂popup無聲消失);
+            //$scopedSlots保留供直接掛載本元件並帶slot之用法
+            return !!(this.conn.name || this.conn.description || this.popupSlotFn || this.$scopedSlots['conn-popup'])
         },
         //(效能重構)錨點方位/座標自算(原由EdgeRenderer解析後以props傳入):
         //  含拖曳/縮放ghost(細粒度反應式), 僅本邊兩端節點變動時本元件才重渲染
+        //方位解析走 anchorPolicy 單一來源(Fixed=conn層 > Auto=節點層 > defNode層 > 內建);
+        //why 補 defNode 層: 原本此處手寫 fallback 漏看 defNode, 與把手渲染(有看)分家——
+        //宿主設 defNodeToPosition 時把手畫在該側, 邊卻仍自內建側出發
         sourcePosition() {
-            return this.conn.fromPosition || (this.sourceNode && this.sourceNode.toPosition) || 'bottom' //conn層級覆寫優先
+            return resolveSourceAnchor(this.conn, this.sourceNode, this.getDefNode()).side
         },
         targetPosition() {
-            return this.conn.toPosition || (this.targetNode && this.targetNode.fromPosition) || 'top'
+            return resolveTargetAnchor(this.conn, this.targetNode, this.getDefNode()).side
         },
         effSourceNode() {
             return this.effNode(this.sourceNode)
@@ -220,12 +229,12 @@ export default {
         sourcePoint() {
             const n = this.effSourceNode
             if (!n) return { x: 0, y: 0 }
-            return getHandlePosition(n, this.sourcePosition, this.nodeInternals[n.id] || {}, 'source')
+            return getHandlePosition(n, this.sourcePosition, this.nodeInternals[n.id] || {}, 'source', this.getDefNode())
         },
         targetPoint() {
             const n = this.effTargetNode
             if (!n) return { x: 0, y: 0 }
-            return getHandlePosition(n, this.targetPosition, this.nodeInternals[n.id] || {}, 'target')
+            return getHandlePosition(n, this.targetPosition, this.nodeInternals[n.id] || {}, 'target', this.getDefNode())
         },
         sourceX() {
             return this.sourcePoint.x

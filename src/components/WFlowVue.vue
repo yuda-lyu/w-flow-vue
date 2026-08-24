@@ -89,6 +89,7 @@
         @node-resize="onNodeResize"
         @node-resize-end="onNodeResizeEnd"
         @node-activate="onNodeActivate"
+        @node-anchors-unfix="onNodeAnchorsUnfix"
       />
 
       <ConnectionLine
@@ -167,6 +168,14 @@ import { NODE_DEFAULTS, CONN_DEFAULTS } from '../js/defaults'
  * @prop {Array}    [opt.panLimits=null]                  Pan limits [[minX,minY],[maxX,maxY]]
  * @prop {boolean}  [opt.snapToGrid=false]                Snap node positions to grid
  * @prop {number}   [opt.snapGridSize=20]                  Grid cell size (px, used for both drag snap and resize snap)
+ *
+ * Anchor contract (Auto/Fixed): an edge end is Fixed when the conn itself carries
+ * `fromPosition`/`toPosition` (set via the conn settings form, or by dragging from an extra
+ * fixed handle) — it then always wins. Otherwise the end is Auto and follows
+ * node.toPosition/fromPosition → defNodeToPosition/defNodeFromPosition → built-in bottom/top.
+ * Dragging from a node's default handle creates an Auto edge (no position is persisted), so
+ * changing the node's To/From Handle re-routes all its Auto edges. Fixed anchors are shown in
+ * the node settings form with a batch "改為 Auto" action; the conn form's Auto option clears one.
  *
  * Node-surface input contract: dragging on a node moves the node — text selection and native
  * HTML5 drag are suppressed there (a formed selection would let the browser's text-layer drag
@@ -1062,7 +1071,8 @@ export default {
 
             const pos = getHandlePosition(
                 node, payload.handlePosition,
-                this.nodeInternals[payload.nodeId] || {}
+                this.nodeInternals[payload.nodeId] || {},
+                'source', this.defNode
             )
             this.connectionVisual.fromX = pos.x
             this.connectionVisual.fromY = pos.y
@@ -1094,12 +1104,17 @@ export default {
                 const toNodeId = toNodeEl ? toNodeEl.dataset.id : null
 
                 if (toNodeId) {
+                    //逐邊錨點只在把手宣告 binding='fixed' 時烙印(anchorPolicy 之 Auto/Fixed 語義):
+                    //預設 Auto 把手拉出的邊不寫方位, 動態跟隨節點之 To/From Handle 設定與 defNode;
+                    //why: 原本無條件烙印, 使「自唯一預設把手拉線(無選擇)」被當成明確指定,
+                    //     此後 conn 層永遠蓋過節點層 → 節點只要有一條邊, To Handle 設定即看似失效(已重現)
+                    const fromFixed = this.connectingFrom.handleBinding === 'fixed'
+                    const toFixed = handleEl.dataset.handleBinding === 'fixed'
                     const connection = {
                         from: this.connectingFrom.nodeId,
                         to: toNodeId,
-                        //逐邊錨點: 起點=實際拖曳出發之連接點方位, 迄點=落點handle之方位(缺則不設, 回退節點層級/預設)
-                        ...(this.connectingFrom.handlePosition ? { fromPosition: this.connectingFrom.handlePosition } : {}),
-                        ...(handleEl.dataset.handlePosition ? { toPosition: handleEl.dataset.handlePosition } : {}),
+                        ...(fromFixed && this.connectingFrom.handlePosition ? { fromPosition: this.connectingFrom.handlePosition } : {}),
+                        ...(toFixed && handleEl.dataset.handlePosition ? { toPosition: handleEl.dataset.handlePosition } : {}),
                     }
 
                     const valid = isValidConnection(
@@ -1205,6 +1220,26 @@ export default {
             this.emitNodesUpdate()
             this.emitConnsUpdate()
             this.$emit('node-settings-delete', { node })
+        },
+        //批次將某節點一側之固定錨點改回 Auto(使用者於設定表單明確操作, 非默默清除)
+        //end: 'source'=出邊之fromPosition, 'target'=入邊之toPosition
+        onNodeAnchorsUnfix({ node, end }) {
+            const isSource = end === 'source'
+            let changed = false
+            for (const c of this.conns) {
+                if (isSource && c.from === node.id && c.fromPosition) {
+                    this.$delete(c, 'fromPosition')
+                    changed = true
+                }
+                if (!isSource && c.to === node.id && c.toPosition) {
+                    this.$delete(c, 'toPosition')
+                    changed = true
+                }
+            }
+            if (changed) {
+                clearStepCache()
+                this.emitConnsUpdate()
+            }
         },
         onNodeMouseEnter({ node, event }) {
             this.$emit('node-mouseenter', { node, event })

@@ -5,6 +5,7 @@
       :key="'t-' + p"
       type="target"
       :position="p"
+      :binding="targetBindingFor(p)"
       :connectable="connectable"
       :locked="locked"
       :offset="targetOffsetFor(p)"
@@ -17,6 +18,7 @@
       :key="'s-' + p"
       type="source"
       :position="p"
+      :binding="sourceBindingFor(p)"
       :connectable="connectable"
       :locked="locked"
       :offset="sourceOffsetFor(p)"
@@ -28,6 +30,7 @@
 
 <script>
 import Handle from './Handle.vue'
+import { sourceHandleSides, targetHandleSides } from '../../js/anchorPolicy.mjs'
 
 export default {
     name: 'DefaultNode',
@@ -42,34 +45,19 @@ export default {
         dn() {
             return this.getDefNode()
         },
-        nodeToPosition() {
-            return this.node.toPosition || this.dn.toPosition || 'bottom'
+        //把手集合由 anchorPolicy 單一來源解析: 預設 Auto 把手永遠存在, Fixed 錨點附加;
+        //佈局方法(offset/style)以 side 為鍵, 故另以 usedXxxSides 提供純 side 陣列
+        sourceHandles() {
+            return sourceHandleSides(this.node, this.getConns() || [], this.dn)
         },
-        nodeFromPosition() {
-            return this.node.fromPosition || this.dn.fromPosition || 'top'
+        targetHandles() {
+            return targetHandleSides(this.node, this.getConns() || [], this.dn)
         },
-        // 連接點依「實際連線使用之方位」顯示(conn層級錨點優先), 無邊時回退節點/預設方位
         usedSourceSides() {
-            const def = this.nodeToPosition
-            const conns = this.getConns() || []
-            const sides = []
-            for (const c of conns) {
-                if (c.from !== this.node.id) continue
-                const p = c.fromPosition || def
-                if (sides.indexOf(p) < 0) sides.push(p)
-            }
-            return sides.length ? sides : [def]
+            return this.sourceHandles.map(h => h.side)
         },
         usedTargetSides() {
-            const def = this.nodeFromPosition
-            const conns = this.getConns() || []
-            const sides = []
-            for (const c of conns) {
-                if (c.to !== this.node.id) continue
-                const p = c.toPosition || def
-                if (sides.indexOf(p) < 0) sides.push(p)
-            }
-            return sides.length ? sides : [def]
+            return this.targetHandles.map(h => h.side)
         },
         isDiamond() {
             return this.node.shape === 'diamond'
@@ -99,6 +87,14 @@ export default {
         },
     },
     methods: {
+        sourceBindingFor(p) {
+            const h = this.sourceHandles.find(x => x.side === p)
+            return h ? h.binding : 'auto'
+        },
+        targetBindingFor(p) {
+            const h = this.targetHandles.find(x => x.side === p)
+            return h ? h.binding : 'auto'
+        },
         // 同一側同時有入點與出點時錯開(入33%/出67%), 否則置中
         isBothSide(p) {
             return this.usedSourceSides.indexOf(p) >= 0 && this.usedTargetSides.indexOf(p) >= 0

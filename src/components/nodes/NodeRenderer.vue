@@ -38,6 +38,7 @@
       @node-resize="$emit('node-resize', $event)"
       @node-resize-end="$emit('node-resize-end', $event)"
       @node-activate="$emit('node-activate', $event)"
+      @node-anchors-unfix="$emit('node-anchors-unfix', $event)"
     />
   </div>
 </template>

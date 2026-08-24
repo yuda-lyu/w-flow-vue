@@ -1,7 +1,11 @@
+import { nodeSameSide } from './anchorPolicy.mjs'
+
 /**
  * Calculate the absolute position of a handle on the canvas.
+ * @param {Object} [defNode] - 節點層級預設(opt.defNode*); same-side 判定併入 defNode 層,
+ *                             與把手/邊之錨點解析(anchorPolicy)同一基準
  */
-export function getHandlePosition(node, handlePosition, nodeInternals, handleType) {
+export function getHandlePosition(node, handlePosition, nodeInternals, handleType, defNode) {
     const internals = nodeInternals || {}
     const w = (internals.width) || node.width || 150
     const h = (internals.height) || node.height || 40
@@ -13,8 +17,7 @@ export function getHandlePosition(node, handlePosition, nodeInternals, handleTyp
     const isTriangle = ns === 'triangle' || ns === 'triangle-right' || ns === 'triangle-down' || ns === 'triangle-left'
 
     // Check if this is a default node with source and target on the same side
-    const sameSide = node.type === 'basic' &&
-    (node.toPosition || 'bottom') === (node.fromPosition || 'top')
+    const sameSide = nodeSameSide(node, defNode)
     let ratio = 0.5
     if (sameSide && handleType === 'target') ratio = 0.33
     if (sameSide && handleType === 'source') ratio = 0.67

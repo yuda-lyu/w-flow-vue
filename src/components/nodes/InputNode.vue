@@ -2,10 +2,11 @@
   <div class="vue-flow__node-input">
     <div class="vue-flow__node-label">{{ node.name }}</div>
     <Handle
-      v-for="p in usedSourceSides"
-      :key="'s-' + p"
+      v-for="h in sourceHandles"
+      :key="'s-' + h.side"
       type="source"
-      :position="p"
+      :position="h.side"
+      :binding="h.binding"
       :connectable="connectable"
       :locked="locked"
       @connect-start="$emit('connect-start', $event)"
@@ -15,6 +16,7 @@
 
 <script>
 import Handle from './Handle.vue'
+import { sourceHandleSides } from '../../js/anchorPolicy.mjs'
 
 export default {
     name: 'InputNode',
@@ -29,17 +31,9 @@ export default {
         dn() {
             return this.getDefNode()
         },
-        // 連接點依「實際連線使用之方位」顯示(conn.fromPosition 逐邊錨點優先), 無任何出邊才回退節點/預設方位
-        usedSourceSides() {
-            const def = this.node.toPosition || this.dn.toPosition || 'bottom'
-            const conns = this.getConns() || []
-            const sides = []
-            for (const c of conns) {
-                if (c.from !== this.node.id) continue
-                const p = c.fromPosition || def
-                if (sides.indexOf(p) < 0) sides.push(p)
-            }
-            return sides.length ? sides : [def]
+        //把手集合由 anchorPolicy 單一來源解析: 預設 Auto 把手永遠存在, 各出邊之 Fixed 錨點附加
+        sourceHandles() {
+            return sourceHandleSides(this.node, this.getConns() || [], this.dn)
         },
     },
 }
