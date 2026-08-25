@@ -1,5 +1,12 @@
 <template>
-  <div :style="`width:${widthInp}px; height:${heightInp}px;`">
+  <!-- data-flow-id: 建線 DOM adapter 之 flow 歸屬檢查錨點(頁面可能有多個 flow 實例);
+       vue-flow--connecting: 建線期間之根 class, 靜態 CSS 據此切換游標/把手三態/齒輪縮放把手隱藏
+       (取代原 document.head 注入全域樣式——全域 * 選擇器會污染整頁與其他 flow 實例) -->
+  <div
+    :style="`width:${widthInp}px; height:${heightInp}px;`"
+    :data-flow-id="flowId"
+    :class="{ 'vue-flow--connecting': isConnecting }"
+  >
   <FlowCanvas
     v-if="inited"
     ref="canvas"
@@ -127,7 +134,9 @@ import ConnectionLine from './edges/ConnectionLine.vue'
 import Controls from './ui/Controls.vue'
 import { getHandlePosition, getOverlappingNodes, snapPosition, clampPosition } from '../js/geometry'
 import { clearStepCache } from '../js/edgePath'
-import { isValidConnection, generateId } from '../js/graph'
+import { generateId } from '../js/graph'
+import { assessConnection } from '../js/connectPolicy.mjs'
+import { findHandleElAt, describeHandleEndpoint, setHandleConnectStatus, setHandleConnectRole } from '../js/handleDom.mjs'
 import { NODE_DEFAULTS, CONN_DEFAULTS } from '../js/defaults'
 
 /**
@@ -259,7 +268,12 @@ import { NODE_DEFAULTS, CONN_DEFAULTS } from '../js/defaults'
  * @prop {string}   [opt.defConnCreatingEdgeColor='#b1b1b7']  Drag-line color
  * @prop {number}   [opt.defConnCreatingEdgeWidth=1]          Drag-line width (px)
  * @prop {string}   [opt.defConnCreatingEdgeDasharray='5 5'] Drag-line dash pattern ('' for solid)
- * @prop {Function} [opt.funValidConnCreating=null]      Custom connection validator fn(connection) → boolean
+ * @prop {Function} [opt.funValidConnCreating=null]      Custom connection validator fn(connection) → boolean.
+ *   須為同步純函式(無副作用): 除放開(commit)外, 拖線中游標移入把手(hover 目標變更)時亦會被呼叫一次,
+ *   以即時標示落點可否連線(valid/invalid); 兩處收到之 connection 形狀完全相同(含已烙印之 fromPosition/toPosition)。
+ *   connect-end 事件之第二參數為判定結果 { valid, reason, connection }(additive, 第一參數仍為原生 event),
+ *   reason ∈ 'no-endpoint'|'origin-not-source'|'target-not-target'|'not-connectable'|'self'|'missing-node'|
+ *   'from-output'|'to-input'|'duplicate'|'custom'|'cancelled'|null
  *
  * ─── Default Connection ────────────────────────────────────
  * @prop {string}   [opt.defConnType='bezier']            Default conn type: 'bezier' | 'straight' | 'step' | 'smoothstep'
@@ -350,6 +364,10 @@ export default {
                 fromPosition: 'bottom',
                 toX: 0,
                 toY: 0,
+                //游標懸於把手時之曲線進入方位(把手之 data-handle-position; 離開把手回復 'top')
+                toPosition: 'top',
+                //游標下落點之即時判定: 'none'(非把手)|'valid'|'invalid'; 僅 ConnectionLine 讀取(細粒度)
+                dropStatus: 'none',
             },
             connectingFrom: null,
 
@@ -407,11 +425,15 @@ export default {
         document.removeEventListener('mousemove', this.onDocMouseMove)
         document.removeEventListener('mouseup', this.onDocMouseUp)
         window.removeEventListener('blur', this.onWindowBlur)
-        //建線進行中被銷毀: 插入document.head之全域樣式不會自行移除, 且該樣式含opacity:0與pointer-events:none,
-        //殘留會使整頁齒輪與縮放把手隱形且不可點, 直到重新整理; 此處不發connect-end(元件已在銷毀流程中)
-        this.removeConnectCursorStyle()
+        //建線進行中被銷毀: 把手上的 data-connect-* 暫態標記為 DOM 屬性, 不隨元件狀態消失,
+        //須顯式清理(根 class 隨元素移除自然消失); 此處不發connect-end(元件已在銷毀流程中)
+        this.resetConnectGesture()
     },
     computed: {
+        //flow 實例識別: DOM adapter 據此檢查 elementFromPoint 撿到的把手是否屬於本實例
+        flowId() {
+            return `wf-${this._uid}`
+        },
         widthInp() {
             return this.opt.width || 800
         },
@@ -1055,19 +1077,31 @@ export default {
             if (this.locked || !this.nodesConnectable) return
             //建線只能自source(連出)型handle出發: target(連入)型handle拖曳不啟動建線, 維持方向語義
             if (payload.handleType !== 'source') return
-            //重入守衛: Handle.onMouseDown不判event.button, 故拉線途中對另一source handle按右鍵/中鍵會再次觸發本函式,
-            //若重跑啟動流程則_connectCursorStyle被新樣式覆寫, 舊樣式失去參照而永久滯留document.head(已重現: 放開與銷毀後皆殘留)
+            //重入守衛(縱深第二層, Handle已擋非主鍵): 拉線途中他途再送connect-start不得重跑啟動流程,
+            //否則出發把手標記/狀態被改寫而失去清理參照
             if (this.isConnecting) return
-            //節點不存在即不啟動: 此檢查須先於狀態與樣式之設定, 否則早退會留下isConnecting與已插入之全域樣式
+            //節點不存在即不啟動: 此檢查須先於狀態設定, 否則早退會留下isConnecting與把手標記
             const node = this.nodeById(payload.nodeId)
             if (!node) return
 
+            //出發 endpoint(preview/commit 共用之判定輸入; element 供暫態視覺標記與清理)
+            const originEl = payload.event
+                ? (payload.event.currentTarget || (payload.event.target && payload.event.target.closest && payload.event.target.closest('.vue-flow__handle')))
+                : null
+            this._connectOrigin = {
+                nodeId: payload.nodeId,
+                handleId: payload.handleId || null,
+                type: 'source',
+                position: payload.handlePosition || null,
+                binding: payload.handleBinding || 'auto',
+                connectable: true,
+                element: originEl || null,
+            }
+            this._connectHoverEl = null
+            setHandleConnectRole(originEl, 'origin')
+
             this.connectionVisual.active = true
             this.connectingFrom = payload
-            // Lock cursor to default during connecting, only handles show crosshair
-            this._connectCursorStyle = document.createElement('style')
-            this._connectCursorStyle.textContent = '* { cursor: default !important; } .vue-flow__handle { cursor: crosshair !important; } .vue-flow__node-settings, .vue-flow__edge-settings, .vue-flow__resize { opacity: 0 !important; pointer-events: none !important; }'
-            document.head.appendChild(this._connectCursorStyle)
 
             const pos = getHandlePosition(
                 node, payload.handlePosition,
@@ -1079,6 +1113,8 @@ export default {
             this.connectionVisual.fromPosition = payload.handlePosition
             this.connectionVisual.toX = pos.x
             this.connectionVisual.toY = pos.y
+            this.connectionVisual.toPosition = 'top'
+            this.connectionVisual.dropStatus = 'none'
 
             this.$emit('connect-start', {
                 nodeId: payload.nodeId,
@@ -1092,73 +1128,92 @@ export default {
             const vp = this.viewport
             this.connectionVisual.toX = (event.clientX - rect.left - vp.x) / vp.zoom
             this.connectionVisual.toY = (event.clientY - rect.top - vp.y) / vp.zoom
+            //游標下落點之即時判定(對齊 React Flow/Vue Flow: 拖曳中逐 hover 目標評估, 非只在放開時):
+            //僅於「游標下把手 identity 改變」時判定一次並標記, 不逐幀重算(validator 呼叫紀律)
+            const handleEl = findHandleElAt(event.clientX, event.clientY)
+            if (handleEl !== this._connectHoverEl) {
+                setHandleConnectStatus(this._connectHoverEl, null)
+                this._connectHoverEl = handleEl
+                let status = 'none'
+                let toPosition = 'top'
+                if (handleEl) {
+                    const target = describeHandleEndpoint(handleEl, this.flowId)
+                    if (target) {
+                        //preview 與 commit 共用 assessConnection(相同 endpoint 對必得相同結論);
+                        //宿主 validator 拋錯視為 invalid(hover 屬預覽, 不得讓 mousemove listener 逐次拋錯;
+                        //commit 路徑之拋錯由 endConnect 之 finally 保證清理後原樣上拋)
+                        let r
+                        try {
+                            r = assessConnection(this._connectOrigin, target, {
+                                nodes: this.nodes, conns: this.conns, validator: this.funValidConnCreating,
+                            })
+                        }
+                        catch (e) {
+                            r = { valid: false }
+                        }
+                        status = r.valid ? 'valid' : 'invalid'
+                        if (target.position) toPosition = target.position
+                        setHandleConnectStatus(handleEl, status)
+                    }
+                    //他 flow 實例之把手(describe 回 null): 不標記不反應, status 維持 'none'
+                }
+                if (this.connectionVisual.dropStatus !== status) this.connectionVisual.dropStatus = status
+                if (this.connectionVisual.toPosition !== toPosition) this.connectionVisual.toPosition = toPosition
+            }
         },
         endConnect(event) {
-            // Find handle element under cursor
-            const el = document.elementFromPoint(event.clientX, event.clientY)
-            const handleEl = el && el.closest && el.closest('.vue-flow__handle')
-
-            if (handleEl && this.connectingFrom && handleEl.dataset.handleType === 'target') {
-                //落點限target(連入)型handle: 連出點不可被當作輸入端(如input節點僅有連出點, 不可作為連線終點)
-                const toNodeEl = handleEl.closest('.vue-flow__node')
-                const toNodeId = toNodeEl ? toNodeEl.dataset.id : null
-
-                if (toNodeId) {
-                    //逐邊錨點只在把手宣告 binding='fixed' 時烙印(anchorPolicy 之 Auto/Fixed 語義):
-                    //預設 Auto 把手拉出的邊不寫方位, 動態跟隨節點之 To/From Handle 設定與 defNode;
-                    //why: 原本無條件烙印, 使「自唯一預設把手拉線(無選擇)」被當成明確指定,
-                    //     此後 conn 層永遠蓋過節點層 → 節點只要有一條邊, To Handle 設定即看似失效(已重現)
-                    const fromFixed = this.connectingFrom.handleBinding === 'fixed'
-                    const toFixed = handleEl.dataset.handleBinding === 'fixed'
-                    const connection = {
-                        from: this.connectingFrom.nodeId,
-                        to: toNodeId,
-                        ...(fromFixed && this.connectingFrom.handlePosition ? { fromPosition: this.connectingFrom.handlePosition } : {}),
-                        ...(toFixed && handleEl.dataset.handlePosition ? { toPosition: handleEl.dataset.handlePosition } : {}),
-                    }
-
-                    const valid = isValidConnection(
-                        connection,
-                        this.nodes,
-                        this.conns,
-                        this.funValidConnCreating
-                    )
-
-                    if (valid) {
+            //落點判定與 commit: 與 doConnect 之 preview 共用 describeHandleEndpoint + assessConnection,
+            //不另手組 connection(preview/commit 同源, 不會分家)。
+            //逐邊錨點只在把手宣告 binding='fixed' 時烙印(anchorPolicy 之 Auto/Fixed 語義, 由
+            //buildConnectionCandidate 統一實作): 預設 Auto 把手拉出的邊不寫方位, 動態跟隨節點設定;
+            //why: 原本無條件烙印, 使 conn 層永遠蓋過節點層 → To Handle 設定看似失效(已重現)
+            let result = { valid: false, reason: 'no-endpoint', connection: null }
+            try {
+                const handleEl = findHandleElAt(event.clientX, event.clientY)
+                const target = describeHandleEndpoint(handleEl, this.flowId)
+                if (target && this._connectOrigin) {
+                    result = assessConnection(this._connectOrigin, target, {
+                        nodes: this.nodes, conns: this.conns, validator: this.funValidConnCreating,
+                    })
+                    if (result.valid) {
+                        const connection = result.connection
                         const connId = `e${connection.from}-${connection.to}`
                         const conn = {
                             id: this.connById(connId) ? generateId() : connId,
                             ...connection,
                         }
-
                         this.addConn(conn)
                         this.emitConnsUpdate()
                         this.$emit('connect', connection)
                     }
                 }
             }
-
-            this.$emit('connect-end', event)
-            this.connectionVisual.active = false
-            this.connectingFrom = null
-            this.removeConnectCursorStyle()
-        },
-        //移除建線期間插入document.head之全域樣式; 以parentNode判定而非旗標, 故重複呼叫亦安全
-        //(原本直接document.head.removeChild, 若該樣式已被移除會拋NotFoundError)
-        removeConnectCursorStyle() {
-            if (this._connectCursorStyle && this._connectCursorStyle.parentNode) {
-                this._connectCursorStyle.parentNode.removeChild(this._connectCursorStyle)
+            finally {
+                //清理入 finally: validator/addConn/宿主事件handler拋錯時不得留下建線狀態與把手標記
+                //(原版清理接在 commit 之後循序執行, 中途拋錯即黏死 isConnecting 與全域樣式)
+                //connect-end 第二參數為判定結果(additive): 宿主可據 reason 說明為何未建線
+                this.$emit('connect-end', event, { valid: result.valid, reason: result.reason, connection: result.connection })
+                this.resetConnectGesture()
             }
-            this._connectCursorStyle = null
         },
         //取消建線: 不做落點判定亦不建立連線, 供視窗失焦與buttons補收尾使用——二者皆無「放開當下」之有效座標,
         //交由endConnect會以錯誤座標做drop hit-test; 仍發connect-end使宿主能收尾自身UI(與endDrag於失焦時照發node-drag-stop同理)
         cancelConnect(event) {
             if (!this.isConnecting) return
+            this.$emit('connect-end', event, { valid: false, reason: 'cancelled', connection: null })
+            this.resetConnectGesture()
+        },
+        //建線手勢之統一清理(正常放開/取消/銷毀共用): 重置視覺容器欄位、清除出發與hover把手之暫態標記。
+        //把手標記為 DOM dataset(非反應式), 必須顯式清除; 重複呼叫安全(setHandleConnectXxx 對 null 無操作)
+        resetConnectGesture() {
             this.connectionVisual.active = false
+            this.connectionVisual.dropStatus = 'none'
+            this.connectionVisual.toPosition = 'top'
             this.connectingFrom = null
-            this.removeConnectCursorStyle()
-            this.$emit('connect-end', event)
+            setHandleConnectStatus(this._connectHoverEl, null)
+            this._connectHoverEl = null
+            if (this._connectOrigin) setHandleConnectRole(this._connectOrigin.element, null)
+            this._connectOrigin = null
         },
 
         // --- Selection ---
@@ -1600,4 +1655,32 @@ export default {
 <style scoped>
 
 
+</style>
+
+<!-- 建線期間之全域規則(非scoped: 目標元素位於深層子元件, scoped 之 data-v 屬性搆不到);
+     一律錨定於根 class .vue-flow--connecting 之下, 只影響建線中的 flow 實例,
+     取代原 document.head 注入之 * 全域選擇器(污染整頁與其他 flow 實例, 且拋錯時殘留) -->
+<style>
+/* 鎖游標: 建線期間畫布內一律 default, 僅依把手判定狀態顯示 crosshair/not-allowed */
+.vue-flow--connecting,
+.vue-flow--connecting * {
+  cursor: default !important;
+}
+/* 出發把手與判定合法之落點: crosshair(可連) */
+.vue-flow--connecting .vue-flow__handle[data-connect-role="origin"],
+.vue-flow--connecting .vue-flow__handle[data-connect-status="valid"] {
+  cursor: crosshair !important;
+}
+/* 判定不合法之落點, 以及永不可作為落點之 source 把手: not-allowed(不可連) */
+.vue-flow--connecting .vue-flow__handle[data-connect-status="invalid"],
+.vue-flow--connecting .vue-flow__handle--source:not([data-connect-role="origin"]) {
+  cursor: not-allowed !important;
+}
+/* 建線期間隱藏齒輪與縮放把手(避免遮擋落點與誤觸) */
+.vue-flow--connecting .vue-flow__node-settings,
+.vue-flow--connecting .vue-flow__edge-settings,
+.vue-flow--connecting .vue-flow__resize {
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
 </style>

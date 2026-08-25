@@ -787,6 +787,84 @@ const CASES = [
         await shot(page, 'flow-E2E-031-tohandle-right', { clip: clipAround(b, PAD * 2) })
     }),
 
+    mkCase('E2E-032', 'connect-feedback', async (page) => {
+        //單一 case 之承接式 journey(拖線中各 hover 階段承接同一次按住不放之真實手勢, 無法乾淨 seed 中間點):
+        //起手 → hover 不可連(他節點 source)→ hover 自己節點(自我連線)→ hover 合法 target → 於不可連處放開
+        const n0 = await getConnsLen(page)
+        const q = (sel) => page.evaluate((s) => {
+            const el = document.querySelector(s)
+            if (!el) return null
+            const cs = getComputedStyle(el)
+            return {
+                status: el.getAttribute('data-connect-status'),
+                role: el.getAttribute('data-connect-role'),
+                cursor: cs.cursor,
+                opacity: cs.opacity,
+            }
+        }, sel)
+        const lineClass = () => page.evaluate(() => {
+            const p = document.querySelector('.vue-flow__connection-path')
+            return p ? p.getAttribute('class') : null
+        })
+        const selSrc2 = '.vue-flow__node[data-id="2"] .vue-flow__handle[data-handle-type="source"]'
+        const selTgt2 = '.vue-flow__node[data-id="2"] .vue-flow__handle[data-handle-type="target"]'
+        const selSrc9 = '.vue-flow__node[data-id="9"] .vue-flow__handle[data-handle-type="source"]'
+        const selTgt9 = '.vue-flow__node[data-id="9"] .vue-flow__handle[data-handle-type="target"]'
+        const box = async (sel) => (await page.$(sel)).boundingBox()
+
+        //act(真滑鼠): 自節點2之 source 把手按住拉出
+        const sb = await box(selSrc2)
+        await page.mouse.move(sb.x + sb.width / 2, sb.y + sb.height / 2)
+        await page.mouse.down()
+        await page.mouse.move(sb.x + sb.width / 2 + 30, sb.y + sb.height / 2 + 30, { steps: 4 })
+        await page.waitForTimeout(200)
+
+        //spec: 出發把手標記 origin; 其他 source 把手(永不可為落點)一律淡化, 消除可連暗示
+        const o = await q(selSrc2)
+        expectOk('E2E-032 出發把手標記 origin', !!o && o.role === 'origin', `o=${JSON.stringify(o)}`)
+        const dim = await q(selSrc9)
+        expectOk('E2E-032 他節點 source 把手淡化', !!dim && Number(dim.opacity) < 0.5, `opacity=${dim && dim.opacity}`)
+
+        //spec: hover 他節點之 source 把手 → invalid(紅色 ring + not-allowed), 預覽線轉 danger
+        const s9 = await box(selSrc9)
+        await page.mouse.move(s9.x + s9.width / 2, s9.y + s9.height / 2, { steps: 8 })
+        await page.waitForTimeout(200)
+        const inv = await q(selSrc9)
+        expectOk('E2E-032 hover 他節點 source → invalid', !!inv && inv.status === 'invalid', `inv=${JSON.stringify(inv)}`)
+        expectOk('E2E-032 invalid 落點游標 not-allowed', !!inv && inv.cursor === 'not-allowed', `cursor=${inv && inv.cursor}`)
+        expectOk('E2E-032 預覽線標 invalid', String(await lineClass()).includes('vue-flow__connection-path--invalid'), `class=${await lineClass()}`)
+        const b9 = await nodeBox(page, '9')
+        await shot(page, 'flow-E2E-032-connect-feedback-invalid', { clip: clipAround(b9, PAD), parkMouse: false })
+
+        //spec: 自己節點之把手亦為不可連(自我連線禁止), hover → invalid
+        const t2 = await box(selTgt2)
+        await page.mouse.move(t2.x + t2.width / 2, t2.y + t2.height / 2, { steps: 8 })
+        await page.waitForTimeout(200)
+        const self = await q(selTgt2)
+        expectOk('E2E-032 hover 自己節點把手 → invalid(自我連線)', !!self && self.status === 'invalid', `self=${JSON.stringify(self)}`)
+
+        //spec: hover 合法 target → valid(主題藍 ring + crosshair), 預覽線轉 valid
+        const t9 = await box(selTgt9)
+        await page.mouse.move(t9.x + t9.width / 2, t9.y + t9.height / 2, { steps: 8 })
+        await page.waitForTimeout(200)
+        const val = await q(selTgt9)
+        expectOk('E2E-032 hover 合法落點 → valid', !!val && val.status === 'valid', `val=${JSON.stringify(val)}`)
+        expectOk('E2E-032 valid 落點游標 crosshair', !!val && val.cursor === 'crosshair', `cursor=${val && val.cursor}`)
+        expectOk('E2E-032 預覽線標 valid', String(await lineClass()).includes('vue-flow__connection-path--valid'), `class=${await lineClass()}`)
+        await shot(page, 'flow-E2E-032-connect-feedback-valid', { clip: clipAround(b9, PAD), parkMouse: false })
+
+        //spec: 於不可連落點放開 → 不建線; 手勢暫態(標記/根class)全清
+        await page.mouse.move(s9.x + s9.width / 2, s9.y + s9.height / 2, { steps: 6 })
+        await page.mouse.up()
+        await page.waitForTimeout(400)
+        const n1 = await getConnsLen(page)
+        expectOk('E2E-032 於不可連落點放開不建線', n1 === n0, `conns ${n0} → ${n1}`)
+        const marks = await page.evaluate(() => document.querySelectorAll('[data-connect-role], [data-connect-status]').length)
+        expectOk('E2E-032 放開後暫態標記全清', marks === 0, `marks=${marks}`)
+        const rootCls = await page.evaluate(() => document.querySelector('[data-flow-id]').classList.contains('vue-flow--connecting'))
+        expectOk('E2E-032 放開後根 connecting class 移除', rootCls === false, `has=${rootCls}`)
+    }),
+
 ]
 
 // ─────────────────────────── runner ───────────────────────────

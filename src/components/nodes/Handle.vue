@@ -46,6 +46,10 @@ export default {
     methods: {
         onMouseDown(event) {
             if (!this.connectable) return
+            //僅主鍵可啟動建線: 右鍵/中鍵不 emit(WFlowVue 之重入守衛為第二層縱深)
+            if (event.button !== 0) return
+            //阻止文字選取隨拖線啟動(把手上按下拖曳屬建線手勢, 非選字)
+            event.preventDefault()
             this.$emit('connect-start', {
                 event,
                 handleId: this.id || this.type,
@@ -112,4 +116,39 @@ export default {
 .vue-flow__handle--bottom:hover { bottom: -5px; }
 .vue-flow__handle--left:hover { left: -5px; }
 .vue-flow__handle--right:hover { right: -5px; }
+
+/* ─── 建線期間(祖先 .vue-flow--connecting)之三態視覺 ───
+   通用 hover 效果一律抑制(回復基準幾何與色彩): 可連性只由精確判定之 data-connect-* 標記指示,
+   否則「不能連的落點 hover 起來與能連的一樣」會誤導使用者(對齊 React Flow/Vue Flow:
+   僅游標下把手依 isValidConnection 即時標 valid/invalid) */
+.vue-flow--connecting .vue-flow__handle:hover {
+  background: #555;
+  width: 8px;
+  height: 8px;
+}
+.vue-flow--connecting .vue-flow__handle--source:hover { background: #fff; }
+.vue-flow--connecting .vue-flow__handle--top:hover { top: -4px; }
+.vue-flow--connecting .vue-flow__handle--bottom:hover { bottom: -4px; }
+.vue-flow--connecting .vue-flow__handle--left:hover { left: -4px; }
+.vue-flow--connecting .vue-flow__handle--right:hover { right: -4px; }
+/* 方向語義(strict): source 把手永不可作為落點, 建線期間一律淡化(出發把手除外) */
+.vue-flow--connecting .vue-flow__handle--source:not([data-connect-role="origin"]) {
+  opacity: 0.4;
+}
+/* 出發把手(connectingfrom): 保持強調, 標示線之來源 */
+.vue-flow__handle[data-connect-role="origin"] {
+  box-shadow: 0 0 0 3px rgba(0, 65, 208, 0.35);
+}
+/* 游標下之精確判定(僅建線期間由 adapter 標記): 合法=主題藍 ring, 不合法=danger ring
+   採 ring(box-shadow)不改 width/height, 避免尺寸變更造成 hit box 幾何抖動
+   (帶祖先選擇器使權重與淡化/hover 抑制規則平手, 依源碼順序後者勝出) */
+.vue-flow--connecting .vue-flow__handle[data-connect-status="valid"] {
+  background: #0041d0;
+  box-shadow: 0 0 0 4px rgba(0, 65, 208, 0.45);
+}
+.vue-flow--connecting .vue-flow__handle[data-connect-status="invalid"] {
+  background: #d14343;
+  box-shadow: 0 0 0 4px rgba(209, 67, 67, 0.45);
+  opacity: 1;
+}
 </style>

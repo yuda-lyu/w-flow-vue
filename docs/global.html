@@ -29,7 +29,7 @@
 <nav >
     
     
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-WFlowVue.html">WFlowVue</a></li></ul><h3>Global</h3><ul><li><a href="global.html#NODE_DEFAULTS">NODE_DEFAULTS</a></li><li><a href="global.html#SOURCE_FALLBACK">SOURCE_FALLBACK</a></li><li><a href="global.html#buildRoundedPath">buildRoundedPath</a></li><li><a href="global.html#clampPosition">clampPosition</a></li><li><a href="global.html#fixSvgNs">fixSvgNs</a></li><li><a href="global.html#generateId">generateId</a></li><li><a href="global.html#getBezierPath">getBezierPath</a></li><li><a href="global.html#getControlOffset">getControlOffset</a></li><li><a href="global.html#getDiamondEdgePoint">getDiamondEdgePoint</a></li><li><a href="global.html#getEllipseEdgePoint">getEllipseEdgePoint</a></li><li><a href="global.html#getHandlePosition">getHandlePosition</a></li><li><a href="global.html#getOverlappingNodes">getOverlappingNodes</a></li><li><a href="global.html#getSmoothStepPath">getSmoothStepPath</a></li><li><a href="global.html#getStepPath">getStepPath</a></li><li><a href="global.html#getStraightPath">getStraightPath</a></li><li><a href="global.html#getTriangleEdgePoint">getTriangleEdgePoint</a></li><li><a href="global.html#isValidConnection">isValidConnection</a></li><li><a href="global.html#labelAtHalfLength">labelAtHalfLength</a></li><li><a href="global.html#lookupRoute">lookupRoute</a></li><li><a href="global.html#nodeSameSide">nodeSameSide</a></li><li><a href="global.html#nodeSourceSide">nodeSourceSide</a></li><li><a href="global.html#nodeTargetSide">nodeTargetSide</a></li><li><a href="global.html#normalizeConnPoints">normalizeConnPoints</a></li><li><a href="global.html#orthogonalizeThroughPoints">orthogonalizeThroughPoints</a></li><li><a href="global.html#pickMenuValue">pickMenuValue</a></li><li><a href="global.html#rectsOverlap">rectsOverlap</a></li><li><a href="global.html#resolveSourceAnchor">resolveSourceAnchor</a></li><li><a href="global.html#resolveTargetAnchor">resolveTargetAnchor</a></li><li><a href="global.html#segmentFallback">segmentFallback</a></li><li><a href="global.html#snapPosition">snapPosition</a></li><li><a href="global.html#sourceHandleSides">sourceHandleSides</a></li><li><a href="global.html#targetHandleSides">targetHandleSides</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-WFlowVue.html">WFlowVue</a></li></ul><h3>Global</h3><ul><li><a href="global.html#NODE_DEFAULTS">NODE_DEFAULTS</a></li><li><a href="global.html#SOURCE_FALLBACK">SOURCE_FALLBACK</a></li><li><a href="global.html#assessConnection">assessConnection</a></li><li><a href="global.html#assessGraphConnection">assessGraphConnection</a></li><li><a href="global.html#buildConnectionCandidate">buildConnectionCandidate</a></li><li><a href="global.html#buildRoundedPath">buildRoundedPath</a></li><li><a href="global.html#clampPosition">clampPosition</a></li><li><a href="global.html#describeHandleEndpoint">describeHandleEndpoint</a></li><li><a href="global.html#findHandleElAt">findHandleElAt</a></li><li><a href="global.html#fixSvgNs">fixSvgNs</a></li><li><a href="global.html#generateId">generateId</a></li><li><a href="global.html#getBezierPath">getBezierPath</a></li><li><a href="global.html#getControlOffset">getControlOffset</a></li><li><a href="global.html#getDiamondEdgePoint">getDiamondEdgePoint</a></li><li><a href="global.html#getEllipseEdgePoint">getEllipseEdgePoint</a></li><li><a href="global.html#getHandlePosition">getHandlePosition</a></li><li><a href="global.html#getOverlappingNodes">getOverlappingNodes</a></li><li><a href="global.html#getSmoothStepPath">getSmoothStepPath</a></li><li><a href="global.html#getStepPath">getStepPath</a></li><li><a href="global.html#getStraightPath">getStraightPath</a></li><li><a href="global.html#getTriangleEdgePoint">getTriangleEdgePoint</a></li><li><a href="global.html#isValidConnection">isValidConnection</a></li><li><a href="global.html#labelAtHalfLength">labelAtHalfLength</a></li><li><a href="global.html#lookupRoute">lookupRoute</a></li><li><a href="global.html#nodeSameSide">nodeSameSide</a></li><li><a href="global.html#nodeSourceSide">nodeSourceSide</a></li><li><a href="global.html#nodeTargetSide">nodeTargetSide</a></li><li><a href="global.html#normalizeConnPoints">normalizeConnPoints</a></li><li><a href="global.html#orthogonalizeThroughPoints">orthogonalizeThroughPoints</a></li><li><a href="global.html#pickMenuValue">pickMenuValue</a></li><li><a href="global.html#rectsOverlap">rectsOverlap</a></li><li><a href="global.html#resolveSourceAnchor">resolveSourceAnchor</a></li><li><a href="global.html#resolveTargetAnchor">resolveTargetAnchor</a></li><li><a href="global.html#segmentFallback">segmentFallback</a></li><li><a href="global.html#setHandleConnectRole">setHandleConnectRole</a></li><li><a href="global.html#setHandleConnectStatus">setHandleConnectStatus</a></li><li><a href="global.html#snapPosition">snapPosition</a></li><li><a href="global.html#sourceHandleSides">sourceHandleSides</a></li><li><a href="global.html#targetHandleSides">targetHandleSides</a></li></ul>
     
 </nav>
 
@@ -379,6 +379,263 @@ HTML元素因而無排版盒(0x0不可見)。</p>
 
     
 
+    <h4 class="name" id="assessConnection"><span class="type-signature"></span>assessConnection<span class="signature">()</span><span class="type-signature"></span></h4>
+
+    
+
+
+
+
+<dl class="details">
+    
+    <dt class="tag-description">Description:</dt>
+    <dd class="tag-description"><ul class="dummy"><li><p>完整判定: handle 能力 → 候選建構 → 圖層級判定。
+回傳 { valid, reason, connection }; connection 於能力層即拒絕時為 null。</p></li></ul></dd>
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="js_connectPolicy.mjs.html">js/connectPolicy.mjs</a>, <a href="js_connectPolicy.mjs.html#line53">line 53</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="assessGraphConnection"><span class="type-signature"></span>assessGraphConnection<span class="signature">()</span><span class="type-signature"></span></h4>
+
+    
+
+
+
+
+<dl class="details">
+    
+    <dt class="tag-description">Description:</dt>
+    <dd class="tag-description"><ul class="dummy"><li><p>圖層級判定: connection 形狀對圖(nodes/conns)與 custom validator 是否合法。
+回傳 { valid, reason }; reason ∈ 'no-endpoint'|'missing-node'|'self'|'from-output'|'to-input'|'duplicate'|'custom'|null</p></li></ul></dd>
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="js_connectPolicy.mjs.html">js/connectPolicy.mjs</a>, <a href="js_connectPolicy.mjs.html#line31">line 31</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="buildConnectionCandidate"><span class="type-signature"></span>buildConnectionCandidate<span class="signature">()</span><span class="type-signature"></span></h4>
+
+    
+
+
+
+
+<dl class="details">
+    
+    <dt class="tag-description">Description:</dt>
+    <dd class="tag-description"><ul class="dummy"><li><p>由出發/目標 endpoint 建構候選 connection(preview 與 commit 共用, 不可各自手組)。</p></li></ul></dd>
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="js_connectPolicy.mjs.html">js/connectPolicy.mjs</a>, <a href="js_connectPolicy.mjs.html#line18">line 18</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+            
+
+    
+
     <h4 class="name" id="buildRoundedPath"><span class="type-signature"></span>buildRoundedPath<span class="signature">()</span><span class="type-signature"> &rarr; {Object}</span></h4>
 
     
@@ -568,6 +825,178 @@ HTML元素因而無排版盒(0x0不可見)。</p>
 
     
 
+    <h4 class="name" id="describeHandleEndpoint"><span class="type-signature"></span>describeHandleEndpoint<span class="signature">()</span><span class="type-signature"></span></h4>
+
+    
+
+
+
+
+<dl class="details">
+    
+    <dt class="tag-description">Description:</dt>
+    <dd class="tag-description"><ul class="dummy"><li><p>把手元素 → endpoint descriptor。
+flowId 歸屬檢查: 把手必須屬於本 flow 實例(頁面可能有多個/巢狀 flow,
+elementFromPoint 可能撿到他 flow 之把手; 以最近之 [data-flow-id] 祖先比對, 不符即回 null)。</p></li></ul></dd>
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="js_handleDom.mjs.html">js/handleDom.mjs</a>, <a href="js_handleDom.mjs.html#line23">line 23</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="findHandleElAt"><span class="type-signature"></span>findHandleElAt<span class="signature">()</span><span class="type-signature"></span></h4>
+
+    
+
+
+
+
+<dl class="details">
+    
+    <dt class="tag-description">Description:</dt>
+    <dd class="tag-description"><ul class="dummy"><li><p>取游標座標下之把手元素(無則 null)。</p></li></ul></dd>
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="js_handleDom.mjs.html">js/handleDom.mjs</a>, <a href="js_handleDom.mjs.html#line11">line 11</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+            
+
+    
+
     <h4 class="name" id="generateId"><span class="type-signature"></span>generateId<span class="signature">()</span><span class="type-signature"></span></h4>
 
     
@@ -584,7 +1013,7 @@ HTML元素因而無排版盒(0x0不可見)。</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="js_graph.mjs.html">js/graph.mjs</a>, <a href="js_graph.mjs.html#line33">line 33</a>
+        <a href="js_graph.mjs.html">js/graph.mjs</a>, <a href="js_graph.mjs.html#line17">line 17</a>
     </li></ul></dd>
     
 
@@ -1656,13 +2085,15 @@ Supports 4 directions: triangle (up), triangle-right, triangle-down, triangle-le
 <dl class="details">
     
     <dt class="tag-description">Description:</dt>
-    <dd class="tag-description"><ul class="dummy"><li><p>Validate a potential connection.</p></li></ul></dd>
+    <dd class="tag-description"><ul class="dummy"><li><p>Validate a potential connection.
+委派 connectPolicy 之圖層級判定(單一來源, preview/commit 共用);
+相較舊版新增「端點必須存在於圖中」——缺任一端之 connection 原本會誤判為合法。</p></li></ul></dd>
     
 
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="js_graph.mjs.html">js/graph.mjs</a>, <a href="js_graph.mjs.html#line4">line 4</a>
+        <a href="js_graph.mjs.html">js/graph.mjs</a>, <a href="js_graph.mjs.html#line8">line 8</a>
     </li></ul></dd>
     
 
@@ -2801,6 +3232,176 @@ Used when nodes are too close for OrthConnector (tooShort).</p></li></ul></dd>
 
     
 
+    <h4 class="name" id="setHandleConnectRole"><span class="type-signature"></span>setHandleConnectRole<span class="signature">()</span><span class="type-signature"></span></h4>
+
+    
+
+
+
+
+<dl class="details">
+    
+    <dt class="tag-description">Description:</dt>
+    <dd class="tag-description"><ul class="dummy"><li><p>標記/清除出發把手(role: 'origin')。</p></li></ul></dd>
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="js_handleDom.mjs.html">js/handleDom.mjs</a>, <a href="js_handleDom.mjs.html#line52">line 52</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="setHandleConnectStatus"><span class="type-signature"></span>setHandleConnectStatus<span class="signature">()</span><span class="type-signature"></span></h4>
+
+    
+
+
+
+
+<dl class="details">
+    
+    <dt class="tag-description">Description:</dt>
+    <dd class="tag-description"><ul class="dummy"><li><p>標記游標下把手之判定結果('valid' | 'invalid'); status 為空即清除。</p></li></ul></dd>
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="js_handleDom.mjs.html">js/handleDom.mjs</a>, <a href="js_handleDom.mjs.html#line43">line 43</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+            
+
+    
+
     <h4 class="name" id="snapPosition"><span class="type-signature"></span>snapPosition<span class="signature">(position, gridSize)</span><span class="type-signature"></span></h4>
 
     
@@ -3170,7 +3771,7 @@ Fixed 錨點恰為預設側時共用同一把手(視覺同位, 新拖出的邊�
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 4.0.5</a> on Mon Aug 24 2026 22:11:21 GMT+0800 (台北標準時間) using the <a href="https://github.com/clenemt/docdash">docdash</a> theme.
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 4.0.5</a> on Tue Aug 25 2026 08:07:11 GMT+0800 (台北標準時間) using the <a href="https://github.com/clenemt/docdash">docdash</a> theme.
 </footer>
 
 <script>prettyPrint();</script>
