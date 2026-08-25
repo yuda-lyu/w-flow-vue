@@ -104,15 +104,17 @@ describe('A4 不沿用拖曳之「已選不塌陷」', () => {
     })
 })
 
-describe('A5 多選鍵按住時控制項語義優先', () => {
-    test('按住多選鍵點 B 齒輪: 仍單選 B, 不 toggle', async () => {
+describe('A5 複選模式中 activate 不作用(宿主裁定推翻舊「控制項語義優先」)', () => {
+    //舊契約「按住多選鍵點齒輪仍單選」已被推翻: 複選模式中齒輪/縮放把手一律隱藏(CSS),
+    //activate 縱深守衛使 synthetic/程式化觸發亦不改選取——模式中選取變更只走 onNodeClick 之 toggle
+    test('按住多選鍵觸發 B 之 node-activate: 選取不變', async () => {
         const w = createWrapper()
         w.vm.setSelectedNodes(['1'])
         w.vm.keysPressed = { Shift: true }
         await w.vm.$nextTick()
         const nwB = nodeWrapperOf(w, '2')
         nwB.vm.$emit('node-activate', { node: nwB.vm.node })
-        expect(w.vm.selectedNodes).toEqual(['2'])
+        expect(w.vm.selectedNodes).toEqual(['1'])
         w.destroy()
     })
 })

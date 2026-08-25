@@ -58,8 +58,11 @@
          click時WPopup trigger之內層handler先跑(popup先開), 冒泡至此才轉移active, 同一手勢內完成且不掛@show -->
     <transition name="vue-flow__fade">
     <div v-if="(hovered || settingsPopupShow) && draggable && !locked && settingsEnabled" class="vue-flow__node-settings-anchor" @click="onSettingsAnchorClick">
+      <!-- 受控而非v-model: 開啟請求須經onSettingsPopupInput裁決(複選模式中拒開);
+           WPopup非isolated, trigger點擊只是$emit請求, @show跟隨實際開啟故拒開時不會幽靈emit -->
       <WPopup
-        v-model="settingsPopupShow"
+        :value="settingsPopupShow"
+        @input="onSettingsPopupInput"
         placement="right-start"
         modeHide="mousedown"
         :minWidth="null"
@@ -164,6 +167,10 @@ export default {
         isSvgShape() {
             return this.isDiamond || this.isEllipse || this.isTriangle
         },
+        //複選模式(反應式讀取注入getter): 供watcher清popup與各開啟入口gating
+        multiSelectActive() {
+            return this.getMultiSelectActive()
+        },
         classes() {
             const nodeClasses = this.node.class
                 ? (Array.isArray(this.node.class) ? this.node.class : [this.node.class])
@@ -232,6 +239,14 @@ export default {
         },
         infoPopupShow(val) {
             if (val) this.settingsPopupShow = false
+        },
+        //複選模式引擎時關閉本節點已開之popup(進入模式=畫面收束為純選取操作; 開啟入口另有各自gating,
+        //本watcher只負責清理既有狀態); computed經注入getter建立反應式依賴, watcher具值相等檢查故僅於翻轉時執行
+        multiSelectActive(val) {
+            if (val) {
+                this.infoPopupShow = false
+                this.settingsPopupShow = false
+            }
         },
     },
     mounted() {
@@ -386,8 +401,18 @@ export default {
             }
             this.infoPopupShow = val
         },
+        //設定popup之開關同樣由本元件裁決(複選模式中拒開; 關閉請求一律放行)
+        onSettingsPopupInput(val) {
+            if (val && this.getMultiSelectActive()) {
+                return
+            }
+            this.settingsPopupShow = val
+        },
+        //宿主API入口同樣gating: 複選模式中程式化開啟亦拒絕(回傳false供呼叫端判斷)
         openInfoPopup() {
+            if (this.getMultiSelectActive()) return false
             this.infoPopupShow = true
+            return true
         },
         //手勢武裝中阻止原生HTML5 drag(拖曳選取文字/圖片/連結): 原生drag一旦接管, mousemove事件流被drag事件流取代;
         //未武裝時(齒輪/nodrag區/非主鍵/未按下)不干涉, 宿主自訂拖放不受影響
@@ -421,6 +446,8 @@ export default {
             this.$emit('node-settings-delete', { node: this.node })
         },
         onResizeStart(event, edge) {
+            //複選模式中不啟動縮放(把手已隱藏, 縱深第二層; 守衛先於任何emit/preventDefault/樣式建立)
+            if (this.getMultiSelectActive()) return
             //縮放=元素專屬操作: 該節點成為唯一active(elementsSelectable守衛在WFlowVue.onNodeActivate)
             this.$emit('node-activate', { node: this.node, event })
             this.infoPopupShow = false

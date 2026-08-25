@@ -1,7 +1,9 @@
 /**
- * 多選鍵按下時抑制資訊 popup 之驗收。
+ * 多選鍵按下時抑制資訊 popup 之驗收(複選模式契約之 popup 開啟入口部分;
+ * 模式整體——affordance 隱藏/手勢守衛/效能——見 unit-multiselect-mode)。
  *
- * 需求:按住多選鍵點擊節點/連線之語義為複選, 不應同時彈出資訊卡遮擋畫面並干擾連續點選。
+ * 需求:按住多選鍵=複選模式, 模式中不得開啟任何 popup(資訊+設定, 含程式化 API 入口),
+ * 已開者於進入模式時關閉(關閉行為見 unit-multiselect-mode)。
  *
  * 實作要點(此測試即在鎖住這些前提):
  * - 以 WPopup 之 :value + @input 取代 v-model, 於 handler 攔截開啟請求;
@@ -80,11 +82,15 @@ describe('節點資訊 popup 之多選抑制', () => {
         w.destroy()
     })
 
-    test('按住多選鍵時程式化 openInfoPopup() 仍可開啟', async () => {
+    test('按住多選鍵時程式化 openInfoPopup() 亦拒開(回傳false; 複選模式所有開啟入口一致封鎖)', async () => {
         const w = createWrapper()
         await pressMultiSelect(w, true)
         const nw = nodeWrapperOf(w, '1')
-        nw.vm.openInfoPopup()
+        expect(nw.vm.openInfoPopup()).toBe(false)
+        expect(nw.vm.infoPopupShow).toBe(false)
+        //放開後 API 恢復可用
+        await pressMultiSelect(w, false)
+        expect(nw.vm.openInfoPopup()).toBe(true)
         expect(nw.vm.infoPopupShow).toBe(true)
         w.destroy()
     })
@@ -175,15 +181,26 @@ describe('多選鍵判準來自 opt, 不寫死 Shift', () => {
     })
 })
 
-describe('設定 popup 不受多選抑制(齒輪為獨立操作入口)', () => {
-    //why: 齒輪不屬於[點擊節點/連線進行複選]之語義, 且已被 onMouseDown 排除在拖曳/點擊之外;
-    //     若一併加守衛, 會造成按著多選鍵就無法使用設定按鈕之確定退化
-    test('按住多選鍵仍可開啟節點設定 popup', async () => {
+describe('設定 popup 於複選模式中一併拒開(宿主裁定: 複選中齒輪隱藏, 統一為選取操作)', () => {
+    //舊契約「設定popup不受多選抑制」已被宿主裁定推翻: 按住複選鍵=複選操作, 齒輪隱藏且不可開
+    test('按住多選鍵: 節點設定 popup 開啟請求被拒', async () => {
         const w = createWrapper()
         await pressMultiSelect(w, true)
         const nw = nodeWrapperOf(w, '1')
-        nw.vm.settingsPopupShow = true
-        expect(nw.vm.settingsPopupShow).toBe(true)
+        nw.vm.onSettingsPopupInput(true)
+        expect(nw.vm.settingsPopupShow).toBe(false)
+        w.destroy()
+    })
+
+    test('按住多選鍵: 連線設定 popup 開啟請求被拒; 放開後恢復', async () => {
+        const w = createWrapper()
+        await pressMultiSelect(w, true)
+        const ew = edgeWrapperOf(w, 'e1-2')
+        ew.vm.onSettingsPopupInput(true)
+        expect(ew.vm.settingsPopupShow).toBe(false)
+        await pressMultiSelect(w, false)
+        ew.vm.onSettingsPopupInput(true)
+        expect(ew.vm.settingsPopupShow).toBe(true)
         w.destroy()
     })
 })

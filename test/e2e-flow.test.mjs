@@ -865,6 +865,73 @@ const CASES = [
         expectOk('E2E-032 放開後根 connecting class 移除', rootCls === false, `has=${rootCls}`)
     }),
 
+    mkCase('E2E-033', 'multiselect-mode', async (page) => {
+        //宿主回報場景: 點a開popup → 按住Shift點b各部位反應不一致 → 裁定為統一複選模式
+        await clickMenu(page, 'fitView') //節點5/6須同時在視窗內(節點6原始座標在視窗外, elementFromPoint會回null)
+        await page.waitForTimeout(400)
+        const getNodePopupState = (id) => evalVm(page, `
+            const ws = (vm.$refs.nodeRenderer && vm.$refs.nodeRenderer.$refs.wrappers) || []
+            const w = ws.find(c => c.node && c.node.id === arg)
+            if (!w) return null
+            return { infoPopupShow: w.infoPopupShow, settingsPopupShow: w.settingsPopupShow }
+        `, id)
+        const vis = (sel) => page.evaluate((s) => {
+            const el = document.querySelector(s)
+            if (!el) return null
+            const cs = getComputedStyle(el)
+            return { visibility: cs.visibility, opacity: cs.opacity, pointerEvents: cs.pointerEvents }
+        }, sel)
+
+        //act 1: 點節點5本體 → 單選 + 資訊popup開啟
+        const b5 = await nodeBox(page, '5')
+        await page.mouse.click(b5.x + b5.width / 2, b5.y + b5.height / 2)
+        await page.waitForTimeout(500)
+        const st0 = await getNodePopupState('5')
+        expectOk('E2E-033 前置: 點節點5開啟資訊popup', !!st0 && st0.infoPopupShow === true, `st=${JSON.stringify(st0)}`)
+        const sel0 = await getSelectedNodes(page)
+        expectOk('E2E-033 前置: 節點5為單選', sel0.length === 1 && sel0[0] === '5', `sel=${JSON.stringify(sel0)}`)
+
+        //act 2: 按住Shift → 進入複選模式
+        await page.keyboard.down('Shift')
+        await page.waitForTimeout(300)
+        //spec: 已開之popup於進入模式時關閉
+        const st1 = await getNodePopupState('5')
+        expectOk('E2E-033 按住Shift: 已開popup關閉', !!st1 && st1.infoPopupShow === false, `st=${JSON.stringify(st1)}`)
+        //spec: 全部節點統一隱藏——齒輪/四角縮放/連出入把手(滑鼠仍hover節點5, 該三者DOM存在但computed hidden)
+        const vGear = await vis('.vue-flow__node[data-id="5"] .vue-flow__node-settings-anchor')
+        expectOk('E2E-033 設定齒輪隱藏', !!vGear && vGear.visibility === 'hidden' && vGear.pointerEvents === 'none', `v=${JSON.stringify(vGear)}`)
+        const vResize = await vis('.vue-flow__node[data-id="5"] .vue-flow__resize')
+        expectOk('E2E-033 四角縮放把手隱藏', !!vResize && vResize.visibility === 'hidden', `v=${JSON.stringify(vResize)}`)
+        const vHandle = await vis('.vue-flow__node[data-id="6"] .vue-flow__handle')
+        expectOk('E2E-033 連出入把手隱藏(全部節點)', !!vHandle && vHandle.visibility === 'hidden' && vHandle.pointerEvents === 'none', `v=${JSON.stringify(vHandle)}`)
+        //spec: 原把手位置之真實hit-test落到節點, 不落在把手(pointer-events:none)
+        const hb = await (await page.$('.vue-flow__node[data-id="5"] .vue-flow__handle')).boundingBox()
+        const hit = await page.evaluate(({ x, y }) => {
+            const el = document.elementFromPoint(x, y)
+            return { onHandle: !!(el && el.closest('.vue-flow__handle')), onNode: !!(el && el.closest('.vue-flow__node')) }
+        }, { x: hb.x + hb.width / 2, y: hb.y + hb.height / 2 })
+        expectOk('E2E-033 把手原位置hit-test不落在把手', hit.onHandle === false, `hit=${JSON.stringify(hit)}`)
+
+        //act 3: Shift+點節點6本體 → toggle加入, 節點5之選取保留(宿主目標場景), 且不開popup
+        const b6 = await nodeBox(page, '6')
+        await page.mouse.click(b6.x + b6.width / 2, b6.y + b6.height / 2)
+        await page.waitForTimeout(400)
+        const sel1 = await getSelectedNodes(page)
+        expectOk('E2E-033 Shift+點6: 5保留且6加入', sel1.includes('5') && sel1.includes('6'), `sel=${JSON.stringify(sel1)}`)
+        const st6 = await getNodePopupState('6')
+        expectOk('E2E-033 模式中點擊不開popup', !!st6 && st6.infoPopupShow === false && st6.settingsPopupShow === false, `st=${JSON.stringify(st6)}`)
+        await shot(page, 'flow-E2E-033-multiselect-mode', { clip: await getCanvasClip(page), parkMouse: false })
+
+        //act 4: 放開Shift → affordance恢復(hover節點5, 齒輪與把手重現)
+        await page.keyboard.up('Shift')
+        await page.mouse.move(b5.x + b5.width / 2, b5.y + b5.height / 2)
+        await page.waitForTimeout(500)
+        const vGear2 = await vis('.vue-flow__node[data-id="5"] .vue-flow__node-settings-anchor')
+        expectOk('E2E-033 放開後齒輪恢復', !!vGear2 && vGear2.visibility === 'visible', `v=${JSON.stringify(vGear2)}`)
+        const vHandle2 = await vis('.vue-flow__node[data-id="5"] .vue-flow__handle')
+        expectOk('E2E-033 放開後把手恢復', !!vHandle2 && vHandle2.visibility === 'visible', `v=${JSON.stringify(vHandle2)}`)
+    }),
+
 ]
 
 // ─────────────────────────── runner ───────────────────────────

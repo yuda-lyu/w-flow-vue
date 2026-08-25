@@ -14,6 +14,11 @@
 <script>
 export default {
     name: 'FlowHandle',
+    inject: {
+        //複選模式(縱深最早邊界): 模式中把手已隱藏(CSS pointer-events:none, 真實點擊到不了這裡),
+        //此守衛擋synthetic/程式化mousedown不啟動建線(模板@mousedown.stop仍生效, 僅阻手勢不改傳播語義)
+        getMultiSelectActive: { default: () => () => false },
+    },
     props: {
         type: { type: String, default: 'source' }, // 'source' | 'target'
         position: { type: String, default: 'bottom' }, // 'top' | 'right' | 'bottom' | 'left'
@@ -46,6 +51,8 @@ export default {
     methods: {
         onMouseDown(event) {
             if (!this.connectable) return
+            //複選模式中不啟動建線(守衛先於preventDefault, 不吞事件語義)
+            if (this.getMultiSelectActive()) return
             //僅主鍵可啟動建線: 右鍵/中鍵不 emit(WFlowVue 之重入守衛為第二層縱深)
             if (event.button !== 0) return
             //阻止文字選取隨拖線啟動(把手上按下拖曳屬建線手勢, 非選字)

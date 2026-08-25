@@ -89,8 +89,10 @@
                foreignObject內元素被patch替換後up落在新元素上, click(popup開啟訊號)根本不發生(已於e2e重現: E2E-012表單數變0);
                click時WPopup trigger之內層handler先跑(popup先開), 冒泡至此才轉移active -->
           <span v-if="(hovered || settingsPopupShow) && interactive && !locked && settingsEnabled" class="vue-flow__edge-settings-anchor" @click="onSettingsAnchorClick">
+              <!-- 受控而非v-model: 開啟請求經onSettingsPopupInput裁決(複選模式中拒開), @show跟隨實際開啟 -->
               <WPopup
-                v-model="settingsPopupShow"
+                :value="settingsPopupShow"
+                @input="onSettingsPopupInput"
                 placement="right-start"
                 modeHide="mousedown"
                 :minWidth="null"
@@ -198,8 +200,19 @@ export default {
         infoPopupShow(val) {
             if (val) this.settingsPopupShow = false
         },
+        //複選模式引擎時關閉本連線已開之popup(與NodeWrapper同契約)
+        multiSelectActive(val) {
+            if (val) {
+                this.infoPopupShow = false
+                this.settingsPopupShow = false
+            }
+        },
     },
     computed: {
+        //複選模式(反應式讀取注入getter): 供watcher清popup與各開啟入口gating
+        multiSelectActive() {
+            return this.getMultiSelectActive()
+        },
         dc() {
             return this.getDefConn()
         },
@@ -394,8 +407,18 @@ export default {
             }
             this.$emit('conn-click', { conn: this.conn, event })
         },
+        //宿主API入口gating: 複選模式中程式化開啟亦拒絕(回傳false供呼叫端判斷)
         openInfoPopup() {
+            if (this.getMultiSelectActive()) return false
             this.infoPopupShow = true
+            return true
+        },
+        //設定popup之開關由本元件裁決(複選模式中拒開; 關閉請求一律放行)
+        onSettingsPopupInput(val) {
+            if (val && this.getMultiSelectActive()) {
+                return
+            }
+            this.settingsPopupShow = val
         },
         onDoubleClick(event) {
             this.$emit('conn-double-click', { conn: this.conn, event })
@@ -434,6 +457,8 @@ export default {
         },
         onWaypointMouseDown(i, event) {
             if (!this.interactive || this.locked || !this.settingsEnabled) return
+            //複選模式中不啟動轉折點拖曳(標記已隱藏, 縱深第二層; 守衛先於preventDefault/樣式建立)
+            if (this.getMultiSelectActive()) return
             event.preventDefault()
 
             // 鎖定拖曳游標

@@ -5,7 +5,7 @@
   <div
     :style="`width:${widthInp}px; height:${heightInp}px;`"
     :data-flow-id="flowId"
-    :class="{ 'vue-flow--connecting': isConnecting }"
+    :class="{ 'vue-flow--connecting': isConnecting, 'vue-flow--multiselecting': multiSelectMode }"
   >
   <FlowCanvas
     v-if="inited"
@@ -168,6 +168,16 @@ import { NODE_DEFAULTS, CONN_DEFAULTS } from '../js/defaults'
  * @prop {boolean}  [opt.multiSelectEnabled=true]          Enable multi-selection (box select + Shift+Click)
  * @prop {string}   [opt.boxSelectionKeyCode='Shift']     Key to hold for box selection (drag on canvas)
  * @prop {string}   [opt.multiSelectionKeyCode='Shift']   Key to hold for Shift+Click add/remove selection
+ *
+ * ─── Multi-select mode(複選模式契約)───
+ * multiSelectionKey 按住(且 multiSelectEnabled、elementsSelectable、未鎖定)期間為「複選模式」:
+ * - 統一隱藏所有元素專屬操作 affordance: 節點設定齒輪/四角縮放把手/連出入把手/邊設定齒輪/邊轉折點;
+ *   模式中不得啟動建線/縮放/轉折點拖曳, 亦不得開啟任何 popup; 已開之資訊/設定 popup 於進入模式時關閉。
+ * - 節點本體點擊 = toggle 加入/移除選取(不清除既有連線選取——連線不參與複選, 點邊不變更選取)。
+ * - 拖曳/框選/平移/縮放畫布/Delete/工具列不受模式影響; dblclick 因兩次 click 而 toggle 兩次(淨零)後照發事件。
+ * - 手勢優先序: 建線進行中按住複選鍵, 建線續行且落點把手不隱藏; 進行中之縮放/拖曳手勢照常完成。
+ * - 鍵盤作用域: 於 input/textarea/select/contenteditable 內按鍵不觸發畫布快捷鍵(含複選鍵與 Delete);
+ *   同頁多個 flow 實例監聽同一 document, 按住複選鍵時各實例同時進入模式(全域行為, 刻意)。
  * @prop {boolean}  [opt.zoomOnScroll=true]               Zoom with mouse wheel
  * @prop {number}   [opt.zoom=1]                  Initial viewport zoom level
  * @prop {number}   [opt.zoomMin=0.5]                     Minimum zoom level (fitView may go below it; wheel zoom then keeps the current level as its lower bound instead of jumping back)
@@ -371,6 +381,9 @@ export default {
             },
             connectingFrom: null,
 
+            //複選模式(渲染面scalar, 由isMultiSelectActive之watcher維護; 契約見JSDoc「Multi-select mode」)
+            multiSelectMode: false,
+
             // Selection state
             isSelecting: false,
             selectionStartPos: null,
@@ -381,6 +394,12 @@ export default {
         }
     },
     watch: {
+        //複選模式之transition-only scalar: watcher僅於值真正翻轉時寫入(watcher具值相等檢查),
+        //根class綁定此scalar而非isMultiSelectActive推導鏈——keysPressed物件於「任意鍵首按」時整包替換,
+        //直接綁computed會使根渲染於無關按鍵時被排程; scalar只在false↔true轉移時觸發一次根渲染
+        isMultiSelectActive(v) {
+            this.multiSelectMode = v
+        },
         //ghost鍵預建: 於節點首次渲染前備妥per-key反應式插槽, 讀者才能建立細粒度依賴
         nodes: {
             immediate: true,
@@ -688,7 +707,8 @@ export default {
             return this.multiSelectEnabled && !this.locked && !!this.keysPressed[this.boxSelectionKeyCode]
         },
         isMultiSelectActive() {
-            return this.multiSelectEnabled && !this.locked && !!this.keysPressed[this.multiSelectionKeyCode]
+            //elementsSelectable=false 時該鍵無複選語義(等同鎖定之判準): 不進入複選模式, 點擊照常開popup
+            return this.multiSelectEnabled && !this.locked && this.elementsSelectable && !!this.keysPressed[this.multiSelectionKeyCode]
         },
         //建線進行中旗標: 單一事實來源為connectionVisual.active(渲染由ConnectionLine細粒度讀取);
         //此computed供既有守衛與外部測試以原名讀取, 不建立主模板渲染依賴
@@ -755,7 +775,16 @@ export default {
         },
 
         // --- Key handling ---
+        //可編輯目標排除: 於輸入框/表單內打字(如設定表單輸入大寫時按Shift)不得被當成畫布快捷鍵——
+        //否則Shift會引擎複選模式而關閉使用者正在打字的表單, Delete會誤刪選取節點
+        isEditableKeyTarget(e) {
+            const t = e.target
+            if (!t || !t.tagName) return false
+            const tag = t.tagName.toUpperCase()
+            return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || t.isContentEditable === true
+        },
         onKeyDown(e) {
+            if (this.isEditableKeyTarget(e)) return
             //key-repeat不重建keysPressed: 按住修飾鍵時OS以repeat連發keydown(Windows之Shift亦repeat),
             //每次重建物件會使依賴它之computed失效而重渲染(實測80節點+90邊場景, 20次repeat=全樹渲染20輪);
             //僅首次按下才更新物件; 不early return——Delete長按之連刪語義須保留
@@ -767,6 +796,7 @@ export default {
             }
         },
         onKeyUp(e) {
+            //keyup不做編輯目標排除: 若按下發生於畫布而放開時焦點已入輸入框, 仍須清除該鍵避免殘留
             //無此鍵即不重建(如視窗外按下回到視窗才放開), 避免多餘之全樹渲染
             if (!(e.key in this.keysPressed)) return
             const copy = { ...this.keysPressed }
@@ -1075,6 +1105,8 @@ export default {
         // --- Connection ---
         onConnectStart(payload) {
             if (this.locked || !this.nodesConnectable) return
+            //複選模式中不啟動建線(把手已隱藏, 此為縱深第二層; 守衛先於任何狀態/標記之設定)
+            if (this.isMultiSelectActive) return
             //建線只能自source(連出)型handle出發: target(連入)型handle拖曳不啟動建線, 維持方向語義
             if (payload.handleType !== 'source') return
             //重入守衛(縱深第二層, Handle已擋非主鍵): 拉線途中他途再送connect-start不得重跑啟動流程,
@@ -1351,6 +1383,9 @@ export default {
         //     按住多選鍵時控制項語義優先, 仍單選不做toggle
         onNodeActivate({ node }) {
             if (!this.elementsSelectable) return
+            //複選模式中不做sole-select(齒輪/縮放把手已隱藏點不到, 此為縱深invariant):
+            //模式中之選取變更只能走onNodeClick之toggle路徑, 程式化選取應走選取API而非借用UI activate
+            if (this.isMultiSelectActive) return
             //已是唯一選取即不重發: 重複點同一齒輪不應連發selection-change
             if (this.selectedNodes.length === 1 && this.selectedNodes[0] === node.id && this.selectedConns.length === 0) return
             this.setSelectedNodes([node.id])
@@ -1359,6 +1394,8 @@ export default {
         },
         onConnActivate({ conn }) {
             if (!this.elementsSelectable) return
+            //同onNodeActivate: 複選模式中不做sole-select
+            if (this.isMultiSelectActive) return
             if (this.selectedConns.length === 1 && this.selectedConns[0] === conn.id && this.selectedNodes.length === 0) return
             this.setSelectedConns([conn.id])
             this.setSelectedNodes([])
@@ -1676,11 +1713,28 @@ export default {
 .vue-flow--connecting .vue-flow__handle--source:not([data-connect-role="origin"]) {
   cursor: not-allowed !important;
 }
-/* 建線期間隱藏齒輪與縮放把手(避免遮擋落點與誤觸) */
+/* 建線期間隱藏齒輪/縮放把手/邊轉折點(避免遮擋落點與誤觸; waypoint與齒輪縮放同屬元素專屬操作) */
 .vue-flow--connecting .vue-flow__node-settings,
 .vue-flow--connecting .vue-flow__edge-settings,
-.vue-flow--connecting .vue-flow__resize {
+.vue-flow--connecting .vue-flow__resize,
+.vue-flow--connecting .vue-flow__edge-waypoint {
   opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+/* ─── 複選模式(根class .vue-flow--multiselecting): 按住複選鍵=進行複選操作 ───
+   統一隱藏所有「元素專屬操作」affordance(節點齒輪/四角縮放/連出入把手/邊齒輪/邊轉折點):
+   複選中點擊之語義一律為選取, 不得依點中部位給出不同反應(sole-select/開popup/啟動手勢)。
+   visibility:hidden 併用: pointer-events:none 擋不住鍵盤焦點(WPopup trigger帶tabindex)與程式化click,
+   visibility同時將其移出tab order; 程式層另有守衛為縱深。
+   建線手勢進行中(.vue-flow--connecting)把手讓位不隱藏——拖線中按住複選鍵不得使落點把手消失 */
+.vue-flow--multiselecting .vue-flow__node-settings-anchor,
+.vue-flow--multiselecting .vue-flow__edge-settings-anchor,
+.vue-flow--multiselecting .vue-flow__resize-group,
+.vue-flow--multiselecting .vue-flow__edge-waypoint,
+.vue-flow--multiselecting:not(.vue-flow--connecting) .vue-flow__handle {
+  opacity: 0 !important;
+  visibility: hidden !important;
   pointer-events: none !important;
 }
 </style>
