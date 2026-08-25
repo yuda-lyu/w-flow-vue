@@ -68,9 +68,10 @@
       </div>
       <div v-if="!ptsLocal.length" class="vue-flow__waypoints-empty">無(自動路由)</div>
     </div>
-    <!-- 刪除不做內建二次確認: 是否需要確認由宿主以 opt.funConfirmDeleting(async)決定, 未提供即直接刪除 -->
+    <!-- 刪除不做內建二次確認: 是否需要確認由宿主以 opt.funConfirmDeleting(async)決定, 未提供即直接刪除。
+         等待宿主確認期間按鈕 disabled(pending), 與節點設定表單同契約 -->
     <div class="vue-flow__delete-area">
-      <button class="vue-flow__delete-btn" @click="$emit('delete')">刪除連接線</button>
+      <button class="vue-flow__delete-btn" :disabled="deleteConfirming" @click="$emit('delete')">刪除連接線</button>
     </div>
   </div>
 </template>
@@ -80,6 +81,10 @@ import WColorSelect from 'w-component-vue/src/components/WColorSelect.vue'
 
 export default {
     components: { WColorSelect },
+    inject: {
+        //刪除確認進行中(getter注入, 預設值使本元件可獨立掛載): 等待宿主回覆期間刪除鈕 disabled
+        getDeleteConfirming: { default: () => () => false },
+    },
     props: {
         conn: { type: Object, required: true },
         defConn: { type: Object, required: true },
@@ -94,6 +99,9 @@ export default {
         }
     },
     computed: {
+        deleteConfirming() {
+            return this.getDeleteConfirming()
+        },
         formStyle() {
             let s = {}
             if (this.textFontSize) s.fontSize = this.textFontSize
@@ -297,5 +305,14 @@ export default {
 .vue-flow__delete-btn:hover {
   background: #b91c1c;
   border-color: #b91c1c;
+}
+/* 等待宿主確認期間: 淡化且不可再點(尺寸與文字不變, 不造成版面跳動) */
+.vue-flow__delete-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+.vue-flow__delete-btn:disabled:hover {
+  background: #dc2626;
+  border-color: #dc2626;
 }
 </style>

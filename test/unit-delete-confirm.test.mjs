@@ -14,8 +14,11 @@
  * D8 deletable:false 之元素自始排除於確認 payload 與刪除之外。
  * D9 delete 事件之 payload 只含實際被刪者。
  */
+import Vue from 'vue'
 import { mount } from '@vue/test-utils'
 import WFlowVue from '../src/components/WFlowVue.vue'
+import NodeSettingsForm from '../src/components/ui/NodeSettingsForm.vue'
+import ConnSettingsForm from '../src/components/ui/ConnSettingsForm.vue'
 
 const mkOpt = (extra = {}) => ({
     nodes: [
@@ -138,9 +141,103 @@ describe('D4 callback 拋錯: 不刪, 錯誤不被靜默吞掉', () => {
         expect(w.emitted('conn-settings-delete')).toBeFalsy()
         expect(spy).toHaveBeenCalled()
         //閘門旗標須於拋錯後釋放(finally), 否則此後所有刪除都被誤擋
-        expect(w.vm._deleteConfirming).toBe(false)
+        expect(w.vm.deleteConfirming).toBe(false)
         spy.mockRestore()
         w.destroy()
+    })
+})
+
+describe('D10 確認期間畫面不得先行變動(不可樂觀刪除)', () => {
+    //why: 若先刪再問, callback 回 false 時節點會「消失又恢復」而閃爍——刪除須待確認回覆後才發生
+    test('await 期間節點與其連線仍在資料與DOM中; 回 false 後全程未曾消失', async () => {
+        const d = deferred()
+        const w = mountFlow(mkOpt({ funConfirmDeleting: () => d.promise }))
+        await w.vm.$nextTick()
+        const inDom = (id) => !!document.querySelector(`.vue-flow__node[data-id="${id}"]`)
+        expect(inDom('1')).toBe(true)
+
+        const p = w.vm.onNodeSettingsDelete({ node: { id: '1' } })
+        await w.vm.$nextTick()
+        //確認尚未回覆: 節點與連線都必須原封不動
+        expect(w.vm.nodes.map(n => n.id)).toEqual(['1', '2', '3'])
+        expect(w.vm.conns.map(c => c.id)).toEqual(['e1-2', 'e2-3'])
+        expect(inDom('1')).toBe(true)
+        //確認期間不得預先發出任何資料異動事件
+        expect(w.emitted('update:nodes')).toBeFalsy()
+        expect(w.emitted('update:conns')).toBeFalsy()
+        expect(w.emitted('node-settings-delete')).toBeFalsy()
+
+        d.resolve(false)
+        expect(await p).toBe(false)
+        await w.vm.$nextTick()
+        //回 false: 節點自始至終都在(無「消失又恢復」)
+        expect(w.vm.nodes.map(n => n.id)).toEqual(['1', '2', '3'])
+        expect(inDom('1')).toBe(true)
+        w.destroy()
+    })
+
+    test('確認回 true 後才刪除(此時才發出資料異動事件)', async () => {
+        const d = deferred()
+        const w = mountFlow(mkOpt({ funConfirmDeleting: () => d.promise }))
+        await w.vm.$nextTick()
+        const p = w.vm.onNodeSettingsDelete({ node: { id: '1' } })
+        await w.vm.$nextTick()
+        expect(document.querySelector('.vue-flow__node[data-id="1"]')).toBeTruthy()
+
+        d.resolve(true)
+        expect(await p).toBe(true)
+        await w.vm.$nextTick()
+        expect(document.querySelector('.vue-flow__node[data-id="1"]')).toBeNull()
+        expect(w.emitted('update:nodes')).toHaveLength(1)
+        w.destroy()
+    })
+})
+
+describe('D11 確認期間之操作回饋(刪除鈕進入 pending)', () => {
+    test('等待宿主回覆期間刪除鈕 disabled, 回覆後恢復', async () => {
+        const d = deferred()
+        const w = mountFlow(mkOpt({ funConfirmDeleting: () => d.promise }))
+        await w.vm.$nextTick()
+        expect(w.vm.deleteConfirming).toBe(false)
+
+        const p = w.vm.onNodeSettingsDelete({ node: { id: '1' } })
+        await w.vm.$nextTick()
+        //閘門進行中旗標為反應式: 供設定表單之刪除鈕呈現 pending(避免使用者以為沒反應而重複點)
+        expect(w.vm.deleteConfirming).toBe(true)
+
+        d.resolve(false)
+        await p
+        await w.vm.$nextTick()
+        expect(w.vm.deleteConfirming).toBe(false)
+        w.destroy()
+    })
+
+    test('設定表單之刪除鈕依 pending 狀態 disabled(節點與連線表單同契約)', async () => {
+        //以反應式來源模擬 WFlowVue 之 deleteConfirming(其注入之 getter 讀取 data, 故表單 computed 會隨之更新)
+        const st = Vue.observable({ pending: false })
+        const provide = { getDeleteConfirming: () => st.pending }
+        const nf = mount(NodeSettingsForm, {
+            propsData: { node: { id: '1', type: 'basic' }, defNode: {} },
+            provide,
+        })
+        const cf = mount(ConnSettingsForm, {
+            propsData: { conn: { id: 'e1', from: '1', to: '2' }, defConn: {} },
+            provide,
+        })
+        expect(nf.find('.vue-flow__delete-btn').attributes('disabled')).toBeUndefined()
+        expect(cf.find('.vue-flow__delete-btn').attributes('disabled')).toBeUndefined()
+
+        st.pending = true
+        await nf.vm.$nextTick()
+        await cf.vm.$nextTick()
+        expect(nf.find('.vue-flow__delete-btn').attributes('disabled')).toBe('disabled')
+        expect(cf.find('.vue-flow__delete-btn').attributes('disabled')).toBe('disabled')
+
+        st.pending = false
+        await nf.vm.$nextTick()
+        expect(nf.find('.vue-flow__delete-btn').attributes('disabled')).toBeUndefined()
+        nf.destroy()
+        cf.destroy()
     })
 })
 
