@@ -325,6 +325,18 @@ import { NODE_DEFAULTS, CONN_DEFAULTS } from '../js/defaults'
  * @prop {string}   [opt.defConnCreatingEdgeColor='#b1b1b7']  Drag-line color
  * @prop {number}   [opt.defConnCreatingEdgeWidth=1]          Drag-line width (px)
  * @prop {string}   [opt.defConnCreatingEdgeDasharray='5 5'] Drag-line dash pattern ('' for solid)
+ * ─── Deleting confirmation(刪除確認契約)───
+ * @prop {Function} [opt.funConfirmDeleting=null]        Async delete confirmation fn(payload) → Promise&lt;boolean>.
+ *   套件不內建二次確認 UI:未提供此 callback 時,刪除按鈕/刪除鍵一律立即刪除;
+ *   提供時,全部刪除入口(節點設定表單、連線設定表單、刪除鍵)一律先 await 此 callback,
+ *   **嚴格回傳 true 才真的刪除**——回傳 false / undefined / 其他值 / 拋錯一律不刪。
+ *   payload = { nodes, conns, from }:
+ *     - nodes:即將刪除之節點(已排除 deletable:false 者)
+ *     - conns:即將刪除之連線,含「因節點被刪而連帶刪除」者(供宿主組出確認訊息)
+ *     - from:'node-settings' | 'conn-settings' | 'delete-key'
+ *   確認進行中(await 尚未回覆)不再受理新的刪除請求,避免重複刪除與多重確認視窗;
+ *   await 期間圖若已變動(宿主抽換資料、他途已刪),僅刪除仍存在之目標,`delete` 事件之
+ *   payload 亦只含實際被刪者。
  * @prop {Function} [opt.funValidConnCreating=null]      Custom connection validator fn(connection) → boolean.
  *   須為同步純函式(無副作用): 除放開(commit)外, 拖線中游標移入把手(hover 目標變更)時亦會被呼叫一次,
  *   以即時標示落點可否連線(valid/invalid); 兩處收到之 connection 形狀完全相同(含已烙印之 fromPosition/toPosition)。
@@ -704,6 +716,10 @@ export default {
         funValidConnCreating() {
             return this.opt.funValidConnCreating || null
         },
+        //刪除確認callback(async): 未提供即直接刪除, 提供則須回傳true才真的刪除
+        funConfirmDeleting() {
+            return typeof this.opt.funConfirmDeleting === 'function' ? this.opt.funConfirmDeleting : null
+        },
 
         defNode() {
             let o = this.opt
@@ -839,6 +855,8 @@ export default {
                 this.keysPressed = { ...this.keysPressed, [e.key]: true }
             }
             if (!this.locked &amp;&amp; this.deleteKeyEnabled &amp;&amp; (e.key === this.deleteKeyCode || e.key === 'Delete')) {
+                //刪除須經確認閘門(async): 此處不等待其完成, 鍵盤事件不因宿主確認流程而阻塞;
+                //長按連發之重複請求由閘門之進行中旗標擋下
                 this.deleteSelectedElements()
             }
         },
@@ -1348,12 +1366,22 @@ export default {
             }
             this.$emit('node-settings-update', { node: n, key, value })
         },
-        onNodeSettingsDelete({ node }) {
+        async onNodeSettingsDelete({ node }) {
+            //與刪除鍵共用同一確認閘門(不同入口不得有不同反應)
+            const ok = await this.confirmDeleting({
+                nodes: [node],
+                conns: this.withRelatedConns([node.id], []), //連帶被刪之邊
+                from: 'node-settings',
+            })
+            if (!ok || this._isDestroyed) return false
+            //await期間目標可能已被他途刪除
+            if (!this.nodeById(node.id)) return false
             this.removeNode(node.id)
             clearStepCache()
             this.emitNodesUpdate()
             this.emitConnsUpdate()
             this.$emit('node-settings-delete', { node })
+            return true
         },
         //批次將某節點一側之固定錨點改回 Auto(使用者於設定表單明確操作, 非默默清除)
         //end: 'source'=出邊之fromPosition, 'target'=入邊之toPosition
@@ -1416,11 +1444,15 @@ export default {
                 this.$emit('conn-settings-update', { conn: c, key, value })
             }
         },
-        onConnSettingsDelete({ conn }) {
+        async onConnSettingsDelete({ conn }) {
+            const ok = await this.confirmDeleting({ nodes: [], conns: [conn], from: 'conn-settings' })
+            if (!ok || this._isDestroyed) return false
+            if (!this.connById(conn.id)) return false
             this.removeConn(conn.id)
             clearStepCache()
             this.emitConnsUpdate()
             this.$emit('conn-settings-delete', { conn })
+            return true
         },
 
         // --- Activate(單元素active轉移) ---
@@ -1514,21 +1546,77 @@ export default {
         },
 
         // --- Delete ---
-        deleteSelectedElements() {
-            const { nodes, conns } = this.getSelectedElements()
-            if (nodes.length === 0 &amp;&amp; conns.length === 0) return
+        //刪除確認閘門: 全部刪除入口(節點設定表單/連線設定表單/刪除鍵)共用之單一 gate。
+        //宿主未提供 opt.funConfirmDeleting 即直接刪除(套件不再內建二次確認UI);
+        //提供則 await 其結果, 嚴格為 true 才真的刪除——回傳 false/undefined/拋錯一律不刪(不可預設為准)。
+        async confirmDeleting(payload) {
+            const fn = this.funConfirmDeleting
+            if (!fn) return true
+            //確認進行中不再受理新的刪除請求: 避免同一目標連點兩次而重複刪除/重複發事件,
+            //或同時開出多個確認流程(宿主之modal通常為單例)
+            if (this._deleteConfirming) return false
+            this._deleteConfirming = true
+            try {
+                const ok = await fn(payload)
+                return ok === true
+            }
+            catch (e) {
+                //宿主callback拋錯=無從確認 → 不刪; 不靜默吞掉, 使宿主能發現自身錯誤
+                console.error('[w-flow-vue] funConfirmDeleting threw, deletion aborted:', e)
+                return false
+            }
+            finally {
+                this._deleteConfirming = false
+            }
+        },
+        //以id重新解析仍存在之目標: await 期間圖可能已變(宿主抽換nodes/conns、他途已刪),
+        //以確認當下之快照直接刪除會刪到不該刪的或對已消失者發事件
+        resolveDeleteTargets(nodeIds, connIds) {
+            return {
+                nodeIds: nodeIds.filter(id => !!this.nodeById(id)),
+                connIds: connIds.filter(id => !!this.connById(id)),
+            }
+        },
+        async deleteSelectedElements() {
+            const sel = this.getSelectedElements()
+            //deletable:false 者自始排除: 不列入確認payload, 亦不列入delete事件(payload語義為「實際被刪者」)
+            const nodes = sel.nodes.filter(n => n.deletable !== false)
+            const conns = sel.conns.filter(c => c.deletable !== false)
+            if (nodes.length === 0 &amp;&amp; conns.length === 0) return false
 
-            nodes.forEach(n => {
-                if (n.deletable !== false) this.removeNode(n.id)
+            const ok = await this.confirmDeleting({
+                nodes,
+                //節點被刪時其相關連線一併刪除: 併入payload使宿主能據以組出確認訊息
+                conns: this.withRelatedConns(nodes.map(n => n.id), conns),
+                from: 'delete-key',
             })
-            conns.forEach(e => {
-                if (e.deletable !== false) this.removeConn(e.id)
-            })
+            //元件於await期間被銷毀即不再操作狀態
+            if (!ok || this._isDestroyed) return false
+
+            const t = this.resolveDeleteTargets(nodes.map(n => n.id), conns.map(c => c.id))
+            if (t.nodeIds.length === 0 &amp;&amp; t.connIds.length === 0) return false
+            const deletedNodes = t.nodeIds.map(id => this.nodeById(id))
+            const deletedConns = t.connIds.map(id => this.connById(id))
+            t.nodeIds.forEach(id => this.removeNode(id))
+            t.connIds.forEach(id => this.removeConn(id))
             this.clearSelection()
 
-            this.$emit('delete', { nodes, conns })
+            clearStepCache()
+            this.$emit('delete', { nodes: deletedNodes, conns: deletedConns })
             this.emitNodesUpdate()
             this.emitConnsUpdate()
+            return true
+        },
+        //指定節點之相關連線(將被連帶刪除者)併入既有連線清單, 去重後回傳
+        withRelatedConns(nodeIds, conns) {
+            const ids = new Set(nodeIds)
+            const seen = new Set(conns.map(c => c.id))
+            const out = conns.slice()
+            for (const c of this.conns) {
+                if (seen.has(c.id)) continue
+                if (ids.has(c.from) || ids.has(c.to)) out.push(c)
+            }
+            return out
         },
 
         // --- Node dimensions ---
@@ -1799,7 +1887,7 @@ export default {
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 4.0.5</a> on Tue Aug 25 2026 09:14:38 GMT+0800 (台北標準時間) using the <a href="https://github.com/clenemt/docdash">docdash</a> theme.
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 4.0.5</a> on Tue Aug 25 2026 09:39:14 GMT+0800 (台北標準時間) using the <a href="https://github.com/clenemt/docdash">docdash</a> theme.
 </footer>
 
 <script>prettyPrint();</script>

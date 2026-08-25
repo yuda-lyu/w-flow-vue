@@ -57,20 +57,16 @@ describe('NodeSettingsForm', () => {
     test('fontSize accepts valid', () => { const w = mountForm(); w.vm.onFontSizeInput('20'); expect(w.emitted('update')[0]).toEqual(['fontSize', 20]); w.destroy() })
     test('edgeWidth ignores below 1', () => { const w = mountForm(); w.vm.onEdgeWidthInput('0'); expect(w.emitted('update')).toBeFalsy(); w.destroy() })
     test('edgeWidth clamps to 24', () => { const w = mountForm(); w.vm.onEdgeWidthInput('30'); expect(w.emitted('update')[0]).toEqual(['edgeWidth', 24]); w.destroy() })
-    test('delete confirm then emit', async () => {
+    //刪除不做內建二次確認(確認與否由宿主之 opt.funConfirmDeleting 決定, 見 unit-delete-confirm)
+    test('delete emits immediately (no built-in confirm step)', async () => {
         const w = mountForm()
         expect(w.find('.vue-flow__delete-warn').exists()).toBe(false)
+        expect(w.findAll('.vue-flow__delete-btn').length).toBe(1)
         await w.find('.vue-flow__delete-btn').trigger('click')
-        expect(w.find('.vue-flow__delete-warn').exists()).toBe(true)
-        await w.find('.vue-flow__delete-confirm-row .vue-flow__delete-btn').trigger('click')
         expect(w.emitted('delete')).toBeTruthy()
-        w.destroy()
-    })
-    test('delete cancel', async () => {
-        const w = mountForm()
-        await w.find('.vue-flow__delete-btn').trigger('click')
-        await w.find('.vue-flow__delete-btn--cancel').trigger('click')
+        //按下後不得出現確認列或取消鈕
         expect(w.find('.vue-flow__delete-warn').exists()).toBe(false)
+        expect(w.find('.vue-flow__delete-btn--cancel').exists()).toBe(false)
         w.destroy()
     })
     test('textFontSize prop', () => {
@@ -107,11 +103,12 @@ describe('ConnSettingsForm', () => {
     test('emits update on markerEnd', async () => { const w = mountForm(); const s = w.findAll('select').at(1); s.element.value = 'arrowclosed'; await s.trigger('input'); expect(w.emitted('update').some(e => e[0] === 'markerEnd')).toBe(true); w.destroy() })
     test('fontSize clamps', () => { const w = mountForm(); w.vm.onFontSizeInput('100'); expect(w.emitted('update')[0]).toEqual(['fontSize', 72]); w.destroy() })
     test('edgeWidth clamps', () => { const w = mountForm(); w.vm.onEdgeWidthInput('30'); expect(w.emitted('update')[0]).toEqual(['edgeWidth', 24]); w.destroy() })
-    test('delete confirm', async () => {
+    test('delete emits immediately (no built-in confirm step)', async () => {
         const w = mountForm()
+        expect(w.findAll('.vue-flow__delete-btn').length).toBe(1)
         await w.find('.vue-flow__delete-btn').trigger('click')
-        await w.find('.vue-flow__delete-confirm-row .vue-flow__delete-btn').trigger('click')
         expect(w.emitted('delete')).toBeTruthy()
+        expect(w.find('.vue-flow__delete-warn').exists()).toBe(false)
         w.destroy()
     })
     test('textFontSize prop', () => {

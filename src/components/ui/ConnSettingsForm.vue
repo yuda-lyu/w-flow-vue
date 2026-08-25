@@ -68,15 +68,9 @@
       </div>
       <div v-if="!ptsLocal.length" class="vue-flow__waypoints-empty">無(自動路由)</div>
     </div>
+    <!-- 刪除不做內建二次確認: 是否需要確認由宿主以 opt.funConfirmDeleting(async)決定, 未提供即直接刪除 -->
     <div class="vue-flow__delete-area">
-      <button v-if="!confirmDelete" class="vue-flow__delete-btn" @click="confirmDelete = true">刪除連接線</button>
-      <template v-else>
-        <span class="vue-flow__delete-warn">確定要刪除此連接線？</span>
-        <div class="vue-flow__delete-confirm-row">
-          <button class="vue-flow__delete-btn" @click="$emit('delete')">確認刪除</button>
-          <button class="vue-flow__delete-btn vue-flow__delete-btn--cancel" @click="confirmDelete = false">取消</button>
-        </div>
-      </template>
+      <button class="vue-flow__delete-btn" @click="$emit('delete')">刪除連接線</button>
     </div>
   </div>
 </template>
@@ -96,7 +90,6 @@ export default {
     },
     data() {
         return {
-            confirmDelete: false,
             ptsLocal: this.normalizePoints(this.conn.points), //轉折點本地編輯態(打字中不被外部回寫干擾)
         }
     },
@@ -292,17 +285,6 @@ export default {
   flex-direction: column;
   align-items: flex-end;
 }
-.vue-flow__delete-warn {
-  display: block;
-  font-size: 11px;
-  color: #c00;
-  margin-bottom: 4px;
-  text-align: right;
-}
-.vue-flow__delete-confirm-row {
-  display: flex;
-  gap: 6px;
-}
 .vue-flow__delete-btn {
   padding: 3px 10px;
   font-size: 11px;
@@ -315,14 +297,5 @@ export default {
 .vue-flow__delete-btn:hover {
   background: #b91c1c;
   border-color: #b91c1c;
-}
-.vue-flow__delete-btn--cancel {
-  color: #666;
-  background: #fff;
-  border-color: #ccc;
-}
-.vue-flow__delete-btn--cancel:hover {
-  background: #f5f5f5;
-  border-color: #ccc;
 }
 </style>

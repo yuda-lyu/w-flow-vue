@@ -197,48 +197,50 @@ describe('WFlowVue', () => {
         })
     })
 
+    //deleteSelectedElements 為 async(全部刪除入口均經 opt.funConfirmDeleting 確認閘門, 見 unit-delete-confirm);
+    //未提供 callback 時仍直接刪除, 但結果落在 microtask, 故斷言前須 await
     describe('deletion', () => {
-        test('deleteSelectedElements removes selected nodes', () => {
+        test('deleteSelectedElements removes selected nodes', async () => {
             const wrapper = createWrapper()
             wrapper.vm.setSelectedNodes(['3'])
-            wrapper.vm.deleteSelectedElements()
+            await wrapper.vm.deleteSelectedElements()
             expect(wrapper.vm.nodeById('3')).toBeNull()
             wrapper.destroy()
         })
 
-        test('deleteSelectedElements removes connected conns', () => {
+        test('deleteSelectedElements removes connected conns', async () => {
             const wrapper = createWrapper()
             wrapper.vm.setSelectedNodes(['1'])
-            wrapper.vm.deleteSelectedElements()
+            await wrapper.vm.deleteSelectedElements()
             // Node 1 removed → e1-2 and e1-3 should also be removed
             expect(wrapper.vm.conns).toHaveLength(0)
             wrapper.destroy()
         })
 
-        test('deleteSelectedElements emits delete event', () => {
+        test('deleteSelectedElements emits delete event', async () => {
             const wrapper = createWrapper()
             wrapper.vm.setSelectedNodes(['3'])
-            wrapper.vm.deleteSelectedElements()
+            await wrapper.vm.deleteSelectedElements()
             expect(wrapper.emitted('delete')).toBeTruthy()
             expect(wrapper.emitted('delete')[0][0].nodes).toHaveLength(1)
             wrapper.destroy()
         })
 
-        test('deleteSelectedElements respects deletable=false', () => {
+        test('deleteSelectedElements respects deletable=false', async () => {
             const nodes = [
                 ...sampleNodes,
                 { id: '4', type: 'basic', name: 'Undeletable', position: { x: 0, y: 0 }, deletable: false },
             ]
             const wrapper = createWrapper({ nodes })
             wrapper.vm.setSelectedNodes(['4'])
-            wrapper.vm.deleteSelectedElements()
+            await wrapper.vm.deleteSelectedElements()
             expect(wrapper.vm.nodeById('4')).not.toBeNull()
             wrapper.destroy()
         })
 
-        test('delete does nothing when nothing selected', () => {
+        test('delete does nothing when nothing selected', async () => {
             const wrapper = createWrapper()
-            wrapper.vm.deleteSelectedElements()
+            await wrapper.vm.deleteSelectedElements()
             expect(wrapper.emitted('delete')).toBeFalsy()
             wrapper.destroy()
         })
@@ -318,11 +320,13 @@ describe('WFlowVue', () => {
     })
 
     describe('keyboard', () => {
-        test('delete key triggers deletion of selected', () => {
+        test('delete key triggers deletion of selected', async () => {
             const wrapper = createWrapper({ deleteKeyEnabled: true })
             wrapper.vm.setSelectedNodes(['3'])
             const event = new KeyboardEvent('keydown', { key: 'Backspace' })
             document.dispatchEvent(event)
+            //鍵盤 handler 不等待確認閘門(不阻塞鍵盤事件), 故須讓出一輪讓其 microtask 鏈完成
+            await new Promise(r => setTimeout(r, 0))
             expect(wrapper.vm.nodeById('3')).toBeNull()
             wrapper.destroy()
         })
