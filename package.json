@@ -1,9 +1,9 @@
 {
   "name": "w-flow-vue",
-  "version": "1.0.32",
+  "version": "1.0.33",
   "main": "dist/w-flow-vue.umd.js",
   "dependencies": {
-    "w-component-vue": "^2.5.2",
+    "w-component-vue": "^2.5.3",
     "w-jsonview-tree": "^1.0.36",
     "wsemi": "^1.8.79"
   },
