@@ -71,7 +71,7 @@
     <!-- 刪除不做內建二次確認: 是否需要確認由宿主以 opt.funConfirmDeleting(async)決定, 未提供即直接刪除。
          等待宿主確認期間按鈕 disabled(pending), 與節點設定表單同契約 -->
     <div class="vue-flow__delete-area">
-      <button class="vue-flow__delete-btn" :disabled="deleteConfirming" @click="$emit('delete')">刪除連接線</button>
+      <button class="vue-flow__delete-btn" :disabled="deleteConfirming || conn.deletable === false" @click="$emit('delete')">刪除連接線</button>
     </div>
   </div>
 </template>
