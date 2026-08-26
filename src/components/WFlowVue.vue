@@ -758,17 +758,26 @@ export default {
         removeNode(id) {
             let nodes = this.nodes
             let idx = nodes.findIndex(n => n.id === id)
-            if (idx === -1) return
+            if (idx === -1) return []
             nodes.splice(idx, 1)
             // Remove connected conns
             let conns = this.conns
+            let removedConns = []
             for (let i = conns.length - 1; i >= 0; i--) {
                 if (conns[i].from === id || conns[i].to === id) {
+                    removedConns.push(conns[i])
                     conns.splice(i, 1)
                 }
             }
             let selIdx = this.selectedNodes.indexOf(id)
             if (selIdx !== -1) this.selectedNodes.splice(selIdx, 1)
+            //連帶被刪之邊亦自選取清單移除, 避免殘留幽靈id
+            for (const c of removedConns) {
+                let ci = this.selectedConns.indexOf(c.id)
+                if (ci !== -1) this.selectedConns.splice(ci, 1)
+            }
+            //回傳連帶被刪之邊: 供刪除完成事件完整告知宿主(否則宿主僅知node被刪, 無從對連帶邊記帳)
+            return removedConns
         },
         removeConn(id) {
             let conns = this.conns
@@ -1334,11 +1343,12 @@ export default {
             if (!ok || this._isDestroyed) return false
             //await期間目標可能已被他途刪除
             if (!this.nodeById(node.id)) return false
-            this.removeNode(node.id)
+            const removedConns = this.removeNode(node.id)
             clearStepCache()
             this.emitNodesUpdate()
             this.emitConnsUpdate()
-            this.$emit('node-settings-delete', { node })
+            //事件攜帶實際連帶被刪之邊: 使完成事件與確認閘門payload對稱(閘門有conns而事件沒有, 宿主就得自行重算連帶集合, 兩份規則日後必然漂移)
+            this.$emit('node-settings-delete', { node, conns: removedConns })
             return true
         },
         //批次將某節點一側之固定錨點改回 Auto(使用者於設定表單明確操作, 非默默清除)
@@ -1556,8 +1566,18 @@ export default {
             const t = this.resolveDeleteTargets(nodes.map(n => n.id), conns.map(c => c.id))
             if (t.nodeIds.length === 0 && t.connIds.length === 0) return false
             const deletedNodes = t.nodeIds.map(id => this.nodeById(id))
-            const deletedConns = t.connIds.map(id => this.connById(id))
-            t.nodeIds.forEach(id => this.removeNode(id))
+            //實際被刪之邊 = 選取之邊 + 節點連帶被刪之邊(removeNode回傳), 以id去重(選取之邊可能同時是連帶對象)
+            //why: 原寫法只列選取之邊, removeNode連帶刪除者未列入 → delete事件payload短報, 宿主無從對其記帳
+            const kpSeen = new Set()
+            const deletedConns = []
+            const pushConn = (c) => {
+                if (c && !kpSeen.has(c.id)) {
+                    kpSeen.add(c.id)
+                    deletedConns.push(c)
+                }
+            }
+            t.connIds.forEach(id => pushConn(this.connById(id)))
+            t.nodeIds.forEach(id => this.removeNode(id).forEach(pushConn))
             t.connIds.forEach(id => this.removeConn(id))
             this.clearSelection()
 
