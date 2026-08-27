@@ -3,7 +3,7 @@
 <head>
     
     <meta charset="utf-8">
-    <title>js/geometry.mjs - Documentation</title>
+    <title>js/hitTest.mjs - Documentation</title>
     
     
     <script src="scripts/prettify/prettify.js"></script>
@@ -35,7 +35,7 @@
 
 <div id="main">
     
-    <h1 class="page-title">js/geometry.mjs</h1>
+    <h1 class="page-title">js/hitTest.mjs</h1>
     
 
     
@@ -45,234 +45,53 @@
     
     <section>
         <article>
-            <pre class="prettyprint source linenums"><code>import { nodeSameSide } from './anchorPolicy.mjs'
+            <pre class="prettyprint source linenums"><code>/**
+ * 互動 hit 分類(純函式, 以 flow root 為界)。契約見 spec/流程_互動契約.md §3。
+ *
+ * 用途(刻意縮小, 非中央事件派送器):
+ * - WFlowVue 之畫布層 handler(平移/框選/pane-click/canvas-dblclick/pane-context-menu)判斷「是否按在畫布空白」;
+ * - Node/EdgeWrapper 判斷「點擊類事件是否落在 affordance 上」(affordance 不代表宿主元素發 click/dblclick/contextmenu)。
+ * 各元件既有之 .stop / dragHandle / nodrag / 互動元素規則維持在元件內, 不由此取代。
+ *
+ * popup 為 Teleport overlay(不在 flow DOM 內), 不在本分類之列; 呼叫端另以 isPopupTarget 判斷。
+ */
+
+//由內而外: affordance 先於容器(gear anchor 內含 WPopup trigger, resize/handle 位於 node 內, waypoint/label 位於 edge 內)
+const ORDER = [
+    ['panel', '.vue-flow__panel'],
+    ['node-gear', '.vue-flow__node-settings-anchor, .vue-flow__node-settings'],
+    ['edge-gear', '.vue-flow__edge-settings-anchor, .vue-flow__edge-settings'],
+    ['resize', '.vue-flow__resize'],
+    ['handle', '.vue-flow__handle'],
+    ['waypoint', '.vue-flow__edge-waypoint'],
+    ['node', '.vue-flow__node'],
+    ['edge', '.vue-flow__edge'],
+]
+
+const AFFORDANCE = new Set(['panel', 'node-gear', 'edge-gear', 'resize', 'handle', 'waypoint'])
 
 /**
- * Calculate the absolute position of a handle on the canvas.
- * @param {Object} [defNode] - 節點層級預設(opt.defNode*); same-side 判定併入 defNode 層,
- *                             與把手/邊之錨點解析(anchorPolicy)同一基準
+ * @param {EventTarget|null} target
+ * @param {Element|null} [flowRoot] 本 flow 實例之根元素; 給定時, 命中元素須位於其內(巢狀/多實例時不撿到他 flow 之元素)
+ * @returns {'panel'|'node-gear'|'edge-gear'|'resize'|'handle'|'waypoint'|'node'|'edge'|'canvas'}
  */
-export function getHandlePosition(node, handlePosition, nodeInternals, handleType, defNode) {
-    const internals = nodeInternals || {}
-    const w = (internals.width) || node.width || 150
-    const h = (internals.height) || node.height || 40
-    const x = node.position.x
-    const y = node.position.y
-    const isDiamond = node.shape === 'diamond'
-    const isEllipse = node.shape === 'ellipse'
-    const ns = node.shape
-    const isTriangle = ns === 'triangle' || ns === 'triangle-right' || ns === 'triangle-down' || ns === 'triangle-left'
-
-    // Check if this is a default node with source and target on the same side
-    const sameSide = nodeSameSide(node, defNode)
-    let ratio = 0.5
-    if (sameSide &amp;&amp; handleType === 'target') ratio = 0.33
-    if (sameSide &amp;&amp; handleType === 'source') ratio = 0.67
-
-    // Diamond same-side: position along diamond edges
-    if (isDiamond &amp;&amp; sameSide) {
-        return getDiamondEdgePoint(x, y, w, h, handlePosition, ratio)
+export function classifyHit(target, flowRoot) {
+    if (!target || typeof target.closest !== 'function') return 'canvas'
+    for (const [kind, sel] of ORDER) {
+        const el = target.closest(sel)
+        if (el &amp;&amp; (!flowRoot || flowRoot.contains(el))) return kind
     }
-
-    // Ellipse: position on the ellipse border
-    if (isEllipse) {
-        return getEllipseEdgePoint(x, y, w, h, handlePosition, ratio)
-    }
-
-    // Triangle: position on the triangle edges
-    if (isTriangle) {
-        return getTriangleEdgePoint(x, y, w, h, handlePosition, ratio, ns)
-    }
-
-    switch (handlePosition) {
-    case 'top': return { x: x + w * ratio, y }
-    case 'bottom': return { x: x + w * ratio, y: y + h }
-    case 'left': return { x, y: y + h * ratio }
-    case 'right': return { x: x + w, y: y + h * ratio }
-    default: return { x: x + w / 2, y: y + h }
-    }
+    return 'canvas'
 }
 
-/**
- * Get a point on the diamond edge for same-side handles.
- * Each "side" of the diamond is split into two edges meeting at the vertex.
- * ratio &lt; 0.5: on the first edge, ratio >= 0.5: on the second edge.
- */
-function getDiamondEdgePoint(x, y, w, h, side, ratio) {
-    let halfW = w / 2
-    let halfH = h / 2
-
-    switch (side) {
-    case 'top':
-        if (ratio &lt;= 0.5) {
-            let t = ratio * 2
-            return { x: x + t * halfW, y: y + halfH - t * halfH }
-        }
-        else {
-            let t = (ratio - 0.5) * 2
-            return { x: x + halfW + t * halfW, y: y + t * halfH }
-        }
-    case 'bottom':
-        if (ratio &lt;= 0.5) {
-            let t = ratio * 2
-            return { x: x + t * halfW, y: y + halfH + t * halfH }
-        }
-        else {
-            let t = (ratio - 0.5) * 2
-            return { x: x + halfW + t * halfW, y: y + h - t * halfH }
-        }
-    case 'left':
-        if (ratio &lt;= 0.5) {
-            let t = ratio * 2
-            return { x: x + halfW - t * halfW, y: y + t * halfH }
-        }
-        else {
-            let t = (ratio - 0.5) * 2
-            return { x: x + t * halfW, y: y + halfH + t * halfH }
-        }
-    case 'right':
-        if (ratio &lt;= 0.5) {
-            let t = ratio * 2
-            return { x: x + halfW + t * halfW, y: y + t * halfH }
-        }
-        else {
-            let t = (ratio - 0.5) * 2
-            return { x: x + w - t * halfW, y: y + halfH + t * halfH }
-        }
-    default:
-        return { x: x + halfW, y: y + h }
-    }
+/** affordance(gear/resize/handle/waypoint/panel): 其點擊類事件不代表宿主元素或畫布 */
+export function isAffordanceHit(kind) {
+    return AFFORDANCE.has(kind)
 }
 
-/**
- * Get a point on the ellipse edge for handle positioning.
- * Maps ratio (0..1) to a parametric angle based on the side.
- */
-function getEllipseEdgePoint(x, y, w, h, side, ratio) {
-    let cx = x + w / 2
-    let cy = y + h / 2
-    let rx = w / 2
-    let ry = h / 2
-    let angle
-
-    switch (side) {
-    case 'top':
-        angle = Math.PI * (1 - ratio); break
-    case 'bottom':
-        angle = Math.PI * (ratio - 1); break
-    case 'left':
-        angle = Math.PI * (0.5 + ratio); break
-    case 'right':
-        angle = Math.PI * (0.5 - ratio); break
-    default:
-        angle = 0
-    }
-
-    return {
-        x: cx + rx * Math.cos(angle),
-        y: cy - ry * Math.sin(angle)
-    }
-}
-
-/**
- * Get a point on the triangle edge for handle positioning.
- * Supports 4 directions: triangle (up), triangle-right, triangle-down, triangle-left.
- */
-function getTriangleEdgePoint(x, y, w, h, side, ratio, shape) {
-    // Get absolute vertices based on direction
-    let apex, baseA, baseB, apexSide, baseSide, edgeA, edgeB
-    if (shape === 'triangle-right') {
-        apex = { x: x + w, y: y + h / 2 }; baseA = { x, y }; baseB = { x, y: y + h }
-        apexSide = 'right'; baseSide = 'left'; edgeA = 'top'; edgeB = 'bottom'
-    }
-    else if (shape === 'triangle-down') {
-        apex = { x: x + w / 2, y: y + h }; baseA = { x, y }; baseB = { x: x + w, y }
-        apexSide = 'bottom'; baseSide = 'top'; edgeA = 'left'; edgeB = 'right'
-    }
-    else if (shape === 'triangle-left') {
-        apex = { x, y: y + h / 2 }; baseA = { x: x + w, y }; baseB = { x: x + w, y: y + h }
-        apexSide = 'left'; baseSide = 'right'; edgeA = 'top'; edgeB = 'bottom'
-    }
-    else {
-    // triangle (up)
-        apex = { x: x + w / 2, y }; baseA = { x, y: y + h }; baseB = { x: x + w, y: y + h }
-        apexSide = 'top'; baseSide = 'bottom'; edgeA = 'left'; edgeB = 'right'
-    }
-
-    if (side === apexSide) {
-        if (ratio &lt;= 0.5) {
-            let t = ratio * 2
-            return { x: baseA.x + (apex.x - baseA.x) * t, y: baseA.y + (apex.y - baseA.y) * t }
-        }
-        else {
-            let t2 = (ratio - 0.5) * 2
-            return { x: apex.x + (baseB.x - apex.x) * t2, y: apex.y + (baseB.y - apex.y) * t2 }
-        }
-    }
-    if (side === baseSide) {
-        return { x: baseA.x + (baseB.x - baseA.x) * ratio, y: baseA.y + (baseB.y - baseA.y) * ratio }
-    }
-    if (side === edgeA) {
-        return { x: apex.x + (baseA.x - apex.x) * ratio, y: apex.y + (baseA.y - apex.y) * ratio }
-    }
-    if (side === edgeB) {
-        return { x: apex.x + (baseB.x - apex.x) * ratio, y: apex.y + (baseB.y - apex.y) * ratio }
-    }
-    return { x: x + w / 2, y: y + h / 2 }
-}
-
-/**
- * Get all nodes that overlap with a given rectangle.
- */
-export function getOverlappingNodes(rect, nodes, nodeInternals) {
-    return nodes.filter(node => {
-        const internals = (nodeInternals &amp;&amp; nodeInternals[node.id]) || {}
-        const w = internals.width || node.width || 150
-        const h = internals.height || node.height || 40
-        const nodeRect = {
-            x: node.position.x,
-            y: node.position.y,
-            width: w,
-            height: h,
-        }
-        return rectsOverlap(rect, nodeRect)
-    })
-}
-
-/**
- * Check if two rectangles overlap.
- */
-function rectsOverlap(a, b) {
-    return (
-        a.x &lt; b.x + b.width &amp;&amp;
-    a.x + a.width > b.x &amp;&amp;
-    a.y &lt; b.y + b.height &amp;&amp;
-    a.y + a.height > b.y
-    )
-}
-
-/**
- * Clamp a position within a coordinate extent.
- */
-export function clampPosition(position, extent) {
-    if (!extent) return position
-    return {
-        x: Math.max(extent[0][0], Math.min(extent[1][0], position.x)),
-        y: Math.max(extent[0][1], Math.min(extent[1][1], position.y)),
-    }
-}
-
-/**
- * Snap a position to the nearest grid point.
- * @param {{ x: number, y: number }} position
- * @param {number|null} gridSize - Grid cell size (single number for both axes)
- */
-export function snapPosition(position, gridSize) {
-    if (!gridSize) return position
-    return {
-        x: Math.round(position.x / gridSize) * gridSize,
-        y: Math.round(position.y / gridSize) * gridSize,
-    }
+/** 畫布層手勢(平移/框選/pane-click)之目標排除: 非畫布空白即排除 */
+export function isCanvasBlank(target, flowRoot) {
+    return classifyHit(target, flowRoot) === 'canvas'
 }
 </code></pre>
         </article>
