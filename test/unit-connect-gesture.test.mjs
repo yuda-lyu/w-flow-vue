@@ -83,7 +83,7 @@ describe('S1 建線暫態(根class與把手標記)為手勢期間之暫態', () 
 
         window.dispatchEvent(new Event('blur'))
         expect(w.vm.isConnecting).toBe(false)
-        expect(w.vm.connectingFrom).toBe(null)
+        expect(w.vm._connectOrigin).toBe(null)
         expect(countMarks()).toBe(0)
         w.destroy()
     })
@@ -177,12 +177,12 @@ describe('S3 非主鍵不啟動; 進行中不得重入', () => {
     test('進行中他途再送 connect-start 不重跑啟動流程, 起點不被改寫', () => {
         const w = createWrapper()
         sourceHandles(w).at(0).trigger('mousedown', { button: 0 })
-        const first = w.vm.connectingFrom.nodeId
+        const first = w.vm._connectOrigin.nodeId
         expect(countMarks()).toBe(1)
 
         //縱深第二層: 即使事件由他途送達(繞過 Handle 之 button 守衛), 重入守衛仍須擋下
         w.vm.onConnectStart({ nodeId: '2', handleType: 'source', handlePosition: 'bottom' })
-        expect(w.vm.connectingFrom.nodeId).toBe(first)
+        expect(w.vm._connectOrigin.nodeId).toBe(first)
         expect(countMarks()).toBe(1)
 
         docMouseUp()

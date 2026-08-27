@@ -25,6 +25,7 @@ import NodeFace from './NodeFace.vue'
 import DefaultNode from './DefaultNode.vue'
 import InputNode from './InputNode.vue'
 import OutputNode from './OutputNode.vue'
+import { nodeType } from '../../js/anchorPolicy.mjs'
 
 const builtInNodes = {
     basic: DefaultNode,
@@ -35,6 +36,7 @@ const builtInNodes = {
 export default {
     name: 'NodeBody',
     components: { NodeFace, DefaultNode, InputNode, OutputNode },
+    inject: { getDefNode: { default: () => () => ({}) } },
     props: {
         node: { type: Object, required: true },
         connectable: { type: Boolean, default: true },
@@ -54,7 +56,8 @@ export default {
     },
     computed: {
         nodeComponent() {
-            return builtInNodes[this.node.type || 'basic'] || DefaultNode
+            //有效型別經 anchorPolicy.nodeType 單一解析(與 class/表單/same-side/建線判定同一基準)
+            return builtInNodes[nodeType(this.node, this.getDefNode())] || DefaultNode
         },
         bodyStyle() {
             const w = this.lastW || this.node.width

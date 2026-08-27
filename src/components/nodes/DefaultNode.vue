@@ -1,29 +1,23 @@
 <template>
   <div class="vue-flow__node-basic">
     <Handle
-      v-for="p in usedTargetSides"
-      :key="'t-' + p"
       type="target"
-      :position="p"
-      :binding="targetBindingFor(p)"
+      :position="targetSide"
       :connectable="connectable"
       :locked="locked"
-      :offset="targetOffsetFor(p)"
-      :custom-style="targetHandleStyleFor(p)"
+      :offset="targetOffsetFor(targetSide)"
+      :custom-style="targetHandleStyleFor(targetSide)"
       :node-edge-width="nodeEdgeWidth"
       @connect-start="$emit('connect-start', $event)"
     />
     <div class="vue-flow__node-label" :style="labelStyle">{{ node.name }}</div>
     <Handle
-      v-for="p in usedSourceSides"
-      :key="'s-' + p"
       type="source"
-      :position="p"
-      :binding="sourceBindingFor(p)"
+      :position="sourceSide"
       :connectable="connectable"
       :locked="locked"
-      :offset="sourceOffsetFor(p)"
-      :custom-style="sourceHandleStyleFor(p)"
+      :offset="sourceOffsetFor(sourceSide)"
+      :custom-style="sourceHandleStyleFor(sourceSide)"
       :node-edge-width="nodeEdgeWidth"
       @connect-start="$emit('connect-start', $event)"
     />
@@ -32,13 +26,13 @@
 
 <script>
 import Handle from './Handle.vue'
-import { sourceHandleSides, targetHandleSides } from '../../js/anchorPolicy.mjs'
+import { nodeSourceSide, nodeTargetSide } from '../../js/anchorPolicy.mjs'
 import { nodeBorderWidth } from '../../js/nodeStyle.mjs'
 
 export default {
     name: 'DefaultNode',
     components: { Handle },
-    inject: { getDefNode: { default: () => () => ({}) }, getConns: { default: () => () => [] } },
+    inject: { getDefNode: { default: () => () => ({}) } },
     props: {
         node: { type: Object, required: true },
         connectable: { type: Boolean, default: true },
@@ -52,19 +46,12 @@ export default {
         nodeEdgeWidth() {
             return nodeBorderWidth(this.node, this.dn)
         },
-        //把手集合由 anchorPolicy 單一來源解析: 預設 Auto 把手永遠存在, Fixed 錨點附加;
-        //佈局方法(offset/style)以 side 為鍵, 故另以 usedXxxSides 提供純 side 陣列
-        sourceHandles() {
-            return sourceHandleSides(this.node, this.getConns() || [], this.dn)
+        //連出/連入側由節點決定(anchorPolicy 單一來源): 節點 → defNode → 內建; 每種各一個把手
+        sourceSide() {
+            return nodeSourceSide(this.node, this.dn)
         },
-        targetHandles() {
-            return targetHandleSides(this.node, this.getConns() || [], this.dn)
-        },
-        usedSourceSides() {
-            return this.sourceHandles.map(h => h.side)
-        },
-        usedTargetSides() {
-            return this.targetHandles.map(h => h.side)
+        targetSide() {
+            return nodeTargetSide(this.node, this.dn)
         },
         isDiamond() {
             return this.node.shape === 'diamond'
@@ -94,17 +81,9 @@ export default {
         },
     },
     methods: {
-        sourceBindingFor(p) {
-            const h = this.sourceHandles.find(x => x.side === p)
-            return h ? h.binding : 'auto'
-        },
-        targetBindingFor(p) {
-            const h = this.targetHandles.find(x => x.side === p)
-            return h ? h.binding : 'auto'
-        },
         // 同一側同時有入點與出點時錯開(入33%/出67%), 否則置中
         isBothSide(p) {
-            return this.usedSourceSides.indexOf(p) >= 0 && this.usedTargetSides.indexOf(p) >= 0
+            return this.sourceSide === p && this.targetSide === p
         },
         targetOffsetFor(p) {
             if (this.isSvgShape) return null

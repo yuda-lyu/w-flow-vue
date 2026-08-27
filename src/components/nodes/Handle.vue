@@ -6,7 +6,6 @@
     :data-handle-id="id || type"
     :data-handle-type="type"
     :data-handle-position="position"
-    :data-handle-binding="binding"
     @mousedown.stop="onMouseDown"
     @click.stop
   />
@@ -39,9 +38,6 @@ export default {
         type: { type: String, default: 'source' }, // 'source' | 'target'
         position: { type: String, default: 'bottom' }, // 'top' | 'right' | 'bottom' | 'left'
         id: { type: String, default: null },
-        //錨點綁定語義(anchorPolicy): 'auto'=預設把手(建線不烙印方位, 跟隨節點設定);
-        //'fixed'=逐邊固定錨點之附加把手(建線烙印方位)。由把手身分宣告, 不以方位比較推測意圖
-        binding: { type: String, default: 'auto' },
         connectable: { type: Boolean, default: true },
         locked: { type: Boolean, default: false },
         offset: { type: String, default: null },
@@ -85,7 +81,6 @@ export default {
                 handleId: this.id || this.type,
                 handleType: this.type,
                 handlePosition: this.position,
-                handleBinding: this.binding,
             })
         },
     },

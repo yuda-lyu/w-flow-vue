@@ -87,11 +87,8 @@
             :def-node="dn"
             :text-font-size="settingsPopupTextFontSize"
             :excludes="settingsExcludes"
-            :fixed-out-count="fixedOutCount"
-            :fixed-in-count="fixedInCount"
             @update="onSettingsUpdate"
             @delete="onSettingsDelete"
-            @unfix-anchors="onUnfixAnchors"
           />
         </template>
       </WPopup>
@@ -106,14 +103,13 @@ import NodeSettingsForm from '../ui/NodeSettingsForm.vue'
 import SlotOutlet from '../ui/SlotOutlet.vue'
 import WPopup from 'w-component-vue/src/components/WPopup.vue'
 import { classifyHit, isAffordanceHit } from '../../js/hitTest.mjs'
+import { nodeType } from '../../js/anchorPolicy.mjs'
 
 export default {
     name: 'NodeWrapper',
     components: { NodeBody, NodeSettingsForm, SlotOutlet, WPopup },
     inject: {
         getDefNode: { default: () => () => ({}) },
-        //conns 供固定錨點(Fixed)數量統計(設定表單之揭示列)
-        getConns: { default: () => () => [] },
         getDragGhost: { default: () => () => null },
         //複選鍵是否生效: getter注入而非prop——只被事件handler讀取, 不進渲染面, 按/放複選鍵時不觸發重渲染
         getMultiSelectActive: { default: () => () => false },
@@ -152,13 +148,6 @@ export default {
         dn() {
             return this.getDefNode()
         },
-        //固定錨點(Fixed)之出/入邊數: 這些邊不跟隨節點之 To/From Handle 設定, 於表單揭示
-        fixedOutCount() {
-            return (this.getConns() || []).filter(c => c && c.from === this.node.id && c.fromPosition).length
-        },
-        fixedInCount() {
-            return (this.getConns() || []).filter(c => c && c.to === this.node.id && c.toPosition).length
-        },
         isDiamond() {
             return this.node.shape === 'diamond'
         },
@@ -182,7 +171,7 @@ export default {
                 : []
             return [
                 'vue-flow__node',
-                `vue-flow__node-${this.node.type || 'basic'}`,
+                `vue-flow__node-${nodeType(this.node, this.dn)}`,
                 ...nodeClasses,
                 {
                     'vue-flow__node--selected': this.selected,
@@ -468,12 +457,9 @@ export default {
         onSettingsUpdate(key, value) {
             this.$emit('node-settings-update', { node: this.node, key, value })
         },
-        //批次將固定錨點改回 Auto(end: 'source'=出邊之fromPosition, 'target'=入邊之toPosition)
-        onUnfixAnchors(end) {
-            this.$emit('node-anchors-unfix', { node: this.node, end })
-        },
         onSettingsDelete() {
-            this.$emit('node-settings-delete', { node: this.node })
+            //刪除「請求」(內部通道, 由 WFlowVue.runDelete 裁決與提交; 對宿主之完成事件只有 elements-deleted)
+            this.$emit('node-delete-request', { node: this.node })
         },
         onResizeStart(event, edge) {
             //複選模式中不啟動縮放(把手已隱藏, 縱深第二層; 守衛先於任何emit/preventDefault/樣式建立)

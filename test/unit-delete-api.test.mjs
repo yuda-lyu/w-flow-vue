@@ -4,7 +4,7 @@
  * 規格:
  * A1 deleteElements/deleteNodes/deleteConns 公開; 刪節點自動連帶相鄰邊; 回傳 { ok:true, ...payload }。
  * A2 四路徑(節點表單/連線表單/刪除鍵/API)皆發 elements-deleted, payload 形狀一致, from 正確。
- * A3 事件順序: 各入口既有序列原樣保留, elements-deleted 最後發出。
+ * A3 事件順序: 所有入口同一序列——(僅實際變動之集合)update:nodes → update:conns → elements-deleted 最後。
  * A4 API: 僅對實際變動之集合發 update:*。
  * A5 回傳 reason: empty / not-found / excluded / busy / cancelled / confirm-error / destroyed / stale。
  * A6 deletable:false: API 與刪除鍵歸 excluded; 節點/連線表單之刪除鈕 disabled 且入口回 false;
@@ -16,7 +16,6 @@
  * A11 輔助狀態回收: nodeInternals / dragPositions 之被刪 key 移除; 選取清單移除被刪 id。
  * A12 await 期間新增相鄰邊 → stale, 不刪、不發事件。
  * A13 重複 id 於載入時 console.warn(同組只一次)。
- * A14 低階 removeNode/removeConn 相容保留: 行為與回傳不變(不發事件)。
  */
 import { mount } from '@vue/test-utils'
 import WFlowVue from '../src/components/WFlowVue.vue'
@@ -46,7 +45,7 @@ const PAYLOAD_KEYS = ['from', 'requested', 'deleted', 'cascades', 'notFound', 'e
 const shapeOf = (p) => Object.keys(p).sort()
 //事件序列(只取與刪除相關者)
 const seq = (w) => {
-    const names = ['delete', 'update:nodes', 'update:conns', 'node-settings-delete', 'conn-settings-delete', 'elements-deleted', 'node-settings-update']
+    const names = ['update:nodes', 'update:conns', 'elements-deleted', 'node-settings-update']
     const out = []
     for (const n of names) {
         const ev = w.emitted(n)
@@ -92,32 +91,31 @@ describe('A1 公開 API 基本行為', () => {
     })
 })
 
-describe('A2/A3 四路徑皆發 elements-deleted, 形狀一致, 既有順序保留且新事件最後', () => {
+describe('A2/A3 四路徑皆發 elements-deleted, 形狀一致, 同一序列且 elements-deleted 最後', () => {
     test('節點表單', async () => {
         const w = mountFlow(mkOpt())
         trackOrder(w)
         await w.vm.onNodeSettingsDelete({ node: { id: '2' } })
-        expect(seq(w)).toEqual(['update:nodes', 'update:conns', 'node-settings-delete', 'elements-deleted'])
+        expect(seq(w)).toEqual(['update:nodes', 'update:conns', 'elements-deleted'])
+        //對宿主之完成事件只有 elements-deleted: 其他名稱一律不得發出
+        for (const n of ['delete', 'node-settings-delete', 'conn-settings-delete', 'node-delete-request', 'conn-delete-request']) {
+            expect(w.emitted(n)).toBeFalsy()
+        }
         const p = w.emitted('elements-deleted')[0][0]
         expect(shapeOf(p)).toEqual(PAYLOAD_KEYS)
         expect(p.from).toBe('node-settings')
         expect(p.deleted.connIds.sort()).toEqual(['e1-2', 'e2-3'])
-        //既有窄事件 payload 不變
-        const legacy = w.emitted('node-settings-delete')[0][0]
-        expect(legacy.node.id).toBe('2')
-        expect(legacy.conns.map(c => c.id).sort()).toEqual(['e1-2', 'e2-3'])
         w.destroy()
     })
     test('連線表單', async () => {
         const w = mountFlow(mkOpt())
         trackOrder(w)
         await w.vm.onConnSettingsDelete({ conn: { id: 'e1-2' } })
-        expect(seq(w)).toEqual(['update:conns', 'conn-settings-delete', 'elements-deleted'])
+        expect(seq(w)).toEqual(['update:conns', 'elements-deleted'])
         const p = w.emitted('elements-deleted')[0][0]
         expect(shapeOf(p)).toEqual(PAYLOAD_KEYS)
         expect(p.from).toBe('conn-settings')
         expect(p.deleted).toMatchObject({ nodeIds: [], connIds: ['e1-2'] })
-        expect(w.emitted('conn-settings-delete')[0][0].conn.id).toBe('e1-2')
         w.destroy()
     })
     test('刪除鍵', async () => {
@@ -125,7 +123,7 @@ describe('A2/A3 四路徑皆發 elements-deleted, 形狀一致, 既有順序保�
         trackOrder(w)
         w.vm.setSelectedNodes(['1'])
         await w.vm.deleteSelectedElements()
-        expect(seq(w)).toEqual(['delete', 'update:nodes', 'update:conns', 'elements-deleted'])
+        expect(seq(w)).toEqual(['update:nodes', 'update:conns', 'elements-deleted'])
         const p = w.emitted('elements-deleted')[0][0]
         expect(shapeOf(p)).toEqual(PAYLOAD_KEYS)
         expect(p.from).toBe('delete-key')
@@ -212,7 +210,7 @@ describe('A5 回傳 reason', () => {
         const d = deferred()
         const w = mountFlow(mkOpt({ funConfirmDeleting: () => d.promise }))
         const p = w.vm.deleteConns(['e1-2'])
-        w.vm.removeConn('e1-2')
+        w.vm.conns.splice(w.vm.conns.findIndex(c => c.id === 'e1-2'), 1)
         d.resolve(true)
         const r = await p
         expect(r.reason).toBe('not-found')
@@ -355,7 +353,7 @@ describe('A12 await 期間新增相鄰邊 → stale', () => {
         const d = deferred()
         const w = mountFlow(mkOpt({ funConfirmDeleting: () => d.promise }))
         const p = w.vm.deleteNodes(['1', '3'])
-        w.vm.removeNode('3')
+        w.vm.nodes.splice(w.vm.nodes.findIndex(n => n.id === '3'), 1)
         d.resolve(true)
         const r = await p
         expect(r.ok).toBe(true)
@@ -379,33 +377,6 @@ describe('A13 重複 id 警告', () => {
         expect(String(hits[0][0])).toContain('1')
         spy.mockRestore()
         errSpy.mockRestore()
-        w.destroy()
-    })
-})
-
-describe('A14 低階 removeNode/removeConn 相容保留', () => {
-    test('removeNode 回傳連帶邊、清選取、不發事件; removeConn 同', () => {
-        const w = mountFlow(mkOpt())
-        w.vm.setSelectedNodes(['2'])
-        w.vm.setSelectedConns(['e1-2'])
-        const removed = w.vm.removeNode('2')
-        expect(removed.map(c => c.id).sort()).toEqual(['e1-2', 'e2-3'])
-        expect(w.vm.nodes.map(n => n.id)).toEqual(['1', '3'])
-        expect(w.vm.selectedNodes).toEqual([])
-        expect(w.vm.selectedConns).toEqual([])
-        expect(w.vm.removeNode('nope')).toEqual([])
-        expect(w.emitted('elements-deleted')).toBeFalsy()
-        expect(w.emitted('update:nodes')).toBeFalsy()
-        w.destroy()
-    })
-    test('removeNode 不套 deletable 政策: deletable:false 節點指定即刪且連帶相鄰邊(不留孤兒邊)', () => {
-        const opt = mkOpt()
-        opt.nodes[1].deletable = false
-        const w = mountFlow(opt)
-        const removed = w.vm.removeNode('2')
-        expect(removed.map(c => c.id).sort()).toEqual(['e1-2', 'e2-3'])
-        expect(w.vm.nodes.map(n => n.id)).toEqual(['1', '3'])
-        expect(w.vm.conns).toHaveLength(0)
         w.destroy()
     })
 })

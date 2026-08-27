@@ -147,7 +147,7 @@
 <script>
 import { getBezierPath, getStraightPath, getStepPath, getSmoothStepPath } from '../../js/edgePath'
 import { getHandlePosition } from '../../js/geometry'
-import { resolveSourceAnchor, resolveTargetAnchor } from '../../js/anchorPolicy.mjs'
+import { nodeSourceSide, nodeTargetSide } from '../../js/anchorPolicy.mjs'
 import ConnSettingsForm from '../ui/ConnSettingsForm.vue'
 import SlotOutlet from '../ui/SlotOutlet.vue'
 import WPopup from 'w-component-vue/src/components/WPopup.vue'
@@ -246,14 +246,14 @@ export default {
         },
         //(效能重構)錨點方位/座標自算(原由EdgeRenderer解析後以props傳入):
         //  含拖曳/縮放ghost(細粒度反應式), 僅本邊兩端節點變動時本元件才重渲染
-        //方位解析走 anchorPolicy 單一來源(Fixed=conn層 > Auto=節點層 > defNode層 > 內建);
+        //方位由兩端節點決定(anchorPolicy 單一來源: 節點層 > defNode層 > 內建); 邊沒有自己的方位
         //why 補 defNode 層: 原本此處手寫 fallback 漏看 defNode, 與把手渲染(有看)分家——
         //宿主設 defNodeToPosition 時把手畫在該側, 邊卻仍自內建側出發
         sourcePosition() {
-            return resolveSourceAnchor(this.conn, this.sourceNode, this.getDefNode()).side
+            return nodeSourceSide(this.sourceNode, this.getDefNode())
         },
         targetPosition() {
-            return resolveTargetAnchor(this.conn, this.targetNode, this.getDefNode()).side
+            return nodeTargetSide(this.targetNode, this.getDefNode())
         },
         effSourceNode() {
             return this.effNode(this.sourceNode)
@@ -570,7 +570,8 @@ export default {
             window.addEventListener('blur', onMouseUp)
         },
         onSettingsDelete() {
-            this.$emit('conn-settings-delete', { conn: this.conn })
+            //刪除「請求」(內部通道, 由 WFlowVue.runDelete 裁決與提交; 對宿主之完成事件只有 elements-deleted)
+            this.$emit('conn-delete-request', { conn: this.conn })
         },
     },
 }

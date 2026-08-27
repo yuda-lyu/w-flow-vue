@@ -36,25 +36,7 @@
         <option value="arrowclosed">Arrow Closed</option>
       </select>
     </label>
-    <!-- 逐邊錨點方位: 此連線於起點節點之連出方位/迄點節點之連入方位; Auto=回退節點層級/預設 -->
-    <label v-if="!isEx('fromPosition')">From Anchor
-      <select :value="conn.fromPosition || ''" @input="$emit('update', 'fromPosition', $event.target.value || undefined)">
-        <option value="">Auto</option>
-        <option value="top">Top</option>
-        <option value="right">Right</option>
-        <option value="bottom">Bottom</option>
-        <option value="left">Left</option>
-      </select>
-    </label>
-    <label v-if="!isEx('toPosition')">To Anchor
-      <select :value="conn.toPosition || ''" @input="$emit('update', 'toPosition', $event.target.value || undefined)">
-        <option value="">Auto</option>
-        <option value="top">Top</option>
-        <option value="right">Right</option>
-        <option value="bottom">Bottom</option>
-        <option value="left">Left</option>
-      </select>
-    </label>
+    <!-- 邊沒有自己的方位: 兩端方向由節點之 To/From Handle 決定(anchorPolicy), 故此表單無 From/To Anchor -->
     <div v-if="!isEx('points')" class="vue-flow__waypoints">
       <div class="vue-flow__waypoints-head">
         <span>Waypoints</span>

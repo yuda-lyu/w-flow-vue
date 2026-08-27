@@ -221,8 +221,8 @@ describe('WFlowVue', () => {
             const wrapper = createWrapper()
             wrapper.vm.setSelectedNodes(['3'])
             await wrapper.vm.deleteSelectedElements()
-            expect(wrapper.emitted('delete')).toBeTruthy()
-            expect(wrapper.emitted('delete')[0][0].nodes).toHaveLength(1)
+            expect(wrapper.emitted('elements-deleted')).toBeTruthy()
+            expect(wrapper.emitted('elements-deleted')[0][0].deleted.nodes).toHaveLength(1)
             wrapper.destroy()
         })
 
@@ -241,7 +241,7 @@ describe('WFlowVue', () => {
         test('delete does nothing when nothing selected', async () => {
             const wrapper = createWrapper()
             await wrapper.vm.deleteSelectedElements()
-            expect(wrapper.emitted('delete')).toBeFalsy()
+            expect(wrapper.emitted('elements-deleted')).toBeFalsy()
             wrapper.destroy()
         })
     })

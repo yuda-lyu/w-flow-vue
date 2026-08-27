@@ -56,7 +56,7 @@
         @conn-mouseleave="onConnMouseLeave"
         @conn-settings-click="onConnSettingsClick"
         @conn-settings-update="onConnSettingsUpdate"
-        @conn-settings-delete="onConnSettingsDelete"
+        @conn-delete-request="onConnSettingsDelete"
         @conn-activate="onConnActivate"
         @conn-waypoint-start="onConnWaypointStart"
         @conn-waypoint-end="onConnWaypointEnd"
@@ -90,7 +90,7 @@
         @node-context-menu="onNodeContextMenu"
         @node-settings-click="onNodeSettingsClick"
         @node-settings-update="onNodeSettingsUpdate"
-        @node-settings-delete="onNodeSettingsDelete"
+        @node-delete-request="onNodeSettingsDelete"
         @node-mouseenter="onNodeMouseEnter"
         @node-mouseleave="onNodeMouseLeave"
         @connect-start="onConnectStart"
@@ -100,7 +100,6 @@
         @resize-start="onNodeResizeStart"
         @node-resize-cancel="onNodeResizeCancel"
         @node-activate="onNodeActivate"
-        @node-anchors-unfix="onNodeAnchorsUnfix"
       />
 
       <ConnectionLine
@@ -209,13 +208,11 @@ import { previewDelete, applyDelete, previewNodeTypeChange, findDuplicateIds, sn
  * @prop {boolean}  [opt.snapToGrid=false]                Snap node positions to grid
  * @prop {number}   [opt.snapGridSize=20]                  Grid cell size (px, used for both drag snap and resize snap)
  *
- * Anchor contract (Auto/Fixed): an edge end is Fixed when the conn itself carries
- * `fromPosition`/`toPosition` (set via the conn settings form, or by dragging from an extra
- * fixed handle) — it then always wins. Otherwise the end is Auto and follows
- * node.toPosition/fromPosition → defNodeToPosition/defNodeFromPosition → built-in bottom/top.
- * Dragging from a node's default handle creates an Auto edge (no position is persisted), so
- * changing the node's To/From Handle re-routes all its Auto edges. Fixed anchors are shown in
- * the node settings form with a batch "改為 Auto" action; the conn form's Auto option clears one.
+ * Anchor contract: the node decides its own out/in direction. An edge has no direction of its
+ * own — each end sits on the handle of that end's node, perpendicular to that node side:
+ *   source end: sourceNode.toPosition → opt.defNodeToPosition → 'bottom'
+ *   target end: targetNode.fromPosition → opt.defNodeFromPosition → 'top'
+ * Changing a node's To/From Handle re-routes all its edges. Conns carry no direction fields.
  *
  * Node-surface input contract: dragging on a node moves the node — text selection and native
  * HTML5 drag are suppressed there (a formed selection would let the browser's text-layer drag
@@ -320,7 +317,7 @@ import { previewDelete, applyDelete, previewNodeTypeChange, findDuplicateIds, sn
  *     - conns:即將刪除之連線,含「因節點被刪而連帶刪除」者(供宿主組出確認訊息)
  *     - from:'node-settings' | 'conn-settings' | 'delete-key'
  *   確認進行中(await 尚未回覆)不再受理新的刪除請求,避免重複刪除與多重確認視窗;
- *   await 期間圖若已變動(宿主抽換資料、他途已刪),僅刪除仍存在之目標,`delete` 事件之
+ *   await 期間圖若已變動(宿主抽換資料、他途已刪),僅刪除仍存在之目標,`elements-deleted` 之
  *   payload 亦只含實際被刪者;若 await 期間出現「確認 payload 未涵蓋」之新連帶邊(如期間新增了
  *   相鄰連線),整筆刪除以 stale 放棄,不默默擴大刪除範圍。
  *   from 亦可能為 'api'(公開刪除方法)或宿主自訂字串;'node-type-change' 路徑不經此閘門(見下)。
@@ -346,22 +343,17 @@ import { previewDelete, applyDelete, previewNodeTypeChange, findDuplicateIds, sn
  *           'stale'(await 期間出現未經確認之新連帶邊)
  * @method deleteNodes(nodeIds, opt) / deleteConns(connIds, opt) — deleteElements 之便捷包裝
  *
- * @event elements-deleted 所有刪除路徑完成後皆發出(於該入口既有事件序列之後、最後發出),payload:
+ * @event elements-deleted 所有刪除路徑完成後皆發出(於 update:* 之後、最後發出),payload:
  *   { from, requested:{nodeIds,connIds}, deleted:{nodeIds,connIds,nodes,conns}, cascades:[{nodeId,connIds}],
  *     notFound:{nodeIds,connIds}, excluded:{nodeIds,connIds} }
  *   - deleted.nodes/conns 為被刪當下之深複製快照(JSON 往返,同 getFlowData);id 清單供輕量記帳;
  *   - cascades 只描述因果(哪條邊因哪個節點而刪),記帳以 deleted.*Ids 為準(已去重);
  *   - 不含刪後全量快照(remain):需要者呼叫 getFlowData() 或沿用 update:nodes / update:conns。
- *   既有窄事件(node-settings-delete / conn-settings-delete / delete)與各入口既有順序原樣保留為相容層:
- *     節點表單:update:nodes → update:conns → node-settings-delete → elements-deleted
- *     連線表單:update:conns → conn-settings-delete → elements-deleted
- *     刪除鍵:  delete → update:nodes → update:conns → elements-deleted
- *     公開方法:(僅實際變動之集合)update:nodes → update:conns → elements-deleted
- *     type 變更:node-settings-update → update:conns → elements-deleted
- *   遷移期間宿主勿同時以新舊事件各記帳一次。
+ *   刪除只有這一個完成事件。所有入口同一序列:(僅實際變動之集合)update:nodes → update:conns → elements-deleted;
+ *   type 變更:node-settings-update → update:conns → elements-deleted。
  * @prop {Function} [opt.funValidConnCreating=null]      Custom connection validator fn(connection) → boolean.
  *   須為同步純函式(無副作用): 除放開(commit)外, 拖線中游標移入把手(hover 目標變更)時亦會被呼叫一次,
- *   以即時標示落點可否連線(valid/invalid); 兩處收到之 connection 形狀完全相同(含已烙印之 fromPosition/toPosition)。
+ *   以即時標示落點可否連線(valid/invalid); 兩處收到之 connection 形狀完全相同({ from, to })。
  *   connect-end 事件之第二參數為判定結果 { valid, reason, connection }(additive, 第一參數仍為原生 event),
  *   reason ∈ 'no-endpoint'|'unknown-handle'|'self'|'same-kind'|'not-connectable'|'missing-node'|
  *   'from-output'|'to-input'|'duplicate'|'custom'|'cancelled'|null
@@ -401,7 +393,6 @@ export default {
         return {
             getDefNode: () => this.defNode,
             getDefConn: () => this.defConn,
-            getConns: () => this.conns, //供節點元件推導實際使用之連接點方位(conn層級錨點)
             //拖曳/縮放ghost(細粒度): 回傳該節點進行中之暫時幾何({x,y}或{x,y,width,height}), 無則null
             getDragGhost: (id) => {
                 return this.dragPositions[id] || null
@@ -468,7 +459,6 @@ export default {
                 //游標下落點之即時判定: 'none'(非把手)|'valid'|'invalid'; 僅 ConnectionLine 讀取(細粒度)
                 dropStatus: 'none',
             },
-            connectingFrom: null,
 
             //複選模式(渲染面scalar, 由isMultiSelectActive之watcher維護; 契約見JSDoc「Multi-select mode」)
             multiSelectMode: false,
@@ -852,30 +842,6 @@ export default {
             this.selectedNodes.splice(0, this.selectedNodes.length)
             this.selectedConns.splice(0, this.selectedConns.length)
         },
-        //低階移除(相容保留, 非完整 transaction): 只 splice 與清選取, 不清 cache、不發 update:*/刪除事件、
-        //不回收輔助狀態。既有測試以其模擬「他途已刪」之競態。需完整語義者一律走 deleteElements。
-        removeNode(id) {
-            //低階方法不套 deletable 政策(維持舊語義: 指定即刪, 相鄰邊一律連帶), 故不走 previewDelete 而直接取相鄰邊
-            const node = this.nodeById(id)
-            if (!node) return []
-            const connIds = this.conns.filter(c => c.from === id || c.to === id).map(c => c.id)
-            const removed = applyDelete({ nodes: this.nodes, conns: this.conns }, { nodeIds: [id], connIds })
-            let selIdx = this.selectedNodes.indexOf(id)
-            if (selIdx !== -1) this.selectedNodes.splice(selIdx, 1)
-            //連帶被刪之邊亦自選取清單移除, 避免殘留幽靈id
-            for (const c of removed.conns) {
-                let ci = this.selectedConns.indexOf(c.id)
-                if (ci !== -1) this.selectedConns.splice(ci, 1)
-            }
-            //回傳連帶被刪之邊: 供刪除完成事件完整告知宿主(否則宿主僅知node被刪, 無從對連帶邊記帳)
-            return removed.conns
-        },
-        removeConn(id) {
-            const removed = applyDelete({ nodes: this.nodes, conns: this.conns }, { connIds: [id] })
-            if (removed.conns.length === 0) return
-            let selIdx = this.selectedConns.indexOf(id)
-            if (selIdx !== -1) this.selectedConns.splice(selIdx, 1)
-        },
         //重複 id 防呆: 一切查找/對帳/Vue key 皆以 id 為鍵, 重複即宿主資料錯誤, 須及早暴露; 同一組重複只警告一次
         warnDuplicateIds(kind, list) {
             const dup = findDuplicateIds(list)
@@ -938,7 +904,6 @@ export default {
 
         // --- Canvas events ---
         onCanvasClick(event) {
-            if (event.target.closest('.vue-flow__popup')) return
             if (this.isCanvasInteractiveTarget(event)) return
             //本次手勢已是框選(於mousedown鎖定)者不清空選取: 是否提交新選取交由endSelection依門檻決定
             //why: canvas-click由FlowCanvas元素層mouseup同步emit, 必先於document層之onDocMouseUp→endSelection,
@@ -981,7 +946,6 @@ export default {
             return !isCanvasBlank(event && event.target, this.$el)
         },
         onCanvasMouseDown(event) {
-            if (event.target.closest && event.target.closest('.vue-flow__popup')) return
             //非主鍵不啟動任何畫布層手勢: 判準對齊NodeWrapper.onMouseDown之event.button !== 0
             if (event.button !== 0) return
             //一次一手勢
@@ -1320,7 +1284,6 @@ export default {
                 handleId: payload.handleId || null,
                 type: originType,
                 position: payload.handlePosition || null,
-                binding: payload.handleBinding || 'auto',
                 connectable: true,
                 element: originEl || null,
                 nodeElement: originNodeEl,
@@ -1334,7 +1297,6 @@ export default {
 
             this.connectionVisual.originType = originType
             this.connectionVisual.active = true
-            this.connectingFrom = payload
 
             //起點幾何依實際把手類型(same-side 時 target=0.33 / source=0.67, 與把手渲染同一基準)
             const pos = getHandlePosition(
@@ -1379,7 +1341,7 @@ export default {
                         let r
                         try {
                             r = assessConnection(this._connectOrigin, target, {
-                                nodes: this.nodes, conns: this.conns, validator: this.funValidConnCreating,
+                                nodes: this.nodes, conns: this.conns, validator: this.funValidConnCreating, defNode: this.defNode,
                             })
                         }
                         catch (e) {
@@ -1398,16 +1360,14 @@ export default {
         endConnect(event) {
             //落點判定與 commit: 與 doConnect 之 preview 共用 describeHandleEndpoint + assessConnection,
             //不另手組 connection(preview/commit 同源, 不會分家)。
-            //逐邊錨點只在把手宣告 binding='fixed' 時烙印(anchorPolicy 之 Auto/Fixed 語義, 由
-            //buildConnectionCandidate 統一實作): 預設 Auto 把手拉出的邊不寫方位, 動態跟隨節點設定;
-            //why: 原本無條件烙印, 使 conn 層永遠蓋過節點層 → To Handle 設定看似失效(已重現)
+            //候選只有 { from, to }: 邊沒有自己的方位, 兩端方向由節點決定(anchorPolicy)
             let result = { valid: false, reason: 'no-endpoint', connection: null }
             try {
                 const handleEl = findHandleElAt(event.clientX, event.clientY)
                 const target = describeHandleEndpoint(handleEl, this.flowId)
                 if (target && this._connectOrigin) {
                     result = assessConnection(this._connectOrigin, target, {
-                        nodes: this.nodes, conns: this.conns, validator: this.funValidConnCreating,
+                        nodes: this.nodes, conns: this.conns, validator: this.funValidConnCreating, defNode: this.defNode,
                     })
                     if (result.valid) {
                         const connection = result.connection
@@ -1443,7 +1403,6 @@ export default {
             this.connectionVisual.active = false
             this.connectionVisual.dropStatus = 'none'
             this.connectionVisual.toPosition = 'top'
-            this.connectingFrom = null
             setHandleConnectStatus(this._connectHoverEl, null)
             this._connectHoverEl = null
             if (this._connectOrigin) {
@@ -1498,69 +1457,21 @@ export default {
             if (!n) return
             let oldType = n.type
             this.$set(n, key, value)
-            //type 變更之副作用(不相容方向之連線移除)為同一 transaction: 先算 plan 再一次套用;
-            //不經確認閘門(既有行為), 但須發 update:conns 與 elements-deleted——原寫法直接 splice 且只發
-            //node-settings-update, 宿主對被移除之連線完全無從記帳(第五條靜默刪除路徑)
-            let typeRemoved = null
-            if (key === 'type' && oldType !== value) {
-                const graph = { nodes: this.nodes, conns: this.conns }
-                const plan = previewNodeTypeChange(graph, n.id, value)
-                if (plan.connIds.length > 0) {
-                    const removed = applyDelete(graph, { connIds: plan.connIds })
-                    typeRemoved = {
-                        plan: {
-                            requested: { nodeIds: [], connIds: [] },
-                            nodeIds: [],
-                            connIds: removed.conns.map(c => c.id),
-                            cascades: [{ nodeId: n.id, connIds: removed.conns.map(c => c.id) }],
-                            notFound: { nodeIds: [], connIds: [] },
-                            excluded: { nodeIds: [], connIds: [] },
-                        },
-                        removed,
-                    }
-                    this.cleanupAfterDelete(removed, { selection: 'ids' })
-                }
-            }
             this.$emit('node-settings-update', { node: n, key, value })
-            if (typeRemoved) {
-                this.emitConnsUpdate()
-                this.$emit('elements-deleted', this.buildDeletedPayload(typeRemoved.plan, typeRemoved.removed, 'node-type-change'))
+            //type 變更之副作用(不相容方向之連線移除)走同一 coordinator(runDelete, 不經確認閘門):
+            //連帶歸因於此節點(cascadeNodeId), 事件序列與其他入口一致(update:conns → elements-deleted)。
+            //runDelete 於 confirm=false 時無 await, 主體同步執行, 故序列仍為 node-settings-update → update:conns → elements-deleted
+            if (key === 'type' && oldType !== value) {
+                const plan = previewNodeTypeChange({ nodes: this.nodes, conns: this.conns }, n.id, value)
+                if (plan.connIds.length > 0) {
+                    this.runDelete({ connIds: plan.connIds }, { from: 'node-type-change', selection: 'ids', confirm: false, cascadeNodeId: n.id })
+                }
             }
         },
-        //節點設定表單之刪除入口: 轉接層, 與其他入口共用 runDelete(確認閘門/連帶/政策/事件皆同一核心);
-        //既有事件順序(update:nodes → update:conns → node-settings-delete)原樣保留為相容層
+        //節點設定表單之刪除入口: 與其他入口共用 runDelete(確認閘門/連帶/政策/事件皆同一核心)
         async onNodeSettingsDelete({ node }) {
-            const r = await this.runDelete({ nodeIds: [node.id] }, {
-                from: 'node-settings',
-                selection: 'ids',
-                emitLegacy: (removed) => {
-                    this.emitNodesUpdate()
-                    this.emitConnsUpdate()
-                    //事件攜帶實際連帶被刪之邊: 使完成事件與確認閘門payload對稱(閘門有conns而事件沒有, 宿主就得自行重算連帶集合, 兩份規則日後必然漂移)
-                    this.$emit('node-settings-delete', { node: removed.nodes[0] || node, conns: removed.conns })
-                },
-            })
+            const r = await this.runDelete({ nodeIds: [node.id] }, { from: 'node-settings', selection: 'ids' })
             return r.ok
-        },
-        //批次將某節點一側之固定錨點改回 Auto(使用者於設定表單明確操作, 非默默清除)
-        //end: 'source'=出邊之fromPosition, 'target'=入邊之toPosition
-        onNodeAnchorsUnfix({ node, end }) {
-            const isSource = end === 'source'
-            let changed = false
-            for (const c of this.conns) {
-                if (isSource && c.from === node.id && c.fromPosition) {
-                    this.$delete(c, 'fromPosition')
-                    changed = true
-                }
-                if (!isSource && c.to === node.id && c.toPosition) {
-                    this.$delete(c, 'toPosition')
-                    changed = true
-                }
-            }
-            if (changed) {
-                clearStepCache()
-                this.emitConnsUpdate()
-            }
         },
         onNodeMouseEnter({ node, event }) {
             this.$emit('node-mouseenter', { node, event })
@@ -1606,14 +1517,7 @@ export default {
             }
         },
         async onConnSettingsDelete({ conn }) {
-            const r = await this.runDelete({ connIds: [conn.id] }, {
-                from: 'conn-settings',
-                selection: 'ids',
-                emitLegacy: (removed) => {
-                    this.emitConnsUpdate()
-                    this.$emit('conn-settings-delete', { conn: removed.conns[0] || conn })
-                },
-            })
+            const r = await this.runDelete({ connIds: [conn.id] }, { from: 'conn-settings', selection: 'ids' })
             return r.ok
         },
 
@@ -1737,31 +1641,20 @@ export default {
                 this.deleteConfirming = false
             }
         },
-        //Boolean 包裝(相容保留): 嚴格 true 才准刪
-        async confirmDeleting(payload) {
-            const r = await this.confirmDeletingResult(payload)
-            return r.ok
-        },
-        //刪除鍵入口: 轉接層, 目標=目前選取; deletable:false 者由核心歸入 excluded(不列入確認payload與delete事件);
-        //既有事件順序(delete → update:nodes → update:conns)與「清空全部選取」語義原樣保留
+        //刪除鍵入口: 目標=目前選取; deletable:false 者由核心歸入 excluded; 刪除後清空全部選取
         async deleteSelectedElements() {
             const r = await this.runDelete({ nodeIds: this.selectedNodes.slice(), connIds: this.selectedConns.slice() }, {
                 from: 'delete-key',
                 selection: 'clear',
-                emitLegacy: (removed) => {
-                    this.$emit('delete', { nodes: removed.nodes, conns: removed.conns })
-                    this.emitNodesUpdate()
-                    this.emitConnsUpdate()
-                },
             })
             return r.ok
         },
 
         // --- Delete transaction coordinator ---
         //所有刪除入口之唯一提交路徑: preview → (確認閘門) → await 後重 preview 與 stale 判定 → 提交 →
-        //選取/輔助狀態/手勢回收 → 清路由 cache → 既有窄事件(相容層, 由入口注入) → elements-deleted(最後)。
+        //選取/輔助狀態/手勢回收 → 清路由 cache → update:nodes / update:conns(僅實際變動之集合) → elements-deleted(最後)。
         //opt.from: 來源標記; opt.selection: 'ids'(僅移除被刪id)|'clear'(清空全部, 刪除鍵語義);
-        //opt.confirm: 是否經閘門(預設 true); opt.emitLegacy(removed): 入口之既有事件序列
+        //opt.confirm: 是否經閘門(預設 true); opt.cascadeNodeId: type 變更路徑之連帶歸因節點
         async runDelete(target, opt) {
             opt = opt || {}
             const from = opt.from || 'api'
@@ -1782,18 +1675,32 @@ export default {
                 if (!gate.ok) return { ok: false, reason: gate.reason }
                 //元件於await期間被銷毀即不再操作狀態
                 if (this._isDestroyed) return { ok: false, reason: 'destroyed' }
-                //await 後以「已確認之集合」重新解析: 他途已刪者剔除; 期間新增之相鄰邊不在確認 payload 內 → stale,
-                //不得默默擴大刪除(舊寫法 cascade 於 await 前算、await 後由 removeNode 無條件刪, 有此縫隙)
-                //以原始 requested 重算(cascades/notFound/excluded 自然一致), 再以「已確認集合」做子集比對
+                //await 後以「已確認之集合」(節點+連帶邊, 皆為明確目標)重新解析:
+                //- 他途已刪者剔除(歸入 notFound);
+                //- 已確認之連帶邊即使其節點已被他途移除仍刪除(不留孤兒邊: 使用者確認的就是這組);
+                //- 期間新增之相鄰邊不在確認集合內 → stale, 不得默默擴大刪除。
+                //因果(cascades)沿用確認時之歸屬, 僅保留仍被刪之邊; requested 沿用原始請求
                 const confirmedNodeSet = new Set(plan.nodeIds)
                 const confirmedConnSet = new Set(plan.connIds)
-                const plan2 = previewDelete(graph(), plan.requested)
+                const plan2 = previewDelete(graph(), { nodeIds: plan.nodeIds, connIds: plan.connIds })
                 if (plan2.nodeIds.some(id => !confirmedNodeSet.has(id)) || plan2.connIds.some(id => !confirmedConnSet.has(id))) {
                     return { ok: false, reason: 'stale' }
                 }
                 if (plan2.nodeIds.length === 0 && plan2.connIds.length === 0) {
                     return { ok: false, reason: 'not-found', notFound: plan2.notFound, excluded: plan2.excluded }
                 }
+                const kept = new Set(plan2.connIds)
+                plan2.cascades = plan.cascades
+                    .map(c => ({ nodeId: c.nodeId, connIds: c.connIds.filter(id => kept.has(id)) }))
+                    .filter(c => c.connIds.length > 0)
+                plan2.requested = plan.requested
+                //對帳沿用確認時之結果並併入 await 期間新消失者; excluded 於確認時已決定
+                const uniq = (a, b) => [...new Set([...a, ...b])]
+                plan2.notFound = {
+                    nodeIds: uniq(plan.notFound.nodeIds, plan2.notFound.nodeIds),
+                    connIds: uniq(plan.notFound.connIds, plan2.notFound.connIds),
+                }
+                plan2.excluded = plan.excluded
                 plan = plan2
             }
 
@@ -1802,15 +1709,15 @@ export default {
             this.cleanupAfterDelete(removed, { selection: opt.selection || 'ids' })
             clearStepCache()
 
+            //type 變更路徑: 被移除之邊全部歸因於該節點(直接指定之 connIds 於 previewDelete 不算連帶)
+            if (opt.cascadeNodeId !== undefined && removed.conns.length > 0) {
+                plan.requested = { nodeIds: [], connIds: [] }
+                plan.cascades = [{ nodeId: opt.cascadeNodeId, connIds: removed.conns.map(c => c.id) }]
+            }
             const payload = this.buildDeletedPayload(plan, removed, from)
-            if (typeof opt.emitLegacy === 'function') {
-                opt.emitLegacy(removed)
-            }
-            else {
-                //公開方法: 僅對實際變動之集合發 update:*
-                if (removed.nodes.length > 0) this.emitNodesUpdate()
-                if (removed.conns.length > 0) this.emitConnsUpdate()
-            }
+            //所有入口同一事件序列: 僅對實際變動之集合發 update:*, 最後發 elements-deleted
+            if (removed.nodes.length > 0) this.emitNodesUpdate()
+            if (removed.conns.length > 0) this.emitConnsUpdate()
             this.$emit('elements-deleted', payload)
             return { ok: true, ...payload }
         },

@@ -31,7 +31,6 @@ export function describeHandleEndpoint(handleEl, flowId) {
         handleId: handleEl.dataset.handleId || null,
         type: handleEl.dataset.handleType || null,
         position: handleEl.dataset.handlePosition || null,
-        binding: handleEl.dataset.handleBinding || 'auto',
         connectable: !handleEl.classList.contains('vue-flow__handle--not-connectable'),
         element: handleEl,
     }

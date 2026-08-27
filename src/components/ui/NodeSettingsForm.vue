@@ -7,7 +7,7 @@
       <input type="text" :value="node.description || ''" @input="$emit('update', 'description', $event.target.value)">
     </label>
     <label v-if="!isEx('type')">Type
-      <select :value="node.type || defNode.type" @input="$emit('update', 'type', $event.target.value)">
+      <select :value="effType" @input="$emit('update', 'type', $event.target.value)">
         <option value="input">Input</option>
         <option value="basic">Basic</option>
         <option value="output">Output</option>
@@ -47,7 +47,7 @@
     <label v-if="!isEx('edgeWidth')">Edge Width
       <input type="number" :value="node.edgeWidth !== undefined ? node.edgeWidth : defNode.edgeWidth" min="1" max="24" @input="onEdgeWidthInput($event.target.value)">
     </label>
-    <label v-if="!isEx('fromPosition') && (node.type === 'output' || node.type === 'basic')">From Handle
+    <label v-if="!isEx('fromPosition') && (effType === 'output' || effType === 'basic')">From Handle
       <select :value="node.fromPosition || defNode.fromPosition" @input="$emit('update', 'fromPosition', $event.target.value)">
         <option value="top">Top</option>
         <option value="right">Right</option>
@@ -55,13 +55,7 @@
         <option value="left">Left</option>
       </select>
     </label>
-    <!-- 固定錨點揭示: 逐邊固定(Fixed)之入邊不跟隨 From Handle, 明示數量並提供批次改回 Auto;
-         不默默清除——既有資料無法辨識「舊版自動烙印」與「使用者刻意固定」 -->
-    <div v-if="!isEx('fromPosition') && (node.type === 'output' || node.type === 'basic') && fixedInCount > 0" class="vue-flow__anchor-hint">
-      <span>{{ fixedInCount }} 條入邊為固定錨點,不跟隨此設定</span>
-      <button class="vue-flow__anchor-unfix-btn" @click="$emit('unfix-anchors', 'target')">改為 Auto</button>
-    </div>
-    <label v-if="!isEx('toPosition') && (node.type === 'input' || node.type === 'basic')">To Handle
+    <label v-if="!isEx('toPosition') && (effType === 'input' || effType === 'basic')">To Handle
       <select :value="node.toPosition || defNode.toPosition" @input="$emit('update', 'toPosition', $event.target.value)">
         <option value="top">Top</option>
         <option value="right">Right</option>
@@ -69,10 +63,6 @@
         <option value="left">Left</option>
       </select>
     </label>
-    <div v-if="!isEx('toPosition') && (node.type === 'input' || node.type === 'basic') && fixedOutCount > 0" class="vue-flow__anchor-hint">
-      <span>{{ fixedOutCount }} 條出邊為固定錨點,不跟隨此設定</span>
-      <button class="vue-flow__anchor-unfix-btn" @click="$emit('unfix-anchors', 'source')">改為 Auto</button>
-    </div>
     <!-- 刪除不做內建二次確認: 是否需要確認由宿主以 opt.funConfirmDeleting(async)決定, 未提供即直接刪除。
          等待宿主確認期間按鈕 disabled(pending): 慢流程若毫無回饋會被當成沒反應而連點 -->
     <div class="vue-flow__delete-area">
@@ -83,6 +73,7 @@
 
 <script>
 import WColorSelect from 'w-component-vue/src/components/WColorSelect.vue'
+import { nodeType } from '../../js/anchorPolicy.mjs'
 
 export default {
     components: { WColorSelect },
@@ -95,11 +86,12 @@ export default {
         defNode: { type: Object, required: true },
         textFontSize: { type: String, default: '' },
         excludes: { type: Array, default: () => [] },
-        //固定錨點(Fixed)之出/入邊數量(由 NodeWrapper 統計), 供 To/From Handle 揭示
-        fixedOutCount: { type: Number, default: 0 },
-        fixedInCount: { type: Number, default: 0 },
     },
     computed: {
+        //有效型別(anchorPolicy.nodeType 單一解析): 缺省 type 之節點依 defNode.type 顯示對應欄位
+        effType() {
+            return nodeType(this.node, this.defNode)
+        },
         deleteConfirming() {
             return this.getDeleteConfirming()
         },
@@ -160,29 +152,6 @@ export default {
   border: 1px solid #ccc;
   cursor: pointer;
   flex-shrink: 0;
-}
-/* 固定錨點揭示列: 沿用表單既有樣式語言(11px 提示字 + cancel 鈕之中性配色) */
-.vue-flow__anchor-hint {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 8px;
-  font-size: 11px;
-  color: #888;
-  margin-top: -4px;
-}
-.vue-flow__anchor-unfix-btn {
-  padding: 1px 8px;
-  font-size: 11px;
-  border: 1px solid #ccc;
-  border-radius: 3px;
-  color: #666;
-  background: #fff;
-  cursor: pointer;
-  flex-shrink: 0;
-}
-.vue-flow__anchor-unfix-btn:hover {
-  background: #f5f5f5;
 }
 .vue-flow__delete-area {
   margin-top: 4px;

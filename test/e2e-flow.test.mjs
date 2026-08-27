@@ -650,9 +650,9 @@ const CASES = [
         expectOk('E2E-027 新連線之 from/to 正確', added.from === '2' && added.to === '9', `added=${JSON.stringify(added)}`)
         const ev = await emitted(page)
         expectOk('E2E-027 發出 update:conns', ev.includes('update:conns'), `events=${JSON.stringify(ev)}`)
-        //spec: 自預設(Auto)把手拉出之邊不烙印逐邊錨點, 動態跟隨節點之 To/From Handle 設定
+        //spec: 邊沒有自己的方位, 兩端方向由節點之 To/From Handle 決定
         const anchors = await evalVm(page, 'const c = vm.conns[vm.conns.length - 1];return { hasFrom: "fromPosition" in c, hasTo: "toPosition" in c }')
-        expectOk('E2E-027 新連線為 Auto(不烙印錨點)', !anchors.hasFrom && !anchors.hasTo, `anchors=${JSON.stringify(anchors)}`)
+        expectOk('E2E-027 新連線不含方位欄位', !anchors.hasFrom && !anchors.hasTo, `anchors=${JSON.stringify(anchors)}`)
         await page.mouse.move(0, 0)
         await shot(page, 'flow-E2E-027-conn-created', { clip: await getCanvasClip(page) })
     }),
@@ -747,12 +747,12 @@ const CASES = [
     }),
 
     mkCase('E2E-031', 'tohandle-right', async (page) => {
-        //前置確認: demo 節點 1 之出邊為 Auto(無逐邊錨點), 修正前之病即「有邊時 To Handle 失效」
+        //前置確認: demo 節點 1 有出邊且邊資料不含方位欄位
         const pre = await evalVm(page, `
             const cs = vm.conns.filter(c => c.from === '1')
-            return { n: cs.length, fixed: cs.filter(c => c.fromPosition).length }
+            return { n: cs.length, withPos: cs.filter(c => c.fromPosition).length }
         `)
-        expectOk('E2E-031 前置: 節點1有 Auto 出邊', pre.n > 0 && pre.fixed === 0, `pre=${JSON.stringify(pre)}`)
+        expectOk('E2E-031 前置: 節點1有出邊', pre.n > 0 && pre.withPos === 0, `pre=${JSON.stringify(pre)}`)
         const dBefore = await getConnPathD(page, 'e1-2')
 
         //act(真 UI): 開節點1設定表單, 於 To Handle 下拉選 Right
@@ -770,12 +770,12 @@ const CASES = [
             return h ? h.dataset.handlePosition : null
         })
         expectOk('E2E-031 source 把手移至 right', side === 'right', `side=${side}`)
-        //spec: Auto 出邊之出發端跟隨改道
+        //spec: 出邊之出發端跟隨改道
         const dAfter = await getConnPathD(page, 'e1-2')
-        expectOk('E2E-031 Auto 出邊路徑跟隨改變', !!dBefore && !!dAfter && dBefore !== dAfter, `d 未改變`)
-        //spec: 邊資料不被烙印錨點
+        expectOk('E2E-031 出邊路徑跟隨改變', !!dBefore && !!dAfter && dBefore !== dAfter, `d 未改變`)
+        //spec: 邊資料不含方位欄位
         const post = await evalVm(page, `return vm.conns.filter(c => c.from === '1' && c.fromPosition).length`)
-        expectOk('E2E-031 邊資料未被烙印錨點', post === 0, `fixed=${post}`)
+        expectOk('E2E-031 邊資料不含方位欄位', post === 0, `withPos=${post}`)
 
         //關閉popup後拍節點與其出邊之區域
         await page.mouse.move(5, 5)
@@ -999,14 +999,14 @@ const CASES = [
         expectOk('E2E-034 hover 他節點連出點 → valid + crosshair', !!val && val.status === 'valid' && val.cursor === 'crosshair', `val=${JSON.stringify(val)}`)
         await shot(page, 'flow-E2E-034-target-origin-valid', { clip: clipAround(b2, PAD), parkMouse: false })
 
-        //spec: 放開 → 建立 2→9(正規化), Auto 不烙印, 發 update:conns
+        //spec: 放開 → 建立 2→9(正規化), 不含方位欄位, 發 update:conns
         await page.mouse.up()
         await page.waitForTimeout(400)
         const n1 = await getConnsLen(page)
         expectOk('E2E-034 放開建立連線', n1 === n0 + 1, `conns ${n0} → ${n1}`)
         const last = await evalVm(page, 'return JSON.parse(JSON.stringify(vm.conns[vm.conns.length - 1]))')
         expectOk('E2E-034 新連線 from=他節點 to=出發節點', !!last && last.from === '2' && last.to === '9', `last=${JSON.stringify(last)}`)
-        expectOk('E2E-034 新連線為 Auto(不烙印方位)', !!last && last.fromPosition === undefined && last.toPosition === undefined, `last=${JSON.stringify(last)}`)
+        expectOk('E2E-034 新連線不含方位欄位', !!last && last.fromPosition === undefined && last.toPosition === undefined, `last=${JSON.stringify(last)}`)
         expectOk('E2E-034 發出 update:conns', (await emitted(page)).includes('update:conns'), 'no update:conns')
         const after = await page.evaluate(() => ({
             from: document.querySelector('[data-flow-id]').hasAttribute('data-connect-from'),

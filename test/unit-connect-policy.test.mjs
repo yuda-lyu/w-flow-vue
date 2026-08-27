@@ -2,15 +2,15 @@
  * connectPolicy 純函式驗收(建線可行性政策之 domain 層)。
  *
  * 規格:
- * P1 buildConnectionCandidate: 錨點烙印遵循 Auto/Fixed 語義——僅 binding='fixed' 烙印方位。
+ * P1 buildConnectionCandidate: 候選只有 { from, to }, 把手方位不寫入(邊沒有自己的方位)。
  * P2 assessGraphConnection: 端點缺漏/不存在、自我連線、output 起點、input 終點、同向重複、
  *    custom validator, 逐項拒絕並回報 reason; 全過即 valid。
  * P3 反向邊契約: A→B 已存在時 B→A 仍允許(方向圖語義, 鎖定現狀)。
  * P4 assessConnection: 能力層(方向語義/connectable)先於圖層; candidate 形狀與 commit 完全一致,
- *    custom validator 收到含已烙印方位之完整形狀。
+ *    custom validator 收到與 commit 相同之 { from, to }。
  * P5 isValidConnection(graph.mjs)委派本政策: 端點不存在即 false(舊版誤判為 true 之修正)。
  * P6 雙向出發正規化(spec/流程_互動契約.md §4): 自 target 出發落於 source, 候選仍為 { from: source 端, to: target 端 };
- *    Fixed 錨點依端點角色烙印(target 端把手之 position → toPosition), 與出發方向無關。
+ *    候選不含方位, 與出發方向無關。
  * P7 reason 優先序: unknown-handle → self(同節點任何把手, 含拖回出發把手自身與同類) → same-kind → not-connectable → 圖層級。
  * P8 output.target → input.source 之反向出發: 正規化後 input→output 合法(不得因反向而漏判/誤判)。
  */
@@ -23,20 +23,12 @@ const nodes = [
     { id: 'b2' }, //type 未指定=basic
     { id: 'o1', type: 'output' },
 ]
-const ep = (nodeId, type, extra = {}) => ({ nodeId, type, position: null, binding: 'auto', connectable: true, handleId: null, element: null, ...extra })
+const ep = (nodeId, type, extra = {}) => ({ nodeId, type, position: null, connectable: true, handleId: null, element: null, ...extra })
 
-describe('P1 候選建構之 Auto/Fixed 烙印', () => {
-    test('雙 Auto: 不烙印任何方位', () => {
-        expect(buildConnectionCandidate(ep('b1', 'source'), ep('b2', 'target')))
+describe('P1 候選只有 { from, to }(邊沒有自己的方位)', () => {
+    test('把手方位不寫入候選', () => {
+        expect(buildConnectionCandidate(ep('b1', 'source', { position: 'left' }), ep('b2', 'target', { position: 'right' })))
             .toEqual({ from: 'b1', to: 'b2' })
-    })
-    test('出發 Fixed: 烙印 fromPosition', () => {
-        expect(buildConnectionCandidate(ep('b1', 'source', { binding: 'fixed', position: 'left' }), ep('b2', 'target')))
-            .toEqual({ from: 'b1', to: 'b2', fromPosition: 'left' })
-    })
-    test('落點 Fixed: 烙印 toPosition', () => {
-        expect(buildConnectionCandidate(ep('b1', 'source'), ep('b2', 'target', { binding: 'fixed', position: 'right' })))
-            .toEqual({ from: 'b1', to: 'b2', toPosition: 'right' })
     })
 })
 
@@ -90,17 +82,17 @@ describe('P4 完整判定: 能力層先於圖層, validator 收到完整形狀',
         expect(assessConnection(ep('b1', 'source'), ep('b2', 'target', { connectable: false }), { nodes, conns: [] }))
             .toEqual({ valid: false, reason: 'not-connectable', connection: null })
     })
-    test('validator 收到含已烙印方位之完整候選(與 commit 同形狀)', () => {
+    test('validator 收到與 commit 同形狀之候選 { from, to }', () => {
         const seen = []
         const validator = (c) => { seen.push(c); return true }
         const r = assessConnection(
-            ep('b1', 'source', { binding: 'fixed', position: 'left' }),
-            ep('b2', 'target', { binding: 'fixed', position: 'right' }),
+            ep('b1', 'source', { position: 'left' }),
+            ep('b2', 'target', { position: 'right' }),
             { nodes, conns: [], validator },
         )
         expect(r.valid).toBe(true)
-        expect(seen).toEqual([{ from: 'b1', to: 'b2', fromPosition: 'left', toPosition: 'right' }])
-        expect(r.connection).toEqual({ from: 'b1', to: 'b2', fromPosition: 'left', toPosition: 'right' })
+        expect(seen).toEqual([{ from: 'b1', to: 'b2' }])
+        expect(r.connection).toEqual({ from: 'b1', to: 'b2' })
     })
 })
 
@@ -122,13 +114,13 @@ describe('P6 雙向出發正規化', () => {
         const r = assessConnection(ep('b2', 'target'), ep('b1', 'source'), { nodes, conns: [] })
         expect(r).toEqual({ valid: true, reason: null, connection: { from: 'b1', to: 'b2' } })
     })
-    test('Fixed 錨點依端點角色烙印: 出發之 target 把手 position → toPosition', () => {
+    test('反向出發之候選同樣不含任何方位', () => {
         const r = assessConnection(
-            ep('b2', 'target', { binding: 'fixed', position: 'right' }),
-            ep('b1', 'source', { binding: 'fixed', position: 'left' }),
+            ep('b2', 'target', { position: 'right' }),
+            ep('b1', 'source', { position: 'left' }),
             { nodes, conns: [] },
         )
-        expect(r.connection).toEqual({ from: 'b1', to: 'b2', fromPosition: 'left', toPosition: 'right' })
+        expect(r.connection).toEqual({ from: 'b1', to: 'b2' })
     })
     test('反向出發與正向出發對同一對端點得相同候選(validator 形狀不變)', () => {
         const seen = []

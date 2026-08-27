@@ -2,11 +2,8 @@
   <div class="vue-flow__node-input">
     <div class="vue-flow__node-label">{{ node.name }}</div>
     <Handle
-      v-for="h in sourceHandles"
-      :key="'s-' + h.side"
       type="source"
-      :position="h.side"
-      :binding="h.binding"
+      :position="sourceSide"
       :connectable="connectable"
       :locked="locked"
       :node-edge-width="nodeEdgeWidth"
@@ -17,13 +14,13 @@
 
 <script>
 import Handle from './Handle.vue'
-import { sourceHandleSides } from '../../js/anchorPolicy.mjs'
+import { nodeSourceSide } from '../../js/anchorPolicy.mjs'
 import { nodeBorderWidth } from '../../js/nodeStyle.mjs'
 
 export default {
     name: 'InputNode',
     components: { Handle },
-    inject: { getDefNode: { default: () => () => ({}) }, getConns: { default: () => () => [] } },
+    inject: { getDefNode: { default: () => () => ({}) } },
     props: {
         node: { type: Object, required: true },
         connectable: { type: Boolean, default: true },
@@ -36,9 +33,9 @@ export default {
         nodeEdgeWidth() {
             return nodeBorderWidth(this.node, this.dn)
         },
-        //把手集合由 anchorPolicy 單一來源解析: 預設 Auto 把手永遠存在, 各出邊之 Fixed 錨點附加
-        sourceHandles() {
-            return sourceHandleSides(this.node, this.getConns() || [], this.dn)
+        //連出側由節點決定(anchorPolicy 單一來源): 節點 → defNode → 內建
+        sourceSide() {
+            return nodeSourceSide(this.node, this.dn)
         },
     },
 }

@@ -30,7 +30,7 @@
       @node-context-menu="$emit('node-context-menu', $event)"
       @node-settings-click="$emit('node-settings-click', $event)"
       @node-settings-update="$emit('node-settings-update', $event)"
-      @node-settings-delete="$emit('node-settings-delete', $event)"
+      @node-delete-request="$emit('node-delete-request', $event)"
       @node-mouseenter="$emit('node-mouseenter', $event)"
       @node-mouseleave="$emit('node-mouseleave', $event)"
       @connect-start="$emit('connect-start', $event)"
@@ -40,7 +40,6 @@
       @resize-start="$emit('resize-start', $event)"
       @node-resize-cancel="$emit('node-resize-cancel', $event)"
       @node-activate="$emit('node-activate', $event)"
-      @node-anchors-unfix="$emit('node-anchors-unfix', $event)"
     />
   </div>
 </template>

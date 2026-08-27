@@ -9,10 +9,10 @@
  * D3 回傳非 true(false/undefined/truthy 非 true): 一律不刪, 不發 delete/update 事件。
  * D4 callback 拋錯: 不刪(不可預設為准), 且錯誤不被靜默吞掉。
  * D5 確認進行中(await 未回覆)之重入請求一律被擋, 不重複刪除亦不重複呼叫 callback。
- * D6 await 期間目標已被他途刪除: 不再刪除, 不發事件(以 id 重新解析目標)。
+ * D6 await 期間目標已被他途刪除: 以 id 重新解析「已確認之集合」——全數消失則不刪不發事件; 目標節點消失但已確認之連帶邊仍在 → 仍刪該邊(不留孤兒邊), 事件只含實際被刪者。
  * D7 await 期間元件被銷毀: 不再操作狀態。
  * D8 deletable:false 之元素自始排除於確認 payload 與刪除之外。
- * D9 delete 事件之 payload 只含實際被刪者。
+ * D9 elements-deleted 之 payload 只含實際被刪者。
  */
 import Vue from 'vue'
 import { mount } from '@vue/test-utils'
@@ -49,7 +49,7 @@ describe('D1 未提供 callback: 三入口皆直接刪除', () => {
         expect(w.vm.nodes.map(n => n.id)).toEqual(['2', '3'])
         //節點被刪時其相關連線一併刪除
         expect(w.vm.conns.map(c => c.id)).toEqual(['e2-3'])
-        expect(w.emitted('node-settings-delete')).toHaveLength(1)
+        expect(w.emitted('elements-deleted')).toHaveLength(1)
         w.destroy()
     })
 
@@ -57,7 +57,7 @@ describe('D1 未提供 callback: 三入口皆直接刪除', () => {
         const w = mountFlow(mkOpt())
         await w.vm.onConnSettingsDelete({ conn: { id: 'e1-2' } })
         expect(w.vm.conns.map(c => c.id)).toEqual(['e2-3'])
-        expect(w.emitted('conn-settings-delete')).toHaveLength(1)
+        expect(w.emitted('elements-deleted')).toHaveLength(1)
         w.destroy()
     })
 
@@ -66,7 +66,7 @@ describe('D1 未提供 callback: 三入口皆直接刪除', () => {
         w.vm.setSelectedNodes(['1'])
         expect(await w.vm.deleteSelectedElements()).toBe(true)
         expect(w.vm.nodes.map(n => n.id)).toEqual(['2', '3'])
-        expect(w.emitted('delete')).toHaveLength(1)
+        expect(w.emitted('elements-deleted')).toHaveLength(1)
         w.destroy()
     })
 })
@@ -121,13 +121,13 @@ describe('D3 回傳非 true 一律不刪', () => {
         expect(await w.vm.onNodeSettingsDelete({ node: { id: '1' } })).toBe(false)
         expect(w.vm.nodes).toHaveLength(3)
         expect(w.vm.conns).toHaveLength(2)
-        expect(w.emitted('node-settings-delete')).toBeFalsy()
+        expect(w.emitted('elements-deleted')).toBeFalsy()
         expect(w.emitted('update:nodes')).toBeFalsy()
 
         w.vm.setSelectedNodes(['1'])
         expect(await w.vm.deleteSelectedElements()).toBe(false)
         expect(w.vm.nodes).toHaveLength(3)
-        expect(w.emitted('delete')).toBeFalsy()
+        expect(w.emitted('elements-deleted')).toBeFalsy()
         w.destroy()
     })
 })
@@ -138,7 +138,7 @@ describe('D4 callback 拋錯: 不刪, 錯誤不被靜默吞掉', () => {
         const w = mountFlow(mkOpt({ funConfirmDeleting: async () => { throw new Error('host boom') } }))
         expect(await w.vm.onConnSettingsDelete({ conn: { id: 'e1-2' } })).toBe(false)
         expect(w.vm.conns).toHaveLength(2)
-        expect(w.emitted('conn-settings-delete')).toBeFalsy()
+        expect(w.emitted('elements-deleted')).toBeFalsy()
         expect(spy).toHaveBeenCalled()
         //閘門旗標須於拋錯後釋放(finally), 否則此後所有刪除都被誤擋
         expect(w.vm.deleteConfirming).toBe(false)
@@ -165,7 +165,7 @@ describe('D10 確認期間畫面不得先行變動(不可樂觀刪除)', () => {
         //確認期間不得預先發出任何資料異動事件
         expect(w.emitted('update:nodes')).toBeFalsy()
         expect(w.emitted('update:conns')).toBeFalsy()
-        expect(w.emitted('node-settings-delete')).toBeFalsy()
+        expect(w.emitted('elements-deleted')).toBeFalsy()
 
         d.resolve(false)
         expect(await p).toBe(false)
@@ -255,7 +255,7 @@ describe('D5 確認進行中之重入被擋', () => {
         d.resolve(true)
         expect(await p1).toBe(true)
         expect(w.vm.nodes.map(n => n.id)).toEqual(['2', '3'])
-        expect(w.emitted('node-settings-delete')).toHaveLength(1) //只發一次
+        expect(w.emitted('elements-deleted')).toHaveLength(1) //只發一次
         w.destroy()
     })
 })
@@ -266,23 +266,43 @@ describe('D6 await 期間目標已消失: 不刪不發事件', () => {
         const w = mountFlow(mkOpt({ funConfirmDeleting: () => d.promise }))
         const p = w.vm.onConnSettingsDelete({ conn: { id: 'e1-2' } })
         //宿主尚未回覆期間, 該連線已由他途移除
-        w.vm.removeConn('e1-2')
+        w.vm.conns.splice(w.vm.conns.findIndex(c => c.id === 'e1-2'), 1)
         d.resolve(true)
         expect(await p).toBe(false)
-        expect(w.emitted('conn-settings-delete')).toBeFalsy()
+        expect(w.emitted('elements-deleted')).toBeFalsy()
         expect(w.vm.conns.map(c => c.id)).toEqual(['e2-3'])
         w.destroy()
     })
 
-    test('刪除鍵: 選取之節點於確認期間已消失', async () => {
+    test('刪除鍵: 選取之節點於確認期間已消失, 但已確認之連帶邊仍在 → 仍刪該邊(不留孤兒邊)', async () => {
         const d = deferred()
         const w = mountFlow(mkOpt({ funConfirmDeleting: () => d.promise }))
         w.vm.setSelectedNodes(['1'])
         const p = w.vm.deleteSelectedElements()
-        w.vm.removeNode('1')
+        //他途只移除節點 1, 其相鄰邊 e1-2 仍留在圖中
+        w.vm.nodes.splice(0, 1)
+        d.resolve(true)
+        expect(await p).toBe(true)
+        expect(w.vm.conns.map(c => c.id)).toEqual(['e2-3'])
+        const ev = w.emitted('elements-deleted')
+        expect(ev).toHaveLength(1)
+        expect(ev[0][0].deleted.nodeIds).toEqual([])
+        expect(ev[0][0].deleted.connIds).toEqual(['e1-2'])
+        expect(ev[0][0].notFound.nodeIds).toEqual(['1'])
+        expect(ev[0][0].cascades).toEqual([{ nodeId: '1', connIds: ['e1-2'] }])
+        w.destroy()
+    })
+
+    test('刪除鍵: 節點與其連帶邊皆於確認期間消失 → not-found, 不發事件', async () => {
+        const d = deferred()
+        const w = mountFlow(mkOpt({ funConfirmDeleting: () => d.promise }))
+        w.vm.setSelectedNodes(['1'])
+        const p = w.vm.deleteSelectedElements()
+        w.vm.nodes.splice(0, 1)
+        w.vm.conns.splice(0, 1)
         d.resolve(true)
         expect(await p).toBe(false)
-        expect(w.emitted('delete')).toBeFalsy()
+        expect(w.emitted('elements-deleted')).toBeFalsy()
         w.destroy()
     })
 })
@@ -295,12 +315,12 @@ describe('D7 await 期間元件被銷毀: 不再操作狀態', () => {
         w.destroy()
         d.resolve(true)
         expect(await p).toBe(false)
-        expect(w.emitted('node-settings-delete')).toBeFalsy()
+        expect(w.emitted('elements-deleted')).toBeFalsy()
     })
 })
 
-describe('D8/D9 deletable:false 之排除與 delete 事件 payload', () => {
-    test('deletable:false 不進 payload 亦不被刪; delete 事件只含實際被刪者', async () => {
+describe('D8/D9 deletable:false 之排除與 elements-deleted payload', () => {
+    test('deletable:false 不進 payload 亦不被刪; elements-deleted 只含實際被刪者', async () => {
         const seen = []
         const opt = mkOpt({ funConfirmDeleting: async (p) => { seen.push(p); return true } })
         opt.nodes[0].deletable = false //節點1 不可刪
@@ -311,9 +331,9 @@ describe('D8/D9 deletable:false 之排除與 delete 事件 payload', () => {
         expect(seen[0].nodes.map(n => n.id)).toEqual(['2'])
         //實際只刪節點2(及其連帶邊)
         expect(w.vm.nodes.map(n => n.id)).toEqual(['1', '3'])
-        const ev = w.emitted('delete')
+        const ev = w.emitted('elements-deleted')
         expect(ev).toHaveLength(1)
-        expect(ev[0][0].nodes.map(n => n.id)).toEqual(['2'])
+        expect(ev[0][0].deleted.nodes.map(n => n.id)).toEqual(['2'])
         w.destroy()
     })
 
@@ -325,7 +345,7 @@ describe('D8/D9 deletable:false 之排除與 delete 事件 payload', () => {
         w.vm.setSelectedNodes(['1'])
         expect(await w.vm.deleteSelectedElements()).toBe(false)
         expect(calls).toBe(0)
-        expect(w.emitted('delete')).toBeFalsy()
+        expect(w.emitted('elements-deleted')).toBeFalsy()
         w.destroy()
     })
 })
