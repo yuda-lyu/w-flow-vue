@@ -3,7 +3,7 @@
 <head>
     
     <meta charset="utf-8">
-    <title>js/handleDom.mjs - Documentation</title>
+    <title>components/nodes/Handle.vue - Documentation</title>
     
     
     <script src="scripts/prettify/prettify.js"></script>
@@ -35,7 +35,7 @@
 
 <div id="main">
     
-    <h1 class="page-title">js/handleDom.mjs</h1>
+    <h1 class="page-title">components/nodes/Handle.vue</h1>
     
 
     
@@ -45,62 +45,183 @@
     
     <section>
         <article>
-            <pre class="prettyprint source linenums"><code>/**
- * 建線之 DOM target adapter: 把游標下的 DOM 正規化為 endpoint descriptor,
- * 並管理把手上的暫態視覺標記(dataset, 非 class——Vue 對 class 綁定整串覆寫,
- * 外加 class 會於重渲染時被抹除; 未列於模板之 data-* 屬性則不受 patch 影響)。
- * 樣式端以 [data-connect-role] / [data-connect-status] 選擇器對應(Handle.vue)。
- */
+            <pre class="prettyprint source linenums"><code>&lt;template>
+  &lt;div
+    v-if="!locked"
+    :class="classes"
+    :style="handleStyle"
+    :data-handle-id="id || type"
+    :data-handle-type="type"
+    :data-handle-position="position"
+    :data-handle-binding="binding"
+    @mousedown.stop="onMouseDown"
+    @click.stop
+  />
+&lt;/template>
+
+&lt;script>
+import { handleStyleVars } from '../../js/nodeStyle.mjs'
 
 /**
- * 取游標座標下之把手元素(無則 null)。
+ * 把手幾何契約: 圓心落在節點「外框盒」邊上(與 geometry.getHandlePosition 之連線端點同一基準)。
+ * 定位以 CSS 變數計算: 邊距 = -(尺寸/2 + 節點外框寬)——舊寫法固定 -4px 是以 padding box 為基準,
+ * 圓心會落在外框內側(偏入 1px + 邊框寬, 實測 border 2px 時偏入 3px)。
+ * 樣式(面色/框線色/框線寬/尺寸)由 opt.defHandleSource* 與 defHandleTarget* 經 defNode 解析注入。
+ * @click.stop: 把手為建線手勢之出發/落點, 點擊(按下放開不拖)不得冒泡至 NodeWrapper 之 WPopup trigger
+ * 誤開節點資訊 popup(實測已重現); mousedown 早已 .stop 故節點亦不發 node-click, 與之對稱
  */
-export function findHandleElAt(clientX, clientY) {
-    //jsdom 無版面未實作 elementFromPoint(測試各自 stub); 無此函式即視為無把手
-    if (typeof document.elementFromPoint !== 'function') return null
-    const el = document.elementFromPoint(clientX, clientY)
-    return (el &amp;&amp; el.closest) ? el.closest('.vue-flow__handle') : null
+export default {
+    name: 'FlowHandle',
+    inject: {
+        //複選模式(縱深最早邊界): 模式中把手已隱藏(CSS pointer-events:none, 真實點擊到不了這裡),
+        //此守衛擋synthetic/程式化mousedown不啟動建線(模板@mousedown.stop仍生效, 僅阻手勢不改傳播語義)
+        getMultiSelectActive: { default: () => () => false },
+        getDefNode: { default: () => () => ({}) },
+    },
+    props: {
+        type: { type: String, default: 'source' }, // 'source' | 'target'
+        position: { type: String, default: 'bottom' }, // 'top' | 'right' | 'bottom' | 'left'
+        id: { type: String, default: null },
+        //錨點綁定語義(anchorPolicy): 'auto'=預設把手(建線不烙印方位, 跟隨節點設定);
+        //'fixed'=逐邊固定錨點之附加把手(建線烙印方位)。由把手身分宣告, 不以方位比較推測意圖
+        binding: { type: String, default: 'auto' },
+        connectable: { type: Boolean, default: true },
+        locked: { type: Boolean, default: false },
+        offset: { type: String, default: null },
+        customStyle: { type: Object, default: null },
+        //所屬節點之外框寬(px): 定位扣除量, 由節點元件以 nodeBorderWidth 解析後傳入
+        nodeEdgeWidth: { type: Number, default: 1 },
+    },
+    computed: {
+        offsetStyle() {
+            if (this.customStyle) return this.customStyle
+            if (!this.offset) return null
+            const isHorizontal = this.position === 'top' || this.position === 'bottom'
+            if (isHorizontal) return { left: this.offset, transform: 'translateX(-50%)' }
+            return { top: this.offset, transform: 'translateY(-50%)' }
+        },
+        handleStyle() {
+            return { ...handleStyleVars(this.type, this.getDefNode(), this.nodeEdgeWidth), ...(this.offsetStyle || {}) }
+        },
+        classes() {
+            return [
+                'vue-flow__handle',
+                `vue-flow__handle--${this.position}`,
+                `vue-flow__handle--${this.type}`,
+                { 'vue-flow__handle--not-connectable': !this.connectable },
+            ]
+        },
+    },
+    methods: {
+        onMouseDown(event) {
+            if (!this.connectable) return
+            //複選模式中不啟動建線(守衛先於preventDefault, 不吞事件語義)
+            if (this.getMultiSelectActive()) return
+            //僅主鍵可啟動建線: 右鍵/中鍵不 emit(WFlowVue 之重入守衛為第二層縱深)
+            if (event.button !== 0) return
+            //阻止文字選取隨拖線啟動(把手上按下拖曳屬建線手勢, 非選字)
+            event.preventDefault()
+            this.$emit('connect-start', {
+                event,
+                handleId: this.id || this.type,
+                handleType: this.type,
+                handlePosition: this.position,
+                handleBinding: this.binding,
+            })
+        },
+    },
 }
+&lt;/script>
 
-/**
- * 把手元素 → endpoint descriptor。
- * flowId 歸屬檢查: 把手必須屬於本 flow 實例(頁面可能有多個/巢狀 flow,
- * elementFromPoint 可能撿到他 flow 之把手; 以最近之 [data-flow-id] 祖先比對, 不符即回 null)。
- */
-export function describeHandleEndpoint(handleEl, flowId) {
-    if (!handleEl || !handleEl.closest) return null
-    const root = handleEl.closest('[data-flow-id]')
-    if (!root || root.getAttribute('data-flow-id') !== flowId) return null
-    const nodeEl = handleEl.closest('.vue-flow__node')
-    if (!nodeEl || !nodeEl.dataset.id) return null
-    return {
-        nodeId: nodeEl.dataset.id,
-        handleId: handleEl.dataset.handleId || null,
-        type: handleEl.dataset.handleType || null,
-        position: handleEl.dataset.handlePosition || null,
-        binding: handleEl.dataset.handleBinding || 'auto',
-        connectable: !handleEl.classList.contains('vue-flow__handle--not-connectable'),
-        element: handleEl,
-    }
+&lt;style scoped>
+/* 幾何/配色全由 CSS 變數驅動(Handle 之 inline style 注入; 無變數時之 fallback 即預設):
+   --vf-hs 外徑(border-box, 含框線), --vf-hface 面色, --vf-hedge 框線色, --vf-hew 框線寬, --vf-hb 節點外框寬 */
+.vue-flow__handle {
+  position: absolute;
+  width: var(--vf-hs, 10px);
+  height: var(--vf-hs, 10px);
+  border-radius: 50%;
+  background: var(--vf-hface, #555);
+  border: var(--vf-hew, 1px) solid var(--vf-hedge, #fff);
+  box-sizing: border-box;
+  pointer-events: all;
+  cursor: crosshair;
+  z-index: 3;
 }
+/* 連入點(target)不可作為拖曳建線之出發點, 不顯示十字準星 */
+.vue-flow__handle--target {
+  cursor: default;
+}
+/* 圓心 = 節點外框盒邊: 位移 -(尺寸/2 + 外框寬) */
+.vue-flow__handle--top {
+  top: calc(var(--vf-hs, 10px) / -2 - var(--vf-hb, 1px));
+  left: 50%;
+  transform: translateX(-50%);
+}
+.vue-flow__handle--bottom {
+  bottom: calc(var(--vf-hs, 10px) / -2 - var(--vf-hb, 1px));
+  left: 50%;
+  transform: translateX(-50%);
+}
+.vue-flow__handle--left {
+  top: 50%;
+  left: calc(var(--vf-hs, 10px) / -2 - var(--vf-hb, 1px));
+  transform: translateY(-50%);
+}
+.vue-flow__handle--right {
+  top: 50%;
+  right: calc(var(--vf-hs, 10px) / -2 - var(--vf-hb, 1px));
+  transform: translateY(-50%);
+}
+.vue-flow__handle--not-connectable {
+  cursor: default;
+  pointer-events: none;
+}
+/* hover 放大 2px, 圓心不動 */
+.vue-flow__handle:hover {
+  background: #0041d0;
+  width: calc(var(--vf-hs, 10px) + 2px);
+  height: calc(var(--vf-hs, 10px) + 2px);
+}
+.vue-flow__handle--top:hover { top: calc((var(--vf-hs, 10px) + 2px) / -2 - var(--vf-hb, 1px)); }
+.vue-flow__handle--bottom:hover { bottom: calc((var(--vf-hs, 10px) + 2px) / -2 - var(--vf-hb, 1px)); }
+.vue-flow__handle--left:hover { left: calc((var(--vf-hs, 10px) + 2px) / -2 - var(--vf-hb, 1px)); }
+.vue-flow__handle--right:hover { right: calc((var(--vf-hs, 10px) + 2px) / -2 - var(--vf-hb, 1px)); }
 
-/**
- * 標記游標下把手之判定結果('valid' | 'invalid'); status 為空即清除。
- */
-export function setHandleConnectStatus(handleEl, status) {
-    if (!handleEl) return
-    if (status) handleEl.setAttribute('data-connect-status', status)
-    else handleEl.removeAttribute('data-connect-status')
+/* ─── 建線期間(祖先 .vue-flow--connecting)之三態視覺 ───
+   通用 hover 效果一律抑制(回復基準幾何與色彩): 可連性只由精確判定之 data-connect-* 標記指示,
+   否則「不能連的落點 hover 起來與能連的一樣」會誤導使用者(對齊 React Flow/Vue Flow:
+   僅游標下把手依 isValidConnection 即時標 valid/invalid) */
+.vue-flow--connecting .vue-flow__handle:hover {
+  background: var(--vf-hface, #555);
+  width: var(--vf-hs, 10px);
+  height: var(--vf-hs, 10px);
 }
-
-/**
- * 標記/清除出發把手(role: 'origin')。
- */
-export function setHandleConnectRole(handleEl, role) {
-    if (!handleEl) return
-    if (role) handleEl.setAttribute('data-connect-role', role)
-    else handleEl.removeAttribute('data-connect-role')
+.vue-flow--connecting .vue-flow__handle--top:hover { top: calc(var(--vf-hs, 10px) / -2 - var(--vf-hb, 1px)); }
+.vue-flow--connecting .vue-flow__handle--bottom:hover { bottom: calc(var(--vf-hs, 10px) / -2 - var(--vf-hb, 1px)); }
+.vue-flow--connecting .vue-flow__handle--left:hover { left: calc(var(--vf-hs, 10px) / -2 - var(--vf-hb, 1px)); }
+.vue-flow--connecting .vue-flow__handle--right:hover { right: calc(var(--vf-hs, 10px) / -2 - var(--vf-hb, 1px)); }
+/* 方向語義(strict): source 把手永不可作為落點, 建線期間一律淡化(出發把手除外) */
+.vue-flow--connecting .vue-flow__handle--source:not([data-connect-role="origin"]) {
+  opacity: 0.4;
 }
+/* 出發把手(connectingfrom): 保持強調, 標示線之來源 */
+.vue-flow__handle[data-connect-role="origin"] {
+  box-shadow: 0 0 0 3px rgba(0, 65, 208, 0.35);
+}
+/* 游標下之精確判定(僅建線期間由 adapter 標記): 合法=主題藍 ring, 不合法=danger ring
+   採 ring(box-shadow)不改 width/height, 避免尺寸變更造成 hit box 幾何抖動
+   (帶祖先選擇器使權重與淡化/hover 抑制規則平手, 依源碼順序後者勝出) */
+.vue-flow--connecting .vue-flow__handle[data-connect-status="valid"] {
+  background: #0041d0;
+  box-shadow: 0 0 0 4px rgba(0, 65, 208, 0.45);
+}
+.vue-flow--connecting .vue-flow__handle[data-connect-status="invalid"] {
+  background: #d14343;
+  box-shadow: 0 0 0 4px rgba(209, 67, 67, 0.45);
+  opacity: 1;
+}
+&lt;/style>
 </code></pre>
         </article>
     </section>
