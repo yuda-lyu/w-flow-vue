@@ -29,7 +29,13 @@
 <nav >
     
     
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-Handle.html">Handle</a></li></ul><h3>Events</h3><ul><li><a href="global.html#event:elements-deleted%25E6%2589%2580%25E6%259C%2589%25E5%2588%25AA%25E9%2599%25A4%25E8%25B7%25AF%25E5%25BE%2591%25E5%25AE%258C%25E6%2588%2590%25E5%25BE%258C%25E7%259A%2586%25E7%2599%25BC%25E5%2587%25BA(%25E6%2596%25BCupdate:*%25E4%25B9%258B%25E5%25BE%258C%25E3%2580%2581%25E6%259C%2580%25E5%25BE%258C%25E7%2599%25BC%25E5%2587%25BA),payload:%257Bfrom,requested:%257BnodeIds,connIds%257D,deleted:%257BnodeIds,connIds,nodes,conns%257D,cascades:%255B%257BnodeId,connIds%257D%255D,notFound:%257BnodeIds,connIds%257D,excluded:%257BnodeIds,connIds%257D%257D-deleted.nodes/conns%25E7%2582%25BA%25E8%25A2%25AB%25E5%2588%25AA%25E7%2595%25B6%25E4%25B8%258B%25E4%25B9%258B%25E6%25B7%25B1%25E8%25A4%2587%25E8%25A3%25BD%25E5%25BF%25AB%25E7%2585%25A7(JSON%25E5%25BE%2580%25E8%25BF%2594,%25E5%2590%258CgetFlowData);id%25E6%25B8%2585%25E5%2596%25AE%25E4%25BE%259B%25E8%25BC%2595%25E9%2587%258F%25E8%25A8%2598%25E5%25B8%25B3;-cascades%25E5%258F%25AA%25E6%258F%258F%25E8%25BF%25B0%25E5%259B%25A0%25E6%259E%259C(%25E5%2593%25AA%25E6%25A2%259D%25E9%2582%258A%25E5%259B%25A0%25E5%2593%25AA%25E5%2580%258B%25E7%25AF%2580%25E9%25BB%259E%25E8%2580%258C%25E5%2588%25AA),%25E8%25A8%2598%25E5%25B8%25B3%25E4%25BB%25A5deleted.*Ids%25E7%2582%25BA%25E6%25BA%2596(%25E5%25B7%25B2%25E5%258E%25BB%25E9%2587%258D);-%25E4%25B8%258D%25E5%2590%25AB%25E5%2588%25AA%25E5%25BE%258C%25E5%2585%25A8%25E9%2587%258F%25E5%25BF%25AB%25E7%2585%25A7(remain):%25E9%259C%2580%25E8%25A6%2581%25E8%2580%2585%25E5%2591%25BC%25E5%258F%25ABgetFlowData()%25E6%2588%2596%25E6%25B2%25BF%25E7%2594%25A8update:nodes/update:conns%25E3%2580%2582%25E5%2588%25AA%25E9%2599%25A4%25E5%258F%25AA%25E6%259C%2589%25E9%2580%2599%25E4%25B8%2580%25E5%2580%258B%25E5%25AE%258C%25E6%2588%2590%25E4%25BA%258B%25E4%25BB%25B6%25E3%2580%2582%25E6%2589%2580%25E6%259C%2589%25E5%2585%25A5%25E5%258F%25A3%25E5%2590%258C%25E4%25B8%2580%25E5%25BA%258F%25E5%2588%2597:(%25E5%2583%2585%25E5%25AF%25A6%25E9%259A%259B%25E8%25AE%258A%25E5%258B%2595%25E4%25B9%258B%25E9%259B%2586%25E5%2590%2588)update:nodes%25E2%2586%2592update:conns%25E2%2586%2592elements-deleted;type%25E8%25AE%258A%25E6%259B%25B4:node-settings-update%25E2%2586%2592update:conns%25E2%2586%2592elements-deleted%25E3%2580%2582">elements-deleted 所有刪除路徑完成後皆發出(於 update:* 之後、最後發出),payload:  { from, requested:{nodeIds,connIds}, deleted:{nodeIds,connIds,nodes,conns}, cascades:[{nodeId,connIds}],    notFound:{nodeIds,connIds}, excluded:{nodeIds,connIds} }  - deleted.nodes/conns 為被刪當下之深複製快照(JSON 往返,同 getFlowData);id 清單供輕量記帳;  - cascades 只描述因果(哪條邊因哪個節點而刪),記帳以 deleted.*Ids 為準(已去重);  - 不含刪後全量快照(remain):需要者呼叫 getFlowData() 或沿用 update:nodes / update:conns。  刪除只有這一個完成事件。所有入口同一序列:(僅實際變動之集合)update:nodes → update:conns → elements-deleted;  type 變更:node-settings-update → update:conns → elements-deleted。</a></li></ul><h3>Global</h3><ul><li><a href="global.html#NODE_DEFAULTS">NODE_DEFAULTS</a></li><li><a href="global.html#SOURCE_FALLBACK">SOURCE_FALLBACK</a></li><li><a href="global.html#applyDelete">applyDelete</a></li><li><a href="global.html#assessConnection">assessConnection</a></li><li><a href="global.html#assessGraphConnection">assessGraphConnection</a></li><li><a href="global.html#buildConnectionCandidate">buildConnectionCandidate</a></li><li><a href="global.html#buildRoundedPath">buildRoundedPath</a></li><li><a href="global.html#clampPosition">clampPosition</a></li><li><a href="global.html#classifyHit">classifyHit</a></li><li><a href="global.html#describeHandleEndpoint">describeHandleEndpoint</a></li><li><a href="global.html#findDuplicateIds">findDuplicateIds</a></li><li><a href="global.html#findHandleElAt">findHandleElAt</a></li><li><a href="global.html#fixSvgNs">fixSvgNs</a></li><li><a href="global.html#generateId">generateId</a></li><li><a href="global.html#getBezierPath">getBezierPath</a></li><li><a href="global.html#getControlOffset">getControlOffset</a></li><li><a href="global.html#getDiamondEdgePoint">getDiamondEdgePoint</a></li><li><a href="global.html#getEllipseEdgePoint">getEllipseEdgePoint</a></li><li><a href="global.html#getHandlePosition">getHandlePosition</a></li><li><a href="global.html#getOverlappingNodes">getOverlappingNodes</a></li><li><a href="global.html#getSmoothStepPath">getSmoothStepPath</a></li><li><a href="global.html#getStepPath">getStepPath</a></li><li><a href="global.html#getStraightPath">getStraightPath</a></li><li><a href="global.html#getTriangleEdgePoint">getTriangleEdgePoint</a></li><li><a href="global.html#handleStyleVars">handleStyleVars</a></li><li><a href="global.html#isAffordanceHit">isAffordanceHit</a></li><li><a href="global.html#isCanvasBlank">isCanvasBlank</a></li><li><a href="global.html#isSvgShape">isSvgShape</a></li><li><a href="global.html#isValidConnection">isValidConnection</a></li><li><a href="global.html#labelAtHalfLength">labelAtHalfLength</a></li><li><a href="global.html#lookupRoute">lookupRoute</a></li><li><a href="global.html#nodeBorderWidth">nodeBorderWidth</a></li><li><a href="global.html#nodeSameSide">nodeSameSide</a></li><li><a href="global.html#nodeSourceSide">nodeSourceSide</a></li><li><a href="global.html#nodeTargetSide">nodeTargetSide</a></li><li><a href="global.html#nodeType">nodeType</a></li><li><a href="global.html#normalizeConnPoints">normalizeConnPoints</a></li><li><a href="global.html#orthogonalizeThroughPoints">orthogonalizeThroughPoints</a></li><li><a href="global.html#pairEndpoints">pairEndpoints</a></li><li><a href="global.html#pickMenuValue">pickMenuValue</a></li><li><a href="global.html#previewDelete">previewDelete</a></li><li><a href="global.html#previewNodeTypeChange">previewNodeTypeChange</a></li><li><a href="global.html#rectsOverlap">rectsOverlap</a></li><li><a href="global.html#segmentFallback">segmentFallback</a></li><li><a href="global.html#setDomFlag">setDomFlag</a></li><li><a href="global.html#setHandleConnectRole">setHandleConnectRole</a></li><li><a href="global.html#setHandleConnectStatus">setHandleConnectStatus</a></li><li><a href="global.html#snapPosition">snapPosition</a></li><li><a href="global.html#snapshotDeep">snapshotDeep</a></li><li><a href="global.html#uniq">uniq</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-EdgeMarkerDefs.html">EdgeMarkerDefs</a></li><li><a href="module-Handle.html">Handle</a></li><li><a href="module-NodeBody.html">NodeBody</a></li><li><a href="module-NodePorts.html">NodePorts</a></li></ul><h3>Events</h3><ul><li><a href="global.html#event:elements-deleted%25E6%2589%2580%25E6%259C%2589%25E5%2588%25AA%25E9%2599%25A4%25E8%25B7%25AF%25E5%25BE%2591%25E5%25AE%258C%25E6%2588%2590%25E5%25BE%258C%25E7%259A%2586%25E7%2599%25BC%25E5%2587%25BA(%25E6%2596%25BCupdate:*%25E4%25B9%258B%25E5%25BE%258C%25E3%2580%2581%25E6%259C%2580%25E5%25BE%258C%25E7%2599%25BC%25E5%2587%25BA),payload:%257Bfrom,requested:%257BnodeIds,connIds%257D,deleted:%257BnodeIds,connIds,nodes,conns%257D,cascades:%255B%257BnodeId,connIds%257D%255D,notFound:%257BnodeIds,connIds%257D,excluded:%257BnodeIds,connIds%257D%257D-deleted.nodes/conns%25E7%2582%25BA%25E8%25A2%25AB%25E5%2588%25AA%25E7%2595%25B6%25E4%25B8%258B%25E4%25B9%258B%25E6%25B7%25B1%25E8%25A4%2587%25E8%25A3%25BD%25E5%25BF%25AB%25E7%2585%25A7(JSON%25E5%25BE%2580%25E8%25BF%2594,%25E5%2590%258CgetFlowData);id%25E6%25B8%2585%25E5%2596%25AE%25E4%25BE%259B%25E8%25BC%2595%25E9%2587%258F%25E8%25A8%2598%25E5%25B8%25B3;-cascades%25E5%258F%25AA%25E6%258F%258F%25E8%25BF%25B0%25E5%259B%25A0%25E6%259E%259C(%25E5%2593%25AA%25E6%25A2%259D%25E9%2582%258A%25E5%259B%25A0%25E5%2593%25AA%25E5%2580%258B%25E7%25AF%2580%25E9%25BB%259E%25E8%2580%258C%25E5%2588%25AA),%25E8%25A8%2598%25E5%25B8%25B3%25E4%25BB%25A5deleted.*Ids%25E7%2582%25BA%25E6%25BA%2596(%25E5%25B7%25B2%25E5%258E%25BB%25E9%2587%258D);-%25E4%25B8%258D%25E5%2590%25AB%25E5%2588%25AA%25E5%25BE%258C%25E5%2585%25A8%25E9%2587%258F%25E5%25BF%25AB%25E7%2585%25A7(remain):%25E9%259C%2580%25E8%25A6%2581%25E8%2580%2585%25E5%2591%25BC%25E5%258F%25ABgetFlowData()%25E6%2588%2596%25E6%25B2%25BF%25E7%2594%25A8update:nodes/update:conns%25E3%2580%2582%25E5%2588%25AA%25E9%2599%25A4%25E5%258F%25AA%25E6%259C%2589%25E9%2580%2599%25E4%25B8%2580%25E5%2580%258B%25E5%25AE%258C%25E6%2588%2590%25E4%25BA%258B%25E4%25BB%25B6%25E3%2580%2582%25E6%2589%2580%25E6%259C%2589%25E5%2585%25A5%25E5%258F%25A3%25E5%2590%258C%25E4%25B8%2580%25E5%25BA%258F%25E5%2588%2597:(%25E5%2583%2585%25E5%25AF%25A6%25E9%259A%259B%25E8%25AE%258A%25E5%258B%2595%25E4%25B9%258B%25E9%259B%2586%25E5%2590%2588)update:nodes%25E2%2586%2592update:conns%25E2%2586%2592elements-deleted%25E3%2580%2582">elements-deleted 所有刪除路徑完成後皆發出(於 update:* 之後、最後發出),payload:
+  { from, requested:{nodeIds,connIds}, deleted:{nodeIds,connIds,nodes,conns}, cascades:[{nodeId,connIds}],
+    notFound:{nodeIds,connIds}, excluded:{nodeIds,connIds} }
+  - deleted.nodes/conns 為被刪當下之深複製快照(JSON 往返,同 getFlowData);id 清單供輕量記帳;
+  - cascades 只描述因果(哪條邊因哪個節點而刪),記帳以 deleted.*Ids 為準(已去重);
+  - 不含刪後全量快照(remain):需要者呼叫 getFlowData() 或沿用 update:nodes / update:conns。
+  刪除只有這一個完成事件。所有入口同一序列:(僅實際變動之集合)update:nodes → update:conns → elements-deleted。</a></li></ul><h3>Global</h3><ul><li><a href="global.html#CONN_SETTING_KEYS">CONN_SETTING_KEYS</a></li><li><a href="global.html#MARKER_TYPES">MARKER_TYPES</a></li><li><a href="global.html#NODE_DEFAULTS">NODE_DEFAULTS</a></li><li><a href="global.html#NODE_SETTING_KEYS">NODE_SETTING_KEYS</a></li><li><a href="global.html#RECT_FRACTION">RECT_FRACTION</a></li><li><a href="global.html#SETTINGS_TRIGGERS">SETTINGS_TRIGGERS</a></li><li><a href="global.html#SIDES">SIDES</a></li><li><a href="global.html#applyDelete">applyDelete</a></li><li><a href="global.html#assessConnection">assessConnection</a></li><li><a href="global.html#assessGraphConnection">assessGraphConnection</a></li><li><a href="global.html#buildConnectionCandidate">buildConnectionCandidate</a></li><li><a href="global.html#buildRoundedPath">buildRoundedPath</a></li><li><a href="global.html#clampPosition">clampPosition</a></li><li><a href="global.html#classifyHit">classifyHit</a></li><li><a href="global.html#connSourceSide">connSourceSide</a></li><li><a href="global.html#connTargetSide">connTargetSide</a></li><li><a href="global.html#darkenColor">darkenColor</a></li><li><a href="global.html#describeHandleEndpoint">describeHandleEndpoint</a></li><li><a href="global.html#findDuplicateIds">findDuplicateIds</a></li><li><a href="global.html#findHandleElAt">findHandleElAt</a></li><li><a href="global.html#fixSvgNs">fixSvgNs</a></li><li><a href="global.html#generateId">generateId</a></li><li><a href="global.html#getBezierPath">getBezierPath</a></li><li><a href="global.html#getControlOffset">getControlOffset</a></li><li><a href="global.html#getHandlePosition">getHandlePosition</a></li><li><a href="global.html#getOverlappingNodes">getOverlappingNodes</a></li><li><a href="global.html#getSmoothStepPath">getSmoothStepPath</a></li><li><a href="global.html#getStepPath">getStepPath</a></li><li><a href="global.html#getStraightPath">getStraightPath</a></li><li><a href="global.html#handlePlacementStyle">handlePlacementStyle</a></li><li><a href="global.html#handleStyleVars">handleStyleVars</a></li><li><a href="global.html#isAffordanceHit">isAffordanceHit</a></li><li><a href="global.html#isCanvasBlank">isCanvasBlank</a></li><li><a href="global.html#isSide">isSide</a></li><li><a href="global.html#isValidConnection">isValidConnection</a></li><li><a href="global.html#labelAtHalfLength">labelAtHalfLength</a></li><li><a href="global.html#labelOffsetStyle">labelOffsetStyle</a></li><li><a href="global.html#lookupRoute">lookupRoute</a></li><li><a href="global.html#markerDef">markerDef</a></li><li><a href="global.html#markerId">markerId</a></li><li><a href="global.html#markerUrl">markerUrl</a></li><li><a href="global.html#nodeBorderWidth">nodeBorderWidth</a></li><li><a href="global.html#nodeShape">nodeShape</a></li><li><a href="global.html#normalizeConnPoints">normalizeConnPoints</a></li><li><a href="global.html#oppositeSide">oppositeSide</a></li><li><a href="global.html#orthogonalizeThroughPoints">orthogonalizeThroughPoints</a></li><li><a href="global.html#pairEndpoints">pairEndpoints</a></li><li><a href="global.html#pickMenuValue">pickMenuValue</a></li><li><a href="global.html#previewDelete">previewDelete</a></li><li><a href="global.html#rectsOverlap">rectsOverlap</a></li><li><a href="global.html#resolveLineStyle">resolveLineStyle</a></li><li><a href="global.html#resolveMarker">resolveMarker</a></li><li><a href="global.html#segmentFallback">segmentFallback</a></li><li><a href="global.html#setDomFlag">setDomFlag</a></li><li><a href="global.html#setHandleConnectRole">setHandleConnectRole</a></li><li><a href="global.html#setHandleConnectStatus">setHandleConnectStatus</a></li><li><a href="global.html#sideAnchorFraction">sideAnchorFraction</a></li><li><a href="global.html#sideNormal">sideNormal</a></li><li><a href="global.html#snapPosition">snapPosition</a></li><li><a href="global.html#snapshotDeep">snapshotDeep</a></li><li><a href="global.html#stubFallback">stubFallback</a></li><li><a href="global.html#uniq">uniq</a></li></ul>
     
 </nav>
 
@@ -45,180 +51,50 @@
     
     <section>
         <article>
-            <pre class="prettyprint source linenums"><code>import { nodeSameSide } from './anchorPolicy.mjs'
+            <pre class="prettyprint source linenums"><code>import { nodeShape } from './nodeStyle.mjs'
 
 /**
- * Calculate the absolute position of a handle on the canvas.
- * @param {Object} [defNode] - 節點層級預設(opt.defNode*); same-side 判定併入 defNode 層,
- *                             與把手/邊之錨點解析(anchorPolicy)同一基準
+ * 連接點幾何 —— 單一事實來源(把手渲染 nodeStyle.handlePlacementStyle 與邊端點 getHandlePosition 同用 sideAnchorFraction)。
+ *
+ * 契約(spec/流程_互動契約.md §4.1): 節點四邊各一連接點, 位於形狀「該邊」之中點——
+ *   矩形/菱形/橢圓: 外接矩形四邊中點(菱形為四頂點, 橢圓為四極點)
+ *   三角形: 頂點所在邊=頂點; 底邊=底邊中點; 兩斜邊=斜邊中點(仍落在外接矩形之 1/4 或 3/4 處)
+ * 射出方向恆為外接矩形該邊之法向量(由 side 決定, 與點位無關), 三角形斜邊上之連接點亦水平/垂直射出。
  */
-export function getHandlePosition(node, handlePosition, nodeInternals, handleType, defNode) {
+
+const RECT_FRACTION = {
+    top: { fx: 0.5, fy: 0 },
+    right: { fx: 1, fy: 0.5 },
+    bottom: { fx: 0.5, fy: 1 },
+    left: { fx: 0, fy: 0.5 },
+}
+//三角形: 斜邊中點落在外接矩形之 1/4、3/4(上下向三角形斜邊在左右; 左右向三角形斜邊在上下)
+const TRI_VERTICAL_FRACTION = { ...RECT_FRACTION, left: { fx: 0.25, fy: 0.5 }, right: { fx: 0.75, fy: 0.5 } }
+const TRI_HORIZONTAL_FRACTION = { ...RECT_FRACTION, top: { fx: 0.5, fy: 0.25 }, bottom: { fx: 0.5, fy: 0.75 } }
+
+/**
+ * 形狀 × 邊 → 連接點於外接矩形之比例座標 { fx, fy } ∈ [0,1]
+ */
+export function sideAnchorFraction(shape, side) {
+    let table = RECT_FRACTION
+    if (shape === 'triangle' || shape === 'triangle-down') table = TRI_VERTICAL_FRACTION
+    else if (shape === 'triangle-right' || shape === 'triangle-left') table = TRI_HORIZONTAL_FRACTION
+    return table[side] || table.bottom
+}
+
+/**
+ * 節點某邊連接點之畫布絕對座標(邊端點與把手圓心同一基準)。
+ * @param {Object} node
+ * @param {string} side 'top'|'right'|'bottom'|'left'
+ * @param {Object} [nodeInternals] 量測尺寸 { width, height }(優先於 node.width/height)
+ * @param {Object} [defNode] 節點預設(形狀之 defNode 層, 經 nodeStyle.nodeShape 單一解析)
+ */
+export function getHandlePosition(node, side, nodeInternals, defNode) {
     const internals = nodeInternals || {}
     const w = (internals.width) || node.width || 150
     const h = (internals.height) || node.height || 40
-    const x = node.position.x
-    const y = node.position.y
-    const isDiamond = node.shape === 'diamond'
-    const isEllipse = node.shape === 'ellipse'
-    const ns = node.shape
-    const isTriangle = ns === 'triangle' || ns === 'triangle-right' || ns === 'triangle-down' || ns === 'triangle-left'
-
-    // Check if this is a default node with source and target on the same side
-    const sameSide = nodeSameSide(node, defNode)
-    let ratio = 0.5
-    if (sameSide &amp;&amp; handleType === 'target') ratio = 0.33
-    if (sameSide &amp;&amp; handleType === 'source') ratio = 0.67
-
-    // Diamond same-side: position along diamond edges
-    if (isDiamond &amp;&amp; sameSide) {
-        return getDiamondEdgePoint(x, y, w, h, handlePosition, ratio)
-    }
-
-    // Ellipse: position on the ellipse border
-    if (isEllipse) {
-        return getEllipseEdgePoint(x, y, w, h, handlePosition, ratio)
-    }
-
-    // Triangle: position on the triangle edges
-    if (isTriangle) {
-        return getTriangleEdgePoint(x, y, w, h, handlePosition, ratio, ns)
-    }
-
-    switch (handlePosition) {
-    case 'top': return { x: x + w * ratio, y }
-    case 'bottom': return { x: x + w * ratio, y: y + h }
-    case 'left': return { x, y: y + h * ratio }
-    case 'right': return { x: x + w, y: y + h * ratio }
-    default: return { x: x + w / 2, y: y + h }
-    }
-}
-
-/**
- * Get a point on the diamond edge for same-side handles.
- * Each "side" of the diamond is split into two edges meeting at the vertex.
- * ratio &lt; 0.5: on the first edge, ratio >= 0.5: on the second edge.
- */
-function getDiamondEdgePoint(x, y, w, h, side, ratio) {
-    let halfW = w / 2
-    let halfH = h / 2
-
-    switch (side) {
-    case 'top':
-        if (ratio &lt;= 0.5) {
-            let t = ratio * 2
-            return { x: x + t * halfW, y: y + halfH - t * halfH }
-        }
-        else {
-            let t = (ratio - 0.5) * 2
-            return { x: x + halfW + t * halfW, y: y + t * halfH }
-        }
-    case 'bottom':
-        if (ratio &lt;= 0.5) {
-            let t = ratio * 2
-            return { x: x + t * halfW, y: y + halfH + t * halfH }
-        }
-        else {
-            let t = (ratio - 0.5) * 2
-            return { x: x + halfW + t * halfW, y: y + h - t * halfH }
-        }
-    case 'left':
-        if (ratio &lt;= 0.5) {
-            let t = ratio * 2
-            return { x: x + halfW - t * halfW, y: y + t * halfH }
-        }
-        else {
-            let t = (ratio - 0.5) * 2
-            return { x: x + t * halfW, y: y + halfH + t * halfH }
-        }
-    case 'right':
-        if (ratio &lt;= 0.5) {
-            let t = ratio * 2
-            return { x: x + halfW + t * halfW, y: y + t * halfH }
-        }
-        else {
-            let t = (ratio - 0.5) * 2
-            return { x: x + w - t * halfW, y: y + halfH + t * halfH }
-        }
-    default:
-        return { x: x + halfW, y: y + h }
-    }
-}
-
-/**
- * Get a point on the ellipse edge for handle positioning.
- * Maps ratio (0..1) to a parametric angle based on the side.
- */
-function getEllipseEdgePoint(x, y, w, h, side, ratio) {
-    let cx = x + w / 2
-    let cy = y + h / 2
-    let rx = w / 2
-    let ry = h / 2
-    let angle
-
-    switch (side) {
-    case 'top':
-        angle = Math.PI * (1 - ratio); break
-    case 'bottom':
-        angle = Math.PI * (ratio - 1); break
-    case 'left':
-        angle = Math.PI * (0.5 + ratio); break
-    case 'right':
-        angle = Math.PI * (0.5 - ratio); break
-    default:
-        angle = 0
-    }
-
-    return {
-        x: cx + rx * Math.cos(angle),
-        y: cy - ry * Math.sin(angle)
-    }
-}
-
-/**
- * Get a point on the triangle edge for handle positioning.
- * Supports 4 directions: triangle (up), triangle-right, triangle-down, triangle-left.
- */
-function getTriangleEdgePoint(x, y, w, h, side, ratio, shape) {
-    // Get absolute vertices based on direction
-    let apex, baseA, baseB, apexSide, baseSide, edgeA, edgeB
-    if (shape === 'triangle-right') {
-        apex = { x: x + w, y: y + h / 2 }; baseA = { x, y }; baseB = { x, y: y + h }
-        apexSide = 'right'; baseSide = 'left'; edgeA = 'top'; edgeB = 'bottom'
-    }
-    else if (shape === 'triangle-down') {
-        apex = { x: x + w / 2, y: y + h }; baseA = { x, y }; baseB = { x: x + w, y }
-        apexSide = 'bottom'; baseSide = 'top'; edgeA = 'left'; edgeB = 'right'
-    }
-    else if (shape === 'triangle-left') {
-        apex = { x, y: y + h / 2 }; baseA = { x: x + w, y }; baseB = { x: x + w, y: y + h }
-        apexSide = 'left'; baseSide = 'right'; edgeA = 'top'; edgeB = 'bottom'
-    }
-    else {
-    // triangle (up)
-        apex = { x: x + w / 2, y }; baseA = { x, y: y + h }; baseB = { x: x + w, y: y + h }
-        apexSide = 'top'; baseSide = 'bottom'; edgeA = 'left'; edgeB = 'right'
-    }
-
-    if (side === apexSide) {
-        if (ratio &lt;= 0.5) {
-            let t = ratio * 2
-            return { x: baseA.x + (apex.x - baseA.x) * t, y: baseA.y + (apex.y - baseA.y) * t }
-        }
-        else {
-            let t2 = (ratio - 0.5) * 2
-            return { x: apex.x + (baseB.x - apex.x) * t2, y: apex.y + (baseB.y - apex.y) * t2 }
-        }
-    }
-    if (side === baseSide) {
-        return { x: baseA.x + (baseB.x - baseA.x) * ratio, y: baseA.y + (baseB.y - baseA.y) * ratio }
-    }
-    if (side === edgeA) {
-        return { x: apex.x + (baseA.x - apex.x) * ratio, y: apex.y + (baseA.y - apex.y) * ratio }
-    }
-    if (side === edgeB) {
-        return { x: apex.x + (baseB.x - apex.x) * ratio, y: apex.y + (baseB.y - apex.y) * ratio }
-    }
-    return { x: x + w / 2, y: y + h / 2 }
+    const f = sideAnchorFraction(nodeShape(node, defNode), side)
+    return { x: node.position.x + w * f.fx, y: node.position.y + h * f.fy }
 }
 
 /**
@@ -288,7 +164,7 @@ export function snapPosition(position, gridSize) {
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 4.0.5</a> on Thu Aug 27 2026 17:33:26 GMT+0800 (台北標準時間) using the <a href="https://github.com/clenemt/docdash">docdash</a> theme.
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 4.0.5</a> on Thu Aug 27 2026 22:28:38 GMT+0800 (台北標準時間) using the <a href="https://github.com/clenemt/docdash">docdash</a> theme.
 </footer>
 
 <script>prettyPrint();</script>

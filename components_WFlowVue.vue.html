@@ -29,7 +29,13 @@
 <nav >
     
     
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-Handle.html">Handle</a></li></ul><h3>Events</h3><ul><li><a href="global.html#event:elements-deleted%25E6%2589%2580%25E6%259C%2589%25E5%2588%25AA%25E9%2599%25A4%25E8%25B7%25AF%25E5%25BE%2591%25E5%25AE%258C%25E6%2588%2590%25E5%25BE%258C%25E7%259A%2586%25E7%2599%25BC%25E5%2587%25BA(%25E6%2596%25BCupdate:*%25E4%25B9%258B%25E5%25BE%258C%25E3%2580%2581%25E6%259C%2580%25E5%25BE%258C%25E7%2599%25BC%25E5%2587%25BA),payload:%257Bfrom,requested:%257BnodeIds,connIds%257D,deleted:%257BnodeIds,connIds,nodes,conns%257D,cascades:%255B%257BnodeId,connIds%257D%255D,notFound:%257BnodeIds,connIds%257D,excluded:%257BnodeIds,connIds%257D%257D-deleted.nodes/conns%25E7%2582%25BA%25E8%25A2%25AB%25E5%2588%25AA%25E7%2595%25B6%25E4%25B8%258B%25E4%25B9%258B%25E6%25B7%25B1%25E8%25A4%2587%25E8%25A3%25BD%25E5%25BF%25AB%25E7%2585%25A7(JSON%25E5%25BE%2580%25E8%25BF%2594,%25E5%2590%258CgetFlowData);id%25E6%25B8%2585%25E5%2596%25AE%25E4%25BE%259B%25E8%25BC%2595%25E9%2587%258F%25E8%25A8%2598%25E5%25B8%25B3;-cascades%25E5%258F%25AA%25E6%258F%258F%25E8%25BF%25B0%25E5%259B%25A0%25E6%259E%259C(%25E5%2593%25AA%25E6%25A2%259D%25E9%2582%258A%25E5%259B%25A0%25E5%2593%25AA%25E5%2580%258B%25E7%25AF%2580%25E9%25BB%259E%25E8%2580%258C%25E5%2588%25AA),%25E8%25A8%2598%25E5%25B8%25B3%25E4%25BB%25A5deleted.*Ids%25E7%2582%25BA%25E6%25BA%2596(%25E5%25B7%25B2%25E5%258E%25BB%25E9%2587%258D);-%25E4%25B8%258D%25E5%2590%25AB%25E5%2588%25AA%25E5%25BE%258C%25E5%2585%25A8%25E9%2587%258F%25E5%25BF%25AB%25E7%2585%25A7(remain):%25E9%259C%2580%25E8%25A6%2581%25E8%2580%2585%25E5%2591%25BC%25E5%258F%25ABgetFlowData()%25E6%2588%2596%25E6%25B2%25BF%25E7%2594%25A8update:nodes/update:conns%25E3%2580%2582%25E5%2588%25AA%25E9%2599%25A4%25E5%258F%25AA%25E6%259C%2589%25E9%2580%2599%25E4%25B8%2580%25E5%2580%258B%25E5%25AE%258C%25E6%2588%2590%25E4%25BA%258B%25E4%25BB%25B6%25E3%2580%2582%25E6%2589%2580%25E6%259C%2589%25E5%2585%25A5%25E5%258F%25A3%25E5%2590%258C%25E4%25B8%2580%25E5%25BA%258F%25E5%2588%2597:(%25E5%2583%2585%25E5%25AF%25A6%25E9%259A%259B%25E8%25AE%258A%25E5%258B%2595%25E4%25B9%258B%25E9%259B%2586%25E5%2590%2588)update:nodes%25E2%2586%2592update:conns%25E2%2586%2592elements-deleted;type%25E8%25AE%258A%25E6%259B%25B4:node-settings-update%25E2%2586%2592update:conns%25E2%2586%2592elements-deleted%25E3%2580%2582">elements-deleted 所有刪除路徑完成後皆發出(於 update:* 之後、最後發出),payload:  { from, requested:{nodeIds,connIds}, deleted:{nodeIds,connIds,nodes,conns}, cascades:[{nodeId,connIds}],    notFound:{nodeIds,connIds}, excluded:{nodeIds,connIds} }  - deleted.nodes/conns 為被刪當下之深複製快照(JSON 往返,同 getFlowData);id 清單供輕量記帳;  - cascades 只描述因果(哪條邊因哪個節點而刪),記帳以 deleted.*Ids 為準(已去重);  - 不含刪後全量快照(remain):需要者呼叫 getFlowData() 或沿用 update:nodes / update:conns。  刪除只有這一個完成事件。所有入口同一序列:(僅實際變動之集合)update:nodes → update:conns → elements-deleted;  type 變更:node-settings-update → update:conns → elements-deleted。</a></li></ul><h3>Global</h3><ul><li><a href="global.html#NODE_DEFAULTS">NODE_DEFAULTS</a></li><li><a href="global.html#SOURCE_FALLBACK">SOURCE_FALLBACK</a></li><li><a href="global.html#applyDelete">applyDelete</a></li><li><a href="global.html#assessConnection">assessConnection</a></li><li><a href="global.html#assessGraphConnection">assessGraphConnection</a></li><li><a href="global.html#buildConnectionCandidate">buildConnectionCandidate</a></li><li><a href="global.html#buildRoundedPath">buildRoundedPath</a></li><li><a href="global.html#clampPosition">clampPosition</a></li><li><a href="global.html#classifyHit">classifyHit</a></li><li><a href="global.html#describeHandleEndpoint">describeHandleEndpoint</a></li><li><a href="global.html#findDuplicateIds">findDuplicateIds</a></li><li><a href="global.html#findHandleElAt">findHandleElAt</a></li><li><a href="global.html#fixSvgNs">fixSvgNs</a></li><li><a href="global.html#generateId">generateId</a></li><li><a href="global.html#getBezierPath">getBezierPath</a></li><li><a href="global.html#getControlOffset">getControlOffset</a></li><li><a href="global.html#getDiamondEdgePoint">getDiamondEdgePoint</a></li><li><a href="global.html#getEllipseEdgePoint">getEllipseEdgePoint</a></li><li><a href="global.html#getHandlePosition">getHandlePosition</a></li><li><a href="global.html#getOverlappingNodes">getOverlappingNodes</a></li><li><a href="global.html#getSmoothStepPath">getSmoothStepPath</a></li><li><a href="global.html#getStepPath">getStepPath</a></li><li><a href="global.html#getStraightPath">getStraightPath</a></li><li><a href="global.html#getTriangleEdgePoint">getTriangleEdgePoint</a></li><li><a href="global.html#handleStyleVars">handleStyleVars</a></li><li><a href="global.html#isAffordanceHit">isAffordanceHit</a></li><li><a href="global.html#isCanvasBlank">isCanvasBlank</a></li><li><a href="global.html#isSvgShape">isSvgShape</a></li><li><a href="global.html#isValidConnection">isValidConnection</a></li><li><a href="global.html#labelAtHalfLength">labelAtHalfLength</a></li><li><a href="global.html#lookupRoute">lookupRoute</a></li><li><a href="global.html#nodeBorderWidth">nodeBorderWidth</a></li><li><a href="global.html#nodeSameSide">nodeSameSide</a></li><li><a href="global.html#nodeSourceSide">nodeSourceSide</a></li><li><a href="global.html#nodeTargetSide">nodeTargetSide</a></li><li><a href="global.html#nodeType">nodeType</a></li><li><a href="global.html#normalizeConnPoints">normalizeConnPoints</a></li><li><a href="global.html#orthogonalizeThroughPoints">orthogonalizeThroughPoints</a></li><li><a href="global.html#pairEndpoints">pairEndpoints</a></li><li><a href="global.html#pickMenuValue">pickMenuValue</a></li><li><a href="global.html#previewDelete">previewDelete</a></li><li><a href="global.html#previewNodeTypeChange">previewNodeTypeChange</a></li><li><a href="global.html#rectsOverlap">rectsOverlap</a></li><li><a href="global.html#segmentFallback">segmentFallback</a></li><li><a href="global.html#setDomFlag">setDomFlag</a></li><li><a href="global.html#setHandleConnectRole">setHandleConnectRole</a></li><li><a href="global.html#setHandleConnectStatus">setHandleConnectStatus</a></li><li><a href="global.html#snapPosition">snapPosition</a></li><li><a href="global.html#snapshotDeep">snapshotDeep</a></li><li><a href="global.html#uniq">uniq</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-EdgeMarkerDefs.html">EdgeMarkerDefs</a></li><li><a href="module-Handle.html">Handle</a></li><li><a href="module-NodeBody.html">NodeBody</a></li><li><a href="module-NodePorts.html">NodePorts</a></li></ul><h3>Events</h3><ul><li><a href="global.html#event:elements-deleted%25E6%2589%2580%25E6%259C%2589%25E5%2588%25AA%25E9%2599%25A4%25E8%25B7%25AF%25E5%25BE%2591%25E5%25AE%258C%25E6%2588%2590%25E5%25BE%258C%25E7%259A%2586%25E7%2599%25BC%25E5%2587%25BA(%25E6%2596%25BCupdate:*%25E4%25B9%258B%25E5%25BE%258C%25E3%2580%2581%25E6%259C%2580%25E5%25BE%258C%25E7%2599%25BC%25E5%2587%25BA),payload:%257Bfrom,requested:%257BnodeIds,connIds%257D,deleted:%257BnodeIds,connIds,nodes,conns%257D,cascades:%255B%257BnodeId,connIds%257D%255D,notFound:%257BnodeIds,connIds%257D,excluded:%257BnodeIds,connIds%257D%257D-deleted.nodes/conns%25E7%2582%25BA%25E8%25A2%25AB%25E5%2588%25AA%25E7%2595%25B6%25E4%25B8%258B%25E4%25B9%258B%25E6%25B7%25B1%25E8%25A4%2587%25E8%25A3%25BD%25E5%25BF%25AB%25E7%2585%25A7(JSON%25E5%25BE%2580%25E8%25BF%2594,%25E5%2590%258CgetFlowData);id%25E6%25B8%2585%25E5%2596%25AE%25E4%25BE%259B%25E8%25BC%2595%25E9%2587%258F%25E8%25A8%2598%25E5%25B8%25B3;-cascades%25E5%258F%25AA%25E6%258F%258F%25E8%25BF%25B0%25E5%259B%25A0%25E6%259E%259C(%25E5%2593%25AA%25E6%25A2%259D%25E9%2582%258A%25E5%259B%25A0%25E5%2593%25AA%25E5%2580%258B%25E7%25AF%2580%25E9%25BB%259E%25E8%2580%258C%25E5%2588%25AA),%25E8%25A8%2598%25E5%25B8%25B3%25E4%25BB%25A5deleted.*Ids%25E7%2582%25BA%25E6%25BA%2596(%25E5%25B7%25B2%25E5%258E%25BB%25E9%2587%258D);-%25E4%25B8%258D%25E5%2590%25AB%25E5%2588%25AA%25E5%25BE%258C%25E5%2585%25A8%25E9%2587%258F%25E5%25BF%25AB%25E7%2585%25A7(remain):%25E9%259C%2580%25E8%25A6%2581%25E8%2580%2585%25E5%2591%25BC%25E5%258F%25ABgetFlowData()%25E6%2588%2596%25E6%25B2%25BF%25E7%2594%25A8update:nodes/update:conns%25E3%2580%2582%25E5%2588%25AA%25E9%2599%25A4%25E5%258F%25AA%25E6%259C%2589%25E9%2580%2599%25E4%25B8%2580%25E5%2580%258B%25E5%25AE%258C%25E6%2588%2590%25E4%25BA%258B%25E4%25BB%25B6%25E3%2580%2582%25E6%2589%2580%25E6%259C%2589%25E5%2585%25A5%25E5%258F%25A3%25E5%2590%258C%25E4%25B8%2580%25E5%25BA%258F%25E5%2588%2597:(%25E5%2583%2585%25E5%25AF%25A6%25E9%259A%259B%25E8%25AE%258A%25E5%258B%2595%25E4%25B9%258B%25E9%259B%2586%25E5%2590%2588)update:nodes%25E2%2586%2592update:conns%25E2%2586%2592elements-deleted%25E3%2580%2582">elements-deleted 所有刪除路徑完成後皆發出(於 update:* 之後、最後發出),payload:
+  { from, requested:{nodeIds,connIds}, deleted:{nodeIds,connIds,nodes,conns}, cascades:[{nodeId,connIds}],
+    notFound:{nodeIds,connIds}, excluded:{nodeIds,connIds} }
+  - deleted.nodes/conns 為被刪當下之深複製快照(JSON 往返,同 getFlowData);id 清單供輕量記帳;
+  - cascades 只描述因果(哪條邊因哪個節點而刪),記帳以 deleted.*Ids 為準(已去重);
+  - 不含刪後全量快照(remain):需要者呼叫 getFlowData() 或沿用 update:nodes / update:conns。
+  刪除只有這一個完成事件。所有入口同一序列:(僅實際變動之集合)update:nodes → update:conns → elements-deleted。</a></li></ul><h3>Global</h3><ul><li><a href="global.html#CONN_SETTING_KEYS">CONN_SETTING_KEYS</a></li><li><a href="global.html#MARKER_TYPES">MARKER_TYPES</a></li><li><a href="global.html#NODE_DEFAULTS">NODE_DEFAULTS</a></li><li><a href="global.html#NODE_SETTING_KEYS">NODE_SETTING_KEYS</a></li><li><a href="global.html#RECT_FRACTION">RECT_FRACTION</a></li><li><a href="global.html#SETTINGS_TRIGGERS">SETTINGS_TRIGGERS</a></li><li><a href="global.html#SIDES">SIDES</a></li><li><a href="global.html#applyDelete">applyDelete</a></li><li><a href="global.html#assessConnection">assessConnection</a></li><li><a href="global.html#assessGraphConnection">assessGraphConnection</a></li><li><a href="global.html#buildConnectionCandidate">buildConnectionCandidate</a></li><li><a href="global.html#buildRoundedPath">buildRoundedPath</a></li><li><a href="global.html#clampPosition">clampPosition</a></li><li><a href="global.html#classifyHit">classifyHit</a></li><li><a href="global.html#connSourceSide">connSourceSide</a></li><li><a href="global.html#connTargetSide">connTargetSide</a></li><li><a href="global.html#darkenColor">darkenColor</a></li><li><a href="global.html#describeHandleEndpoint">describeHandleEndpoint</a></li><li><a href="global.html#findDuplicateIds">findDuplicateIds</a></li><li><a href="global.html#findHandleElAt">findHandleElAt</a></li><li><a href="global.html#fixSvgNs">fixSvgNs</a></li><li><a href="global.html#generateId">generateId</a></li><li><a href="global.html#getBezierPath">getBezierPath</a></li><li><a href="global.html#getControlOffset">getControlOffset</a></li><li><a href="global.html#getHandlePosition">getHandlePosition</a></li><li><a href="global.html#getOverlappingNodes">getOverlappingNodes</a></li><li><a href="global.html#getSmoothStepPath">getSmoothStepPath</a></li><li><a href="global.html#getStepPath">getStepPath</a></li><li><a href="global.html#getStraightPath">getStraightPath</a></li><li><a href="global.html#handlePlacementStyle">handlePlacementStyle</a></li><li><a href="global.html#handleStyleVars">handleStyleVars</a></li><li><a href="global.html#isAffordanceHit">isAffordanceHit</a></li><li><a href="global.html#isCanvasBlank">isCanvasBlank</a></li><li><a href="global.html#isSide">isSide</a></li><li><a href="global.html#isValidConnection">isValidConnection</a></li><li><a href="global.html#labelAtHalfLength">labelAtHalfLength</a></li><li><a href="global.html#labelOffsetStyle">labelOffsetStyle</a></li><li><a href="global.html#lookupRoute">lookupRoute</a></li><li><a href="global.html#markerDef">markerDef</a></li><li><a href="global.html#markerId">markerId</a></li><li><a href="global.html#markerUrl">markerUrl</a></li><li><a href="global.html#nodeBorderWidth">nodeBorderWidth</a></li><li><a href="global.html#nodeShape">nodeShape</a></li><li><a href="global.html#normalizeConnPoints">normalizeConnPoints</a></li><li><a href="global.html#oppositeSide">oppositeSide</a></li><li><a href="global.html#orthogonalizeThroughPoints">orthogonalizeThroughPoints</a></li><li><a href="global.html#pairEndpoints">pairEndpoints</a></li><li><a href="global.html#pickMenuValue">pickMenuValue</a></li><li><a href="global.html#previewDelete">previewDelete</a></li><li><a href="global.html#rectsOverlap">rectsOverlap</a></li><li><a href="global.html#resolveLineStyle">resolveLineStyle</a></li><li><a href="global.html#resolveMarker">resolveMarker</a></li><li><a href="global.html#segmentFallback">segmentFallback</a></li><li><a href="global.html#setDomFlag">setDomFlag</a></li><li><a href="global.html#setHandleConnectRole">setHandleConnectRole</a></li><li><a href="global.html#setHandleConnectStatus">setHandleConnectStatus</a></li><li><a href="global.html#sideAnchorFraction">sideAnchorFraction</a></li><li><a href="global.html#sideNormal">sideNormal</a></li><li><a href="global.html#snapPosition">snapPosition</a></li><li><a href="global.html#snapshotDeep">snapshotDeep</a></li><li><a href="global.html#stubFallback">stubFallback</a></li><li><a href="global.html#uniq">uniq</a></li></ul>
     
 </nav>
 
@@ -53,7 +59,10 @@
     :style="`width:${widthInp}px; height:${heightInp}px;`"
     :data-flow-id="flowId"
     :class="{ 'vue-flow--connecting': isConnecting, 'vue-flow--multiselecting': multiSelectMode, 'vue-flow--gesturing': gesturing }"
+    @dragstart.prevent
   >
+  &lt;!-- @dragstart.prevent(根層): 圖台內任何原生拖曳(選取文字之文字圖層、圖片)一律取消——圖台之拖曳語義只有節點/轉折點/建線/平移,
+       原生文字拖曳會接管滑鼠事件流使手勢中斷(NodeWrapper 另於節點層處理, 此為全域縱深) -->
   &lt;FlowCanvas
     v-if="inited"
     ref="canvas"
@@ -95,6 +104,7 @@
         :infor-popup-description-text-color="inforPopupDescriptionTextColor"
         :infor-popup-description-text-font-size="inforPopupDescriptionTextFontSize"
         :settings-enabled="connsSettingsEnabled"
+        :settings-trigger="connsSettingsTrigger"
         :settings-excludes="connsSettingsExcludes"
         @conn-click="onConnClick"
         @conn-double-click="onConnDoubleClick"
@@ -129,6 +139,7 @@
         :infor-popup-description-text-font-size="inforPopupDescriptionTextFontSize"
         :snap-grid-size="snapToGrid ? snapGridSize : null"
         :settings-enabled="nodesSettingsEnabled"
+        :settings-trigger="nodesSettingsTrigger"
         :settings-excludes="nodesSettingsExcludes"
         @drag-prepare="onNodeDragPrepare"
         @drag-start="onNodeDragStart"
@@ -188,8 +199,9 @@ import { clearStepCache } from '../js/edgePath'
 import { generateId } from '../js/graph'
 import { assessConnection } from '../js/connectPolicy.mjs'
 import { findHandleElAt, describeHandleEndpoint, setHandleConnectStatus, setHandleConnectRole, setDomFlag } from '../js/handleDom.mjs'
-import { NODE_DEFAULTS, CONN_DEFAULTS } from '../js/defaults'
-import { previewDelete, applyDelete, previewNodeTypeChange, findDuplicateIds, snapshotDeep } from '../js/graphMutation.mjs'
+import { isSide, oppositeSide } from '../js/anchorPolicy.mjs'
+import { NODE_DEFAULTS, CONN_DEFAULTS, NODE_SETTING_KEYS, CONN_SETTING_KEYS, SETTINGS_TRIGGERS } from '../js/defaults'
+import { previewDelete, applyDelete, findDuplicateIds, snapshotDeep } from '../js/graphMutation.mjs'
 
 /**
  * WFlowVue — Vue 2 flow/graph editor component.
@@ -212,6 +224,10 @@ import { previewDelete, applyDelete, previewNodeTypeChange, findDuplicateIds, sn
  * @prop {boolean}  [opt.locked=false]                    Initial interactive-lock state (afterwards toggled via Controls lock button, emits toggle-interactive)
  * @prop {boolean}  [opt.nodesSettingsEnabled=true]       Show built-in node settings popup (gear icon)
  * @prop {boolean}  [opt.connsSettingsEnabled=true]       Show built-in connection settings popup (gear icon)
+ * @prop {string}   [opt.nodesSettingsTrigger='dblclick'] How the node settings popup is opened: 'hover' (gear icon appears at the
+ *   node's top-right on hover; click it) | 'click' | 'dblclick' (that action on the node body opens the settings popup directly, no gear icon;
+ *   in 'click' mode the info popup yields to the settings popup).
+ * @prop {string}   [opt.connsSettingsTrigger='dblclick'] Same for connections ('hover': gear at the right of the label).
  * @prop {Array}    [opt.nodesSettingsExcludes=[]]        Field keys hidden in node settings form (e.g. ['name','description'])
  * @prop {Array}    [opt.connsSettingsExcludes=[]]        Field keys hidden in connection settings form
  * @prop {boolean}  [opt.selectNodesOnDrag=true]          Select node when drag starts
@@ -225,16 +241,17 @@ import { previewDelete, applyDelete, previewNodeTypeChange, findDuplicateIds, sn
  * 不變量(invariants):
  * - 一次一手勢: activeGesture ∈ null|pan|drag|resize|connect|waypoint|boxselect; 啟動即關閉全部 popup,
  *   期間根 class vue-flow--gesturing 抑制非擁有者元素之 hover affordance, 任何 popup 開啟入口(含公開 API)拒開。
- * - 建線雙向出發、嚴格配對: 自 source 把手出發只能落他節點 target, 自 target 出發只能落他節點 source;
- *   候選一律正規化為 { from: source 端, to: target 端 }, validator / connect 事件形狀不變。
- *   自我連線與同類把手一律 not-allowed(出發節點之其他把手與他節點同類把手於建線期間淡化)。
+ * - 建線: 節點四邊連接點無連出/連入之分, 任一把手皆可出發, 落點為他節點之任一把手; 方向 = 出發 → 落點,
+ *   候選 { from, to, fromPosition, toPosition }(兩端方位即各自所在之邊), validator / connect 事件收同形狀。
+ *   自我連線一律 not-allowed(出發節點之其他把手於建線期間淡化)。
  * - affordance(齒輪/四角/把手/轉折點/工具列)之 click/dblclick/contextmenu 不代表宿主元素或畫布發事件。
  * - 主鍵限制對所有手勢一致; 終止路徑(mouseup/blur/視窗外放開/destroy/上鎖)走同一收尾。
  * - 上鎖切換時: 進行中之 connect/boxselect 取消, drag/resize/waypoint 取消提交(ghost 復原不寫回)。
- * 1.0.37 行為變更(Behavior changes): connect-end.reason 集合更新(見 funValidConnCreating);
- *   connect-start.handleType 可為 'target'; 節點齒輪/把手/四角上之雙擊與右鍵不再發 node-double-click /
- *   node-context-menu; 縮放四角與轉折點只認主鍵; 按住連線本體拖曳不再平移畫布; 工具列上之雙擊/右鍵不再發
- *   canvas-dblclick / pane-context-menu。
+ * 事件形狀: connect-start { nodeId, handlePosition }; connect { from, to, fromPosition, toPosition };
+ *   connect-end(event, { valid, reason, connection }), reason ∈ no-endpoint | unknown-handle | self |
+ *   not-connectable | missing-node | duplicate | custom | cancelled。
+ *   節點齒輪/把手/四角上之雙擊與右鍵不發 node-double-click / node-context-menu; 縮放四角與轉折點只認主鍵;
+ *   按住連線本體拖曳不平移畫布; 工具列上之雙擊/右鍵不發 canvas-dblclick / pane-context-menu。
  *
  * ─── Multi-select mode(複選模式契約)───
  * multiSelectionKey 按住(且 multiSelectEnabled、elementsSelectable、未鎖定)期間為「複選模式」:
@@ -255,11 +272,12 @@ import { previewDelete, applyDelete, previewNodeTypeChange, findDuplicateIds, sn
  * @prop {boolean}  [opt.snapToGrid=false]                Snap node positions to grid
  * @prop {number}   [opt.snapGridSize=20]                  Grid cell size (px, used for both drag snap and resize snap)
  *
- * Anchor contract: the node decides its own out/in direction. An edge has no direction of its
- * own — each end sits on the handle of that end's node, perpendicular to that node side:
- *   source end: sourceNode.toPosition → opt.defNodeToPosition → 'bottom'
- *   target end: targetNode.fromPosition → opt.defNodeFromPosition → 'top'
- * Changing a node's To/From Handle re-routes all its edges. Conns carry no direction fields.
+ * Anchor contract: every node has four connection points (top/right/bottom/left side midpoints,
+ * no source/target distinction). A conn owns the direction of both of its ends:
+ *   from end: conn.fromPosition → opt.defConnFromPosition → 'bottom'
+ *   to end:   conn.toPosition   → opt.defConnToPosition   → 'top'
+ * The ray direction is always the normal of that side of the node's bounding box (a triangle's
+ * slanted-edge point still leaves horizontally/vertically). Nodes carry no type or direction fields.
  *
  * Node-surface input contract: dragging on a node moves the node — text selection and native
  * HTML5 drag are suppressed there (a formed selection would let the browser's text-layer drag
@@ -314,6 +332,9 @@ import { previewDelete, applyDelete, previewNodeTypeChange, findDuplicateIds, sn
  * @prop {string}   [opt.settingsPopupBackgroundColor='#fff'] Settings popup background
  * @prop {string}   [opt.settingsPopupTextColor='#333']       Settings popup text color
  * @prop {string}   [opt.settingsPopupTextFontSize='12px']    Settings popup font size
+ * @prop {string}   [opt.nodesSettingsDeleteText='Delete']    Node settings form delete-button text
+ * @prop {string}   [opt.connsSettingsDeleteText='Delete']    Connection settings form delete-button text
+ * @prop {string}   [opt.settingsColorConfirmText='Confirm']  Confirm-button text of the color pickers inside settings forms
  *
  * ─── Infor Popup ────────────────────────────────────────────────────────
  * @prop {string}   [opt.inforPopupBackgroundColor='#fff']              Info popup background
@@ -323,7 +344,6 @@ import { previewDelete, applyDelete, previewNodeTypeChange, findDuplicateIds, sn
  * @prop {string}   [opt.inforPopupDescriptionTextFontSize='10px']     Info popup description font size
  *
  * ─── Default Node ──────────────────────────────────────────
- * @prop {string}   [opt.defNodeType='basic']             Default node type: 'input' | 'basic' | 'output'
  * @prop {string}   [opt.defNodeShape='rectangle']        Default shape: 'rectangle' | 'diamond' | 'ellipse' | 'triangle' | ...
  * @prop {number}   [opt.defNodeWidth=100]                Default node width (px)
  * @prop {number}   [opt.defNodeHeight=40]                Default node height (px)
@@ -334,24 +354,18 @@ import { previewDelete, applyDelete, previewNodeTypeChange, findDuplicateIds, sn
  * @prop {string}   [opt.defNodeFaceColor='#ffffff']      Default node fill color
  * @prop {string}   [opt.defNodeEdgeColor='#bbbbbb']      Default node border color
  * @prop {number}   [opt.defNodeEdgeWidth=1]              Default node border width (px)
- * @prop {string}   [opt.defNodeToPosition='bottom']      Default outgoing handle position: 'top' | 'bottom' | 'left' | 'right'
- * @prop {string}   [opt.defNodeFromPosition='top']       Default incoming handle position
  * @prop {string}   [opt.defNodePopupDirection='right']   Default settings popup direction
  *
  * ─── Default Handle(連接點)───
- * 把手圓心落在節點外框盒邊上(與連線端點同一基準; 定位扣除節點外框寬); hover 放大 2px 圓心不動。
- * @prop {string}   [opt.defHandleSourceFaceColor='#555555'] 連出點(source)背景色
- * @prop {string}   [opt.defHandleSourceEdgeColor='#ffffff'] 連出點框線色
- * @prop {number}   [opt.defHandleSourceEdgeWidth=1]         連出點框線寬(px)
- * @prop {number}   [opt.defHandleSourceSize=10]             連出點大小(px, 外徑含框線)
- * @prop {string}   [opt.defHandleTargetFaceColor='#ffffff'] 連入點(target)背景色
- * @prop {string}   [opt.defHandleTargetEdgeColor='#1a1918'] 連入點框線色
- * @prop {number}   [opt.defHandleTargetEdgeWidth=1]         連入點框線寬(px)
- * @prop {number}   [opt.defHandleTargetSize=10]             連入點大小(px, 外徑含框線)
+ * 每節點四邊各一把手(無連出/連入之分, 同一組樣式); 圓心落在節點外框盒上該邊之連接點(與連線端點同一基準); hover 放大 2px 圓心不動。
+ * @prop {string}   [opt.defHandleFaceColor='#555555']   把手背景色
+ * @prop {string}   [opt.defHandleEdgeColor='#ffffff']   把手框線色
+ * @prop {number}   [opt.defHandleEdgeWidth=1]           把手框線寬(px)
+ * @prop {number}   [opt.defHandleSize=10]               把手大小(px, 外徑含框線)
  *
  * ─── Default Creating Connection ────────────────────────────────────────────────────────
  * @prop {string}   [opt.defConnCreatingType='bezier']     Drag-line type: 'bezier' | 'straight' | 'step' | 'smoothstep'
- * @prop {string}   [opt.defConnCreatingEdgeColor='#b1b1b7']  Drag-line color
+ * @prop {string}   [opt.defConnCreatingEdgeColor='#b1b1b1']  Drag-line color
  * @prop {number}   [opt.defConnCreatingEdgeWidth=1]          Drag-line width (px)
  * @prop {string}   [opt.defConnCreatingEdgeDasharray='5 5'] Drag-line dash pattern ('' for solid)
  * ─── Deleting confirmation(刪除確認契約)───
@@ -367,7 +381,7 @@ import { previewDelete, applyDelete, previewNodeTypeChange, findDuplicateIds, sn
  *   await 期間圖若已變動(宿主抽換資料、他途已刪),僅刪除仍存在之目標,`elements-deleted` 之
  *   payload 亦只含實際被刪者;若 await 期間出現「確認 payload 未涵蓋」之新連帶邊(如期間新增了
  *   相鄰連線),整筆刪除以 stale 放棄,不默默擴大刪除範圍。
- *   from 亦可能為 'api'(公開刪除方法)或宿主自訂字串;'node-type-change' 路徑不經此閘門(見下)。
+ *   from 亦可能為 'api'(公開刪除方法)或宿主自訂字串。
  *
  * ─── Deleting(刪除機制契約:核心 / coordinator / 入口三層)───
  * 圖之刪除一律經 src/js/graphMutation.mjs(純函式:解析/去重/連帶/deletable 政策/就地套用)+
@@ -377,8 +391,6 @@ import { previewDelete, applyDelete, previewNodeTypeChange, findDuplicateIds, sn
  *   - deletable:false 之元素不可被「直接指定」刪除:刪除鍵與公開方法將其歸入 excluded,
  *     設定表單之刪除鈕 disabled(1.0.36 起,舊版設定表單可刪 deletable:false 元素屬 bug);
  *   - id 為 opaque identity(嚴格相等),不強制字串,只要求各集合內唯一(重複時 console.warn)。
- * 第五種會移除連線之路徑——節點 type 變更使不相容方向之連線被移除——不經確認閘門(維持既有行為),
- * 但 1.0.36 起補發 `update:conns` 與 `elements-deleted`(from='node-type-change'),不再靜默。
  *
  * @method deleteElements({ nodeIds=[], connIds=[] }, opt={}) → Promise&lt;result>
  *   公開刪除方法。opt.confirm(預設 true)是否經 funConfirmDeleting;opt.from(預設 'api')透傳至閘門與事件。
@@ -396,15 +408,12 @@ import { previewDelete, applyDelete, previewNodeTypeChange, findDuplicateIds, sn
  *   - deleted.nodes/conns 為被刪當下之深複製快照(JSON 往返,同 getFlowData);id 清單供輕量記帳;
  *   - cascades 只描述因果(哪條邊因哪個節點而刪),記帳以 deleted.*Ids 為準(已去重);
  *   - 不含刪後全量快照(remain):需要者呼叫 getFlowData() 或沿用 update:nodes / update:conns。
- *   刪除只有這一個完成事件。所有入口同一序列:(僅實際變動之集合)update:nodes → update:conns → elements-deleted;
- *   type 變更:node-settings-update → update:conns → elements-deleted。
+ *   刪除只有這一個完成事件。所有入口同一序列:(僅實際變動之集合)update:nodes → update:conns → elements-deleted。
  * @prop {Function} [opt.funValidConnCreating=null]      Custom connection validator fn(connection) → boolean.
  *   須為同步純函式(無副作用): 除放開(commit)外, 拖線中游標移入把手(hover 目標變更)時亦會被呼叫一次,
- *   以即時標示落點可否連線(valid/invalid); 兩處收到之 connection 形狀完全相同({ from, to })。
- *   connect-end 事件之第二參數為判定結果 { valid, reason, connection }(additive, 第一參數仍為原生 event),
- *   reason ∈ 'no-endpoint'|'unknown-handle'|'self'|'same-kind'|'not-connectable'|'missing-node'|
- *   'from-output'|'to-input'|'duplicate'|'custom'|'cancelled'|null
- *   (1.0.37 起雙向出發: 'origin-not-source'/'target-not-target' 由 'same-kind' 取代, 見 Interaction contract)
+ *   以即時標示落點可否連線(valid/invalid); 兩處收到之 connection 形狀完全相同({ from, to, fromPosition, toPosition })。
+ *   connect-end 事件之第二參數為判定結果 { valid, reason, connection }(第一參數仍為原生 event),
+ *   reason ∈ 'no-endpoint'|'unknown-handle'|'self'|'not-connectable'|'missing-node'|'duplicate'|'custom'|'cancelled'|null
  *
  * ─── Default Connection ────────────────────────────────────
  * @prop {string}   [opt.defConnType='bezier']            Default conn type: 'bezier' | 'straight' | 'step' | 'smoothstep'
@@ -412,10 +421,17 @@ import { previewDelete, applyDelete, previewNodeTypeChange, findDuplicateIds, sn
  * @prop {number}   [opt.defConnFontSizeMin=1]            Min font size in settings
  * @prop {number}   [opt.defConnFontSizeMax=72]           Max font size in settings
  * @prop {string}   [opt.defConnFontColor='#333333']      Default conn label text color
- * @prop {string}   [opt.defConnEdgeColor='#b1b1b7']      Default conn line color
+ * @prop {string}   [opt.defConnEdgeColor='#b1b1b1']      Default conn line color
  * @prop {number}   [opt.defConnEdgeWidth=1]              Default conn line width (px)
  * @prop {string}   [opt.defConnEdgeDasharray='']         Default conn dash pattern ('' for solid, '5 5' for dashed)
- * @prop {string}   [opt.defConnMarkerEnd='']             Default arrow marker: '' | 'arrow' | 'arrowclosed'
+ * @prop {string}   [opt.defConnFromPosition='bottom']   Default from-end side when conn.fromPosition is absent: 'top' | 'right' | 'bottom' | 'left'
+ * @prop {string}   [opt.defConnToPosition='top']        Default to-end side when conn.toPosition is absent
+ * @prop {string}   [opt.defConnMarkerStart='']          Default start arrow: '' (none) | 'arrow' (open) | 'arrowclosed' (filled)
+ * @prop {number}   [opt.defConnMarkerStartSize=10]      Default start arrow size (px, absolute; clamped 4–40)
+ * @prop {string}   [opt.defConnMarkerStartColor='']     Default start arrow fill (arrowclosed only; '' = line color darkened 20%)
+ * @prop {string}   [opt.defConnMarkerEnd='']            Default end arrow: '' | 'arrow' | 'arrowclosed'
+ * @prop {number}   [opt.defConnMarkerEndSize=10]        Default end arrow size (px)
+ * @prop {string}   [opt.defConnMarkerEndColor='']       Default end arrow fill (arrowclosed only; '' = line color darkened 20%)
  * @prop {boolean}  [opt.defConnAnimated=false]           Default conn animation (dashed flow)
  * @prop {number}   [opt.defOffset=24]                    Step/smoothstep routing buffer (px)
  */
@@ -440,6 +456,8 @@ export default {
         return {
             getDefNode: () => this.defNode,
             getDefConn: () => this.defConn,
+            //設定表單文字(刪除鈕/色票確認鈕): getter 注入, 表單直接讀取, 不逐層傳 props
+            getSettingsText: () => this.settingsText,
             //拖曳/縮放ghost(細粒度): 回傳該節點進行中之暫時幾何({x,y}或{x,y,width,height}), 無則null
             getDragGhost: (id) => {
                 return this.dragPositions[id] || null
@@ -494,14 +512,12 @@ export default {
             //經computed isConnecting供既有守衛/測試讀取); 欄位全數預宣告, 只改欄位不換容器
             connectionVisual: {
                 active: false,
-                //出發把手類型('source'|'target'): ConnectionLine 據此以正規化後之 source/target 參數繪預覽線(spec §4)
-                originType: 'source',
                 fromX: 0,
                 fromY: 0,
                 fromPosition: 'bottom',
                 toX: 0,
                 toY: 0,
-                //游標懸於把手時之曲線進入方位(把手之 data-handle-position; 離開把手回復 'top')
+                //游標懸於把手時之曲線進入方位(把手之 data-handle-position; 離開把手回復出發邊之對邊)
                 toPosition: 'top',
                 //游標下落點之即時判定: 'none'(非把手)|'valid'|'invalid'; 僅 ConnectionLine 讀取(細粒度)
                 dropStatus: 'none',
@@ -677,6 +693,13 @@ export default {
         nodesSettingsEnabled() {
             return this.opt.nodesSettingsEnabled !== undefined ? this.opt.nodesSettingsEnabled : true
         },
+        //設定齒輪之顯示方式: 'hover'(移入即顯示) | 'click'(點擊後顯示) | 'dblclick'(雙擊後顯示); 非法值回退預設 dblclick
+        nodesSettingsTrigger() {
+            return SETTINGS_TRIGGERS.indexOf(this.opt.nodesSettingsTrigger) >= 0 ? this.opt.nodesSettingsTrigger : 'dblclick'
+        },
+        connsSettingsTrigger() {
+            return SETTINGS_TRIGGERS.indexOf(this.opt.connsSettingsTrigger) >= 0 ? this.opt.connsSettingsTrigger : 'dblclick'
+        },
         connsSettingsEnabled() {
             return this.opt.connsSettingsEnabled !== undefined ? this.opt.connsSettingsEnabled : true
         },
@@ -700,7 +723,7 @@ export default {
             return this.opt.defConnCreatingType || 'bezier'
         },
         defConnCreatingEdgeColor() {
-            return this.opt.defConnCreatingEdgeColor || '#b1b1b7'
+            return this.opt.defConnCreatingEdgeColor || '#b1b1b1'
         },
         defConnCreatingEdgeWidth() {
             return this.opt.defConnCreatingEdgeWidth !== undefined ? this.opt.defConnCreatingEdgeWidth : 1
@@ -780,6 +803,16 @@ export default {
         settingsPopupTextFontSize() {
             return this.opt.settingsPopupTextFontSize || '12px'
         },
+        //設定表單可改文字(非字串或空字串回退預設)
+        settingsText() {
+            const o = this.opt
+            const str = (v, d) => (typeof v === 'string' &amp;&amp; v !== '' ? v : d)
+            return {
+                nodeDelete: str(o.nodesSettingsDeleteText, 'Delete'),
+                connDelete: str(o.connsSettingsDeleteText, 'Delete'),
+                colorConfirm: str(o.settingsColorConfirmText, 'Confirm'),
+            }
+        },
         inforPopupBackgroundColor() {
             return this.opt.inforPopupBackgroundColor || '#fff'
         },
@@ -808,7 +841,6 @@ export default {
             let o = this.opt
             let d = NODE_DEFAULTS
             return {
-                type: o.defNodeType || d.type,
                 shape: o.defNodeShape || d.shape,
                 width: o.defNodeWidth || d.width,
                 height: o.defNodeHeight || d.height,
@@ -819,18 +851,12 @@ export default {
                 faceColor: o.defNodeFaceColor || d.faceColor,
                 edgeColor: o.defNodeEdgeColor || d.edgeColor,
                 edgeWidth: o.defNodeEdgeWidth !== undefined ? o.defNodeEdgeWidth : d.edgeWidth,
-                toPosition: o.defNodeToPosition || d.toPosition,
-                fromPosition: o.defNodeFromPosition || d.fromPosition,
                 popupDirection: o.defNodePopupDirection || d.popupDirection,
-                //連接點(把手)樣式: 數值型以 !== undefined 判斷(0 為合法之框線寬)
-                handleSourceFaceColor: o.defHandleSourceFaceColor || d.handleSourceFaceColor,
-                handleSourceEdgeColor: o.defHandleSourceEdgeColor || d.handleSourceEdgeColor,
-                handleSourceEdgeWidth: o.defHandleSourceEdgeWidth !== undefined ? o.defHandleSourceEdgeWidth : d.handleSourceEdgeWidth,
-                handleSourceSize: o.defHandleSourceSize || d.handleSourceSize,
-                handleTargetFaceColor: o.defHandleTargetFaceColor || d.handleTargetFaceColor,
-                handleTargetEdgeColor: o.defHandleTargetEdgeColor || d.handleTargetEdgeColor,
-                handleTargetEdgeWidth: o.defHandleTargetEdgeWidth !== undefined ? o.defHandleTargetEdgeWidth : d.handleTargetEdgeWidth,
-                handleTargetSize: o.defHandleTargetSize || d.handleTargetSize,
+                //連接點(把手)樣式(四把手同一組): 數值型以 !== undefined 判斷(0 為合法之框線寬)
+                handleFaceColor: o.defHandleFaceColor || d.handleFaceColor,
+                handleEdgeColor: o.defHandleEdgeColor || d.handleEdgeColor,
+                handleEdgeWidth: o.defHandleEdgeWidth !== undefined ? o.defHandleEdgeWidth : d.handleEdgeWidth,
+                handleSize: o.defHandleSize || d.handleSize,
             }
         },
         defConn() {
@@ -845,7 +871,16 @@ export default {
                 edgeColor: o.defConnEdgeColor || d.edgeColor,
                 edgeWidth: o.defConnEdgeWidth !== undefined ? o.defConnEdgeWidth : d.edgeWidth,
                 edgeDasharray: o.defConnEdgeDasharray || '',
+                //兩端方位預設(邊自己持有方位; 未給時取此)
+                fromPosition: o.defConnFromPosition || d.fromPosition,
+                toPosition: o.defConnToPosition || d.toPosition,
+                //兩端箭頭: type '' | 'arrow' | 'arrowclosed'; size px; color 為實心箭頭之填充色(空=線色)
+                markerStart: o.defConnMarkerStart || d.markerStart,
+                markerStartSize: o.defConnMarkerStartSize || d.markerStartSize,
+                markerStartColor: o.defConnMarkerStartColor || d.markerStartColor,
                 markerEnd: o.defConnMarkerEnd || d.markerEnd,
+                markerEndSize: o.defConnMarkerEndSize || d.markerEndSize,
+                markerEndColor: o.defConnMarkerEndColor || d.markerEndColor,
                 animated: o.defConnAnimated !== undefined ? o.defConnAnimated : d.animated,
                 defOffset: o.defOffset != null ? o.defOffset : d.defOffset,
             }
@@ -1309,9 +1344,8 @@ export default {
             if (this.locked || !this.nodesConnectable) return
             //複選模式中不啟動建線(把手已隱藏, 此為縱深第二層; 守衛先於任何狀態/標記之設定)
             if (this.isMultiSelectActive) return
-            //雙向出發(spec §4): source 與 target 把手皆可出發; 型別非二者即不啟動
-            const originType = payload.handleType
-            if (originType !== 'source' &amp;&amp; originType !== 'target') return
+            //任一邊之把手皆可出發(spec §4); 方位非四值即不啟動
+            if (!isSide(payload.handlePosition)) return
             //重入守衛(縱深第二層, Handle已擋非主鍵): 拉線途中他途再送connect-start不得重跑啟動流程,
             //否則出發把手標記/狀態被改寫而失去清理參照; 一次一手勢: 他手勢進行中亦不啟動
             if (this.isConnecting) return
@@ -1328,9 +1362,7 @@ export default {
             const originNodeEl = originEl &amp;&amp; originEl.closest ? originEl.closest('.vue-flow__node') : null
             this._connectOrigin = {
                 nodeId: payload.nodeId,
-                handleId: payload.handleId || null,
-                type: originType,
-                position: payload.handlePosition || null,
+                position: payload.handlePosition,
                 connectable: true,
                 element: originEl || null,
                 nodeElement: originNodeEl,
@@ -1338,19 +1370,12 @@ export default {
             this._connectHoverEl = null
             setHandleConnectRole(originEl, 'origin')
             setDomFlag(originNodeEl, 'data-connect-origin-node', true)
-            //根標記出發類型: 他節點之同類把手據此淡化並 not-allowed(spec §4)
-            setDomFlag(this.$el, 'data-connect-from', originType)
             this.beginGesture('connect', originNodeEl)
 
-            this.connectionVisual.originType = originType
             this.connectionVisual.active = true
 
-            //起點幾何依實際把手類型(same-side 時 target=0.33 / source=0.67, 與把手渲染同一基準)
-            const pos = getHandlePosition(
-                node, payload.handlePosition,
-                this.nodeInternals[payload.nodeId] || {},
-                originType, this.defNode
-            )
+            //起點 = 出發邊之連接點(與把手渲染同一 fraction 基準)
+            const pos = getHandlePosition(node, payload.handlePosition, this.nodeInternals[payload.nodeId] || {}, this.defNode)
             this.connectionVisual.fromX = pos.x
             this.connectionVisual.fromY = pos.y
             this.connectionVisual.fromPosition = payload.handlePosition
@@ -1361,8 +1386,7 @@ export default {
 
             this.$emit('connect-start', {
                 nodeId: payload.nodeId,
-                handleId: payload.handleId,
-                handleType: payload.handleType,
+                handlePosition: payload.handlePosition,
             })
         },
         doConnect(event) {
@@ -1388,7 +1412,7 @@ export default {
                         let r
                         try {
                             r = assessConnection(this._connectOrigin, target, {
-                                nodes: this.nodes, conns: this.conns, validator: this.funValidConnCreating, defNode: this.defNode,
+                                nodes: this.nodes, conns: this.conns, validator: this.funValidConnCreating,
                             })
                         }
                         catch (e) {
@@ -1407,21 +1431,23 @@ export default {
         endConnect(event) {
             //落點判定與 commit: 與 doConnect 之 preview 共用 describeHandleEndpoint + assessConnection,
             //不另手組 connection(preview/commit 同源, 不會分家)。
-            //候選只有 { from, to }: 邊沒有自己的方位, 兩端方向由節點決定(anchorPolicy)
+            //候選 { from, to, fromPosition, toPosition }: 出發端為 from, 落點端為 to, 兩端方位即各自所在之邊
             let result = { valid: false, reason: 'no-endpoint', connection: null }
             try {
                 const handleEl = findHandleElAt(event.clientX, event.clientY)
                 const target = describeHandleEndpoint(handleEl, this.flowId)
                 if (target &amp;&amp; this._connectOrigin) {
                     result = assessConnection(this._connectOrigin, target, {
-                        nodes: this.nodes, conns: this.conns, validator: this.funValidConnCreating, defNode: this.defNode,
+                        nodes: this.nodes, conns: this.conns, validator: this.funValidConnCreating,
                     })
                     if (result.valid) {
                         const connection = result.connection
                         const connId = `e${connection.from}-${connection.to}`
+                        //拖曳建線之新邊: to 端自動帶實心箭頭(方向可見; 宿主可於表單改為 None/線式)
                         const conn = {
                             id: this.connById(connId) ? generateId() : connId,
                             ...connection,
+                            markerEnd: 'arrowclosed',
                         }
                         this.addConn(conn)
                         this.emitConnsUpdate()
@@ -1457,12 +1483,11 @@ export default {
                 setDomFlag(this._connectOrigin.nodeElement, 'data-connect-origin-node', null)
             }
             this._connectOrigin = null
-            setDomFlag(this.$el, 'data-connect-from', null)
             this.endGesture('connect')
         },
-        //建線中無 hover 把手時之遠端預設方位: 遠端是 target 把手(預設在 top)或 source 把手(預設在 bottom)
+        //建線中無 hover 把手時之遠端預設方位: 出發邊之對邊(自 right 出發即預覽線以 left 進入游標)
         defaultFarPosition() {
-            return this.connectionVisual.originType === 'target' ? 'bottom' : 'top'
+            return oppositeSide(this.connectionVisual.fromPosition)
         },
 
         // --- Selection ---
@@ -1499,21 +1524,17 @@ export default {
         onNodeSettingsClick(payload) {
             this.$emit('node-settings-click', payload)
         },
+        //設定更新入口只受理節點 schema 內之欄位(NODE_SETTING_KEYS): 已移除之欄位(type/toPosition/fromPosition)與未知鍵一律拒絕,
+        //不寫回亦不發事件(不支援舊欄位; 契約 §4.1)
         onNodeSettingsUpdate({ node, key, value }) {
             let n = this.nodeById(node.id)
             if (!n) return
-            let oldType = n.type
+            if (NODE_SETTING_KEYS.indexOf(key) &lt; 0) {
+                console.warn(`[w-flow-vue] node-settings-update: unknown field "${key}" rejected`)
+                return
+            }
             this.$set(n, key, value)
             this.$emit('node-settings-update', { node: n, key, value })
-            //type 變更之副作用(不相容方向之連線移除)走同一 coordinator(runDelete, 不經確認閘門):
-            //連帶歸因於此節點(cascadeNodeId), 事件序列與其他入口一致(update:conns → elements-deleted)。
-            //runDelete 於 confirm=false 時無 await, 主體同步執行, 故序列仍為 node-settings-update → update:conns → elements-deleted
-            if (key === 'type' &amp;&amp; oldType !== value) {
-                const plan = previewNodeTypeChange({ nodes: this.nodes, conns: this.conns }, n.id, value)
-                if (plan.connIds.length > 0) {
-                    this.runDelete({ connIds: plan.connIds }, { from: 'node-type-change', selection: 'ids', confirm: false, cascadeNodeId: n.id })
-                }
-            }
         },
         //節點設定表單之刪除入口: 與其他入口共用 runDelete(確認閘門/連帶/政策/事件皆同一核心)
         async onNodeSettingsDelete({ node }) {
@@ -1558,6 +1579,11 @@ export default {
             //上鎖中之轉折點拖曳取消提交(§5): 拖曳中上鎖後放開, 不寫回 points
             if (key === 'points' &amp;&amp; this.locked &amp;&amp; this.activeGesture === 'waypoint') return
             let c = this.connById(conn.id)
+            if (!c) return
+            if (CONN_SETTING_KEYS.indexOf(key) &lt; 0) {
+                console.warn(`[w-flow-vue] conn-settings-update: unknown field "${key}" rejected`)
+                return
+            }
             if (c) {
                 this.$set(c, key, value)
                 this.$emit('conn-settings-update', { conn: c, key, value })
@@ -2074,12 +2100,9 @@ export default {
 .vue-flow--connecting .vue-flow__handle[data-connect-status="valid"] {
   cursor: crosshair !important;
 }
-/* 判定不合法之落點、出發節點之其他把手(自我連線)、他節點之同類把手(根 data-connect-from 標示出發類型):
-   not-allowed(不可連; 後二者不需 hover 判定即刻正確, spec §4) */
+/* 判定不合法之落點、出發節點之其他把手(自我連線, 不需 hover 判定即刻正確, spec §4): not-allowed */
 .vue-flow--connecting .vue-flow__handle[data-connect-status="invalid"],
-.vue-flow--connecting .vue-flow__node[data-connect-origin-node] .vue-flow__handle:not([data-connect-role="origin"]),
-.vue-flow--connecting[data-connect-from="source"] .vue-flow__handle--source:not([data-connect-role="origin"]),
-.vue-flow--connecting[data-connect-from="target"] .vue-flow__handle--target:not([data-connect-role="origin"]) {
+.vue-flow--connecting .vue-flow__node[data-connect-origin-node] .vue-flow__handle:not([data-connect-role="origin"]) {
   cursor: not-allowed !important;
 }
 /* 建線期間隱藏齒輪/縮放把手/邊轉折點(避免遮擋落點與誤觸; waypoint與齒輪縮放同屬元素專屬操作) */
@@ -2091,6 +2114,10 @@ export default {
   pointer-events: none !important;
 }
 
+/* 非建線之手勢進行中: 把手不可作為出發點(一次一手勢), 游標不承諾 crosshair(契約 §5) */
+.vue-flow--gesturing:not(.vue-flow--connecting) .vue-flow__handle {
+  cursor: default;
+}
 /* ─── 任何手勢進行中(根 class .vue-flow--gesturing; 契約 §5): 非擁有者元素之 hover affordance 抑制 ───
    實測: 拖曳 A 經過 B 時 B 亮起齒輪/四角/陰影, 邊加深; 手勢中途經之元素不得反應。
    擁有者(data-gesture-owner, 被拖/被縮放之節點或被拖轉折點之邊)保留其手勢所需之 affordance */
@@ -2104,7 +2131,7 @@ export default {
   box-shadow: none !important;
 }
 .vue-flow--gesturing .vue-flow__edge--hovered:not([data-gesture-owner]):not(.vue-flow__edge--selected) > path {
-  stroke: #b1b1b7;
+  stroke: #b1b1b1;
 }
 /* 建線中亦為手勢: 齒輪/四角已由上方規則隱藏; 拖曳中之擁有者節點不顯示齒輪與四角(正在移動, 非設定時機) */
 .vue-flow--gesturing .vue-flow__node--dragging .vue-flow__node-settings-anchor,
@@ -2143,7 +2170,7 @@ export default {
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 4.0.5</a> on Thu Aug 27 2026 17:33:26 GMT+0800 (台北標準時間) using the <a href="https://github.com/clenemt/docdash">docdash</a> theme.
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 4.0.5</a> on Thu Aug 27 2026 22:28:38 GMT+0800 (台北標準時間) using the <a href="https://github.com/clenemt/docdash">docdash</a> theme.
 </footer>
 
 <script>prettyPrint();</script>

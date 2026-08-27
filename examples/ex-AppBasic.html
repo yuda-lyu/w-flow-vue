@@ -43,7 +43,7 @@
     />
 
     <!-- w-flow-vue -->
-    <script src="https://cdn.jsdelivr.net/npm/w-flow-vue@1.0.39/dist/w-flow-vue.umd.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/w-flow-vue@1.0.40/dist/w-flow-vue.umd.js"></script>
 
     <!-- lodash -->
     <script src="https://cdn.jsdelivr.net/npm/lodash/lodash.min.js"></script>
@@ -177,7 +177,6 @@
           nodes: [
             {
               id: "1",
-              type: "input",
               name: "資料來源",
               description: "從外部 API 取得原始資料",
               position: { x: 260, y: 0 },
@@ -187,7 +186,6 @@
             },
             {
               id: "2",
-              type: "basic",
               name: "資料驗證",
               description: "檢查資料格式與完整性",
               position: { x: 100, y: 120 },
@@ -196,7 +194,6 @@
             },
             {
               id: "3",
-              type: "basic",
               name: "資料轉換",
               description: "將原始資料轉換為標準格式",
               position: { x: 400, y: 120 },
@@ -205,7 +202,6 @@
             },
             {
               id: "8",
-              type: "basic",
               name: "條件判斷",
               description: "根據條件分流處理",
               position: { x: 100, y: 220 },
@@ -215,7 +211,6 @@
             },
             {
               id: "4",
-              type: "basic",
               name: "商業邏輯",
               description: "執行核心商業規則與計算",
               position: { x: 80, y: 380 },
@@ -225,7 +220,6 @@
             },
             {
               id: "5",
-              type: "basic",
               name: "資料聚合",
               description: "合併多個來源的處理結果",
               position: { x: 280, y: 500 },
@@ -236,7 +230,6 @@
             },
             {
               id: "6",
-              type: "output",
               name: "輸出結果",
               description: "將最終結果寫入資料庫",
               position: { x: 160, y: 620 },
@@ -245,7 +238,6 @@
             },
             {
               id: "7",
-              type: "output",
               name: "通知服務",
               description: "發送處理完成通知給相關人員",
               position: { x: 400, y: 620 },
@@ -255,7 +247,6 @@
             },
             {
               id: "9",
-              type: "basic",
               name: "過濾器",
               description: "過濾不符合條件的資料",
               position: { x: 620, y: 80 },
@@ -265,7 +256,6 @@
             },
             {
               id: "10",
-              type: "basic",
               name: "路由分配",
               description: "根據規則分配至不同處理管道",
               position: { x: 620, y: 220 },
@@ -275,7 +265,6 @@
             },
             {
               id: "11",
-              type: "basic",
               name: "資料壓縮",
               description: "壓縮資料以減少儲存空間",
               position: { x: 620, y: 360 },
@@ -285,7 +274,6 @@
             },
             {
               id: "12",
-              type: "basic",
               name: "快取處理",
               description: "從快取中讀取或寫入資料",
               position: { x: 620, y: 500 },
@@ -343,7 +331,11 @@
               to: "5",
               type: "step",
               name: "轉換完成",
-              description: "標準化後的資料"
+              description: "標準化後的資料",
+              markerStart: "arrow",
+              markerEnd: "arrowclosed",
+              markerEndSize: 14,
+              markerEndColor: "#ffa500"
             },
             {
               id: "e4-5",
