@@ -17,9 +17,9 @@ import WFlowVue from '../src/components/WFlowVue.vue'
 
 const mkOpt = () => ({
     nodes: [
-        { id: '1', type: 'basic', name: 'N1', description: 'd1', position: { x: 0, y: 0 }, width: 100, height: 40 },
-        { id: '2', type: 'basic', name: 'N2', description: 'd2', position: { x: 300, y: 0 }, width: 100, height: 40 },
-        { id: '3', type: 'basic', name: 'N3', position: { x: 0, y: 200 }, width: 100, height: 40 },
+        { id: '1', name: 'N1', description: 'd1', position: { x: 0, y: 0 }, width: 100, height: 40 },
+        { id: '2', name: 'N2', description: 'd2', position: { x: 300, y: 0 }, width: 100, height: 40 },
+        { id: '3', name: 'N3', position: { x: 0, y: 200 }, width: 100, height: 40 },
     ],
     conns: [{ id: 'e1', from: '1', to: '2', name: 'L', description: 'dl', points: [[150, 100]] }],
 })
@@ -27,7 +27,8 @@ const mountFlow = () => mount(WFlowVue, { propsData: { opt: mkOpt() }, attachTo:
 const nw = (w, id) => w.vm.$refs.nodeRenderer.$refs.wrappers.find(c => c.node.id === id)
 const ew = (w, id) => w.vm.$refs.edgeRenderer.$refs.wrappers.find(c => c.conn.id === id)
 const nodeEl = (w, id) => w.find(`.vue-flow__node[data-id="${id}"]`)
-const handleEl = (w, id, type) => w.find(`.vue-flow__node[data-id="${id}"] .vue-flow__handle--${type}`)
+//四把手對稱, 統一以 position 選取(position 值即 top/right/bottom/left)
+const handleEl = (w, id, position) => w.find(`.vue-flow__node[data-id="${id}"] .vue-flow__handle--${position}`)
 const docUp = () => document.dispatchEvent(new MouseEvent('mouseup', { bubbles: true }))
 const docMove = (x, y) => document.dispatchEvent(new MouseEvent('mousemove', { bubbles: true, buttons: 1, clientX: x, clientY: y }))
 const evt = (extra = {}) => ({ button: 0, clientX: 0, clientY: 0, preventDefault() {}, stopPropagation() {}, ...extra })
@@ -56,7 +57,7 @@ const gestures = {
         end: () => docUp(),
     },
     connect: {
-        start: async (w) => { handleEl(w, '1', 'source').element.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, button: 0 })) },
+        start: async (w) => { handleEl(w, '1', 'bottom').element.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, button: 0 })) },
         owner: (w) => nodeEl(w, '1').element,
         end: () => docUp(),
     },
@@ -124,8 +125,8 @@ describe('G3 手勢進行中拒開 popup', () => {
         nw(w, '2').onSettingsPopupInput(true)
         ew(w, 'e1').onInfoPopupInput(true)
         expect(nw(w, '2').openInfoPopup()).toBe(false)
-        expect(w.vm.openNodeInfoPopup('2')).toBe(true) //renderer 找到 wrapper 即回 true(既有語義), 但 wrapper 拒開
-        expect(w.vm.openConnInfoPopup('e1')).toBe(true)
+        expect(w.vm.openNodeInfoPopup('2')).toBe(false) //公開 API 回傳 wrapper 之裁決(手勢中拒開)
+        expect(w.vm.openConnInfoPopup('e1')).toBe(false)
         expect(openPopups(w)).toBe(0)
         gestures.connect.end(w)
         expect(nw(w, '2').openInfoPopup()).toBe(true)
@@ -140,7 +141,7 @@ describe('G4 一次一手勢', () => {
         await w.vm.$nextTick()
         w.vm.clearSelection()
         await gestures.resize.start(w)
-        handleEl(w, '2', 'source').element.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, button: 0 }))
+        handleEl(w, '2', 'bottom').element.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, button: 0 }))
         expect(w.vm.isConnecting).toBe(false)
         nodeEl(w, '2').element.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, button: 0 }))
         docMove(50, 50)

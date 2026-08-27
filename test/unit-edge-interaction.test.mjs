@@ -2,7 +2,7 @@
  * 連線互動契約之驗收(EdgeWrapper.vue <g> 註解)。
  *
  * 規格:
- * E1 click/dblclick/contextmenu 統一於 <g> 處理: 線本體、hover rect、label span 皆發 conn-click / conn-double-click / conn-context-menu。
+ * E1 click/dblclick/contextmenu 統一於 <g> 處理: 線本體、label span 皆發 conn-click / conn-double-click / conn-context-menu; label 兩側無透明可點區(無 hover rect)。
  * E2 齒輪錨區與轉折點之點擊類事件不視為點線(不發 conn-click, 不開資訊 popup)。
  * E3 hover 視覺以 class 驅動: hovered → vue-flow__edge--hovered; 齒輪 hover → vue-flow__edge-settings--hover; 離開 <g> 時齒輪 hover 一併清除。
  * E4 <g> 之 click 不冒泡至外層(維持舊 interaction path .stop 語義)。
@@ -15,15 +15,23 @@ const mk = (extra = {}) => mount(EdgeWrapper, {
         conn: { id: 'e1', from: '1', to: '2', name: 'L', points: [[50, 50]] },
         sourceNode: { id: '1', position: { x: 0, y: 0 }, width: 100, height: 40 },
         targetNode: { id: '2', position: { x: 200, y: 200 }, width: 100, height: 40 },
+        settingsTrigger: 'hover', //本檔驗 hover 驅動之齒輪視覺, 顯式指定 hover 模式(預設 dblclick)
         ...extra,
     },
     attachTo: document.body,
 })
 
-describe('E1 三種點擊類事件於線本體 / rect / label 皆發出', () => {
+describe('E1 label 兩側無可點區', () => {
+    test('<g> 內無透明 rect', () => {
+        const w = mk()
+        expect(w.find('rect').exists()).toBe(false)
+        w.destroy()
+    })
+})
+
+describe('E1 三種點擊類事件於線本體 / label 皆發出', () => {
     test.each([
         ['interaction path', '.vue-flow__edge-interaction'],
-        ['hover rect', 'rect'],
         ['label span', '.vue-flow__edge-label'],
     ])('%s', async (_l, sel) => {
         const w = mk()
@@ -113,6 +121,7 @@ describe('E4 click 不冒泡至外層', () => {
                 conn: { id: 'e1', from: '1', to: '2' },
                 sourceNode: { id: '1', position: { x: 0, y: 0 }, width: 100, height: 40 },
                 targetNode: { id: '2', position: { x: 200, y: 200 }, width: 100, height: 40 },
+                settingsTrigger: 'hover',
             },
             attachTo: host,
         })

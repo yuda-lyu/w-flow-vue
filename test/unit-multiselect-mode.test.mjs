@@ -27,10 +27,11 @@ import EdgeWrapper from '../src/components/edges/EdgeWrapper.vue'
 
 const mkOpt = (extra = {}) => ({
     nodes: [
-        { id: '1', type: 'basic', name: 'N1', description: 'd1', position: { x: 0, y: 0 }, width: 100, height: 40 },
-        { id: '2', type: 'basic', name: 'N2', description: 'd2', position: { x: 300, y: 0 }, width: 100, height: 40 },
+        { id: '1', name: 'N1', description: 'd1', position: { x: 0, y: 0 }, width: 100, height: 40 },
+        { id: '2', name: 'N2', description: 'd2', position: { x: 300, y: 0 }, width: 100, height: 40 },
     ],
     conns: [{ id: 'e1-2', from: '1', to: '2', name: 'c', description: 'cd' }],
+    nodesSettingsTrigger: 'hover', connsSettingsTrigger: 'hover', //本檔驗 popup 閘門, 以 hover 模式(資訊 popup 立即開)語義斷言
     ...extra,
 })
 
@@ -138,7 +139,7 @@ describe('M3 模式中之縱深守衛', () => {
         await w.vm.$nextTick()
         keyDown('Shift')
         await w.vm.$nextTick()
-        const h = w.find('.vue-flow__node[data-id="1"] .vue-flow__handle[data-handle-type="source"]')
+        const h = w.find('.vue-flow__node[data-id="1"] .vue-flow__handle[data-handle-position="bottom"]')
         h.trigger('mousedown', { button: 0 })
         expect(w.vm.isConnecting).toBe(false)
         keyUp('Shift')
@@ -278,7 +279,7 @@ describe('M7 手勢優先序: 建線中按複選鍵不中斷建線', () => {
     test('拖線中按下Shift: isConnecting維持, 根同時帶connecting與multiselecting', async () => {
         const w = mountFlow(mkOpt())
         await w.vm.$nextTick()
-        const h = w.find('.vue-flow__node[data-id="1"] .vue-flow__handle[data-handle-type="source"]')
+        const h = w.find('.vue-flow__node[data-id="1"] .vue-flow__handle[data-handle-position="bottom"]')
         h.trigger('mousedown', { button: 0 })
         expect(w.vm.isConnecting).toBe(true)
         keyDown('Shift')

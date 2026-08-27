@@ -22,6 +22,7 @@
       :infor-popup-description-text-font-size="inforPopupDescriptionTextFontSize"
       :snap-grid-size="snapGridSize"
       :settings-enabled="settingsEnabled"
+      :settings-trigger="settingsTrigger"
       :settings-excludes="settingsExcludes"
       @drag-prepare="$emit('drag-prepare', $event)"
       @drag-start="$emit('drag-start', $event)"
@@ -72,6 +73,7 @@ export default {
         inforPopupDescriptionTextFontSize: { type: String, default: '10px' },
         snapGridSize: { type: Number, default: null },
         settingsEnabled: { type: Boolean, default: true },
+        settingsTrigger: { type: String, default: 'dblclick' },
         settingsExcludes: { type: Array, default: () => [] },
     },
     computed: {
@@ -90,8 +92,9 @@ export default {
         isDraggable(node) {
             return node.draggable !== undefined ? node.draggable : this.nodesDraggable
         },
+        //能力旗標: 全域 false 一律擋(契約 §7 任一為 false 即不可連); 節點層只能於全域允許時再收緊
         isConnectable(node) {
-            return node.connectable !== undefined ? node.connectable : this.nodesConnectable
+            return this.nodesConnectable && node.connectable !== false
         },
         isResizable(node) {
             return node.resizable !== undefined ? node.resizable : this.nodesResizable
@@ -100,8 +103,8 @@ export default {
             let wrappers = this.$refs.wrappers || []
             let w = wrappers.find(c => c.node && c.node.id === nodeId)
             if (!w) return false
-            w.openInfoPopup()
-            return true
+            //回傳 wrapper 之裁決(複選/手勢中拒開回 false), 不得一律回 true
+            return w.openInfoPopup() !== false
         },
     },
 }

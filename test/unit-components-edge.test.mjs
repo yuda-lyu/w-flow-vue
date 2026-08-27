@@ -1,157 +1,98 @@
+/**
+ * 邊元件(EdgeWrapper / EdgeMarkerDefs)之渲染驗收——以新契約之 conn 形狀({ id, from, to, fromPosition, toPosition })
+ * 與 sourceNode/targetNode props 掛載(端點座標由元件自 geometry 計算, 不再以 sourceX 等 props 傳入)。
+ */
 import { mount } from '@vue/test-utils'
 import EdgeWrapper from '../src/components/edges/EdgeWrapper.vue'
 import EdgeMarkerDefs from '../src/components/edges/EdgeMarkerDefs.vue'
+import { getHandlePosition } from '../src/js/geometry.mjs'
+
+const n1 = { id: '1', position: { x: 100, y: 50 }, width: 100, height: 40 }
+const n2 = { id: '2', position: { x: 300, y: 250 }, width: 100, height: 40 }
+const mk = (conn, extra = {}) => mount(EdgeWrapper, {
+    propsData: { conn: { id: 'e1-2', from: '1', to: '2', fromPosition: 'bottom', toPosition: 'top', ...conn }, sourceNode: n1, targetNode: n2, ...extra },
+})
+const visiblePath = (w) => w.findAll('path').wrappers.find(p => !p.classes().includes('vue-flow__edge-interaction'))
 
 describe('EdgeWrapper', () => {
-    const baseProps = {
-        conn: { id: 'e1-2', source: '1', target: '2', type: 'default' },
-        sourceX: 100,
-        sourceY: 50,
-        targetX: 300,
-        targetY: 250,
-        sourcePosition: 'bottom',
-        targetPosition: 'top',
-    }
-
-    test('renders svg group', () => {
-        const wrapper = mount(EdgeWrapper, {
-            propsData: baseProps,
-        })
-        expect(wrapper.element.tagName.toLowerCase()).toBe('g')
+    test('renders svg group with data-id', () => {
+        const w = mk({})
+        expect(w.element.tagName.toLowerCase()).toBe('g')
+        expect(w.attributes('data-id')).toBe('e1-2')
+        w.destroy()
     })
 
-    test('renders path with d attribute', () => {
-        const wrapper = mount(EdgeWrapper, {
-            propsData: baseProps,
-        })
-        const paths = wrapper.findAll('path')
-        expect(paths.length).toBeGreaterThanOrEqual(1)
-        const visiblePath = paths.wrappers.find(p => !p.classes().includes('vue-flow__edge-interaction'))
-        expect(visiblePath.attributes('d')).toMatch(/^M /)
+    test('path starts at from-node anchor and ends at to-node anchor(conn 持有方位)', () => {
+        const w = mk({ fromPosition: 'right', toPosition: 'left' })
+        const d = visiblePath(w).attributes('d')
+        const s = getHandlePosition(n1, 'right', {})
+        const t = getHandlePosition(n2, 'left', {})
+        expect(d.startsWith(`M ${s.x},${s.y}`)).toBe(true)
+        expect(d.endsWith(`${t.x},${t.y}`)).toBe(true)
+        w.destroy()
     })
 
-    test('applies selected class', () => {
-        const wrapper = mount(EdgeWrapper, {
-            propsData: { ...baseProps, selected: true },
-        })
-        expect(wrapper.classes()).toContain('vue-flow__edge--selected')
+    test('applies selected / animated / custom classes', () => {
+        const w = mk({ animated: true, class: 'my-edge' }, { selected: true })
+        expect(w.classes()).toContain('vue-flow__edge--selected')
+        expect(w.classes()).toContain('vue-flow__edge--animated')
+        expect(w.classes()).toContain('my-edge')
+        w.destroy()
     })
 
-    test('applies animated class', () => {
-        const wrapper = mount(EdgeWrapper, {
-            propsData: {
-                ...baseProps,
-                conn: { ...baseProps.conn, animated: true },
-            },
-        })
-        expect(wrapper.classes()).toContain('vue-flow__edge--animated')
+    test('renders name label when provided; not otherwise', () => {
+        const a = mk({ name: 'hello' })
+        expect(a.find('.vue-flow__edge-label').text()).toContain('hello')
+        const b = mk({})
+        expect(b.find('.vue-flow__edge-label').exists()).toBe(false)
+        a.destroy(); b.destroy()
     })
 
-    test('renders name when provided', () => {
-        const wrapper = mount(EdgeWrapper, {
-            propsData: {
-                ...baseProps,
-                conn: { ...baseProps.conn, name: 'test label' },
-            },
-        })
-        expect(wrapper.find('.vue-flow__edge-label').exists()).toBe(true)
-    })
-
-    test('does not render name when not provided', () => {
-        const wrapper = mount(EdgeWrapper, {
-            propsData: baseProps,
-        })
-        expect(wrapper.find('.vue-flow__edge-label').exists()).toBe(false)
-    })
-
-    test('emits conn-click on click', () => {
-        const wrapper = mount(EdgeWrapper, {
-            propsData: baseProps,
-        })
-        const interactionPath = wrapper.find('.vue-flow__edge-interaction')
-        interactionPath.trigger('click')
-        expect(wrapper.emitted('conn-click')).toBeTruthy()
-        expect(wrapper.emitted('conn-click')[0][0].conn.id).toBe('e1-2')
+    test('emits conn-click on click', async () => {
+        const w = mk({})
+        await w.find('.vue-flow__edge-interaction').trigger('click')
+        expect(w.emitted('conn-click')).toBeTruthy()
+        w.destroy()
     })
 
     test('renders different edge types', () => {
-        const types = ['default', 'straight', 'step', 'smoothstep']
-        const paths = types.map(type => {
-            const wrapper = mount(EdgeWrapper, {
-                propsData: {
-                    ...baseProps,
-                    conn: { ...baseProps.conn, type },
-                },
-                })
-            const visiblePath = wrapper.findAll('path').wrappers.find(
-                p => !p.classes().includes('vue-flow__edge-interaction')
-            )
-            return visiblePath.attributes('d')
-        })
-        // straight should differ from bezier
-        expect(paths[0]).not.toBe(paths[1])
-    })
-})
-
-//EdgeLabel.vue 已併入 EdgeWrapper(以 .vue-flow__edge-label 直接渲染 conn.name),
-//故原「連線名稱有被渲染」之斷言改由 EdgeWrapper 驗證
-describe('連線名稱標籤', () => {
-    //baseProps 定義於 EdgeWrapper 之 describe 內, 此處自備一份
-    const props = {
-        sourceX: 100, sourceY: 50, targetX: 300, targetY: 250,
-        sourcePosition: 'bottom', targetPosition: 'top',
-    }
-
-    test('conn.name 渲染於 .vue-flow__edge-label', () => {
-        const wrapper = mount(EdgeWrapper, {
-            propsData: { ...props, conn: { id: 'e1', source: '1', target: '2', name: 'hello' } },
-        })
-        const label = wrapper.find('.vue-flow__edge-label')
-        expect(label.exists()).toBe(true)
-        expect(label.text()).toContain('hello')
+        for (const type of ['bezier', 'straight', 'step', 'smoothstep']) {
+            const w = mk({ type })
+            expect(w.classes()).toContain(`vue-flow__edge-${type}`)
+            expect(visiblePath(w).attributes('d')).toMatch(/^M /)
+            w.destroy()
+        }
     })
 
-    test('無 conn.name 時不渲染標籤', () => {
-        const wrapper = mount(EdgeWrapper, {
-            propsData: { ...props, conn: { id: 'e1', source: '1', target: '2' } },
-        })
-        expect(wrapper.find('.vue-flow__edge-label').exists()).toBe(false)
+    test('marker-start / marker-end urls via edgeMarker', () => {
+        const w = mk({ markerStart: 'arrow', markerEnd: 'arrowclosed' })
+        const p = visiblePath(w)
+        expect(p.attributes('marker-start')).toMatch(/^url\(#vue-flow__mk-/)
+        expect(p.attributes('marker-end')).toMatch(/^url\(#vue-flow__mk-/)
+        const none = mk({})
+        expect(visiblePath(none).attributes('marker-end')).toBeUndefined()
+        w.destroy(); none.destroy()
     })
 })
 
 describe('EdgeMarkerDefs', () => {
+    const mount2 = (conns) => mount(EdgeMarkerDefs, { propsData: { conns } })
     test('renders marker defs for conns with markers', () => {
-        const conns = [
-            { id: 'e1', source: '1', target: '2', markerEnd: 'arrowclosed' },
-            { id: 'e2', source: '2', target: '3', markerEnd: 'arrow' },
-        ]
-        const wrapper = mount(EdgeMarkerDefs, {
-            propsData: { conns },
-        })
-        const markers = wrapper.findAll('marker')
-        expect(markers.length).toBe(2)
+        const w = mount2([
+            { id: 'e1', from: '1', to: '2', markerEnd: 'arrowclosed' },
+            { id: 'e2', from: '2', to: '3', markerEnd: 'arrow' },
+        ])
+        expect(w.findAll('marker').length).toBe(2)
     })
-
-    test('deduplicates same marker type', () => {
-        const conns = [
-            { id: 'e1', source: '1', target: '2', markerEnd: 'arrowclosed' },
-            { id: 'e2', source: '2', target: '3', markerEnd: 'arrowclosed' },
-        ]
-        const wrapper = mount(EdgeMarkerDefs, {
-            propsData: { conns },
-        })
-        const markers = wrapper.findAll('marker')
-        expect(markers.length).toBe(1)
+    test('deduplicates same marker spec; both ends counted separately', () => {
+        const w = mount2([
+            { id: 'e1', from: '1', to: '2', markerEnd: 'arrowclosed' },
+            { id: 'e2', from: '2', to: '3', markerEnd: 'arrowclosed', markerStart: 'arrowclosed' },
+        ])
+        expect(w.findAll('marker').length).toBe(1)
     })
-
     test('renders no markers when conns have none', () => {
-        const conns = [
-            { id: 'e1', source: '1', target: '2' },
-        ]
-        const wrapper = mount(EdgeMarkerDefs, {
-            propsData: { conns },
-        })
-        const markers = wrapper.findAll('marker')
-        expect(markers.length).toBe(0)
+        const w = mount2([{ id: 'e1', from: '1', to: '2' }])
+        expect(w.findAll('marker').length).toBe(0)
     })
 })

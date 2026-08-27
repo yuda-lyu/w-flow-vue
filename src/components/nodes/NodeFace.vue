@@ -55,6 +55,8 @@
 </template>
 
 <script>
+import { nodeShape, isTriangleShape } from '../../js/nodeStyle.mjs'
+
 export default {
     name: 'NodeFace',
     inject: { getDefNode: { default: () => () => ({}) } },
@@ -73,15 +75,18 @@ export default {
         nodeH() {
             return this.node.height || this.lastH || 40
         },
+        //有效形狀(nodeStyle.nodeShape 單一解析; 與把手佈局/邊端點同一基準)
+        shape() {
+            return nodeShape(this.node, this.dn)
+        },
         isDiamond() {
-            return this.node.shape === 'diamond'
+            return this.shape === 'diamond'
         },
         isEllipse() {
-            return this.node.shape === 'ellipse'
+            return this.shape === 'ellipse'
         },
         isTriangle() {
-            let s = this.node.shape
-            return s === 'triangle' || s === 'triangle-right' || s === 'triangle-down' || s === 'triangle-left'
+            return isTriangleShape(this.shape)
         },
         diamondPoints() {
             if (!this.isDiamond) return ''
@@ -91,7 +96,7 @@ export default {
             if (!this.isTriangle) return ''
             let w = this.nodeW
             let h = this.nodeH
-            let s = this.node.shape
+            let s = this.shape
             if (s === 'triangle-right') return '0,0 ' + w + ',' + (h / 2) + ' 0,' + h
             if (s === 'triangle-down') return '0,0 ' + w + ',0 ' + (w / 2) + ',' + h
             if (s === 'triangle-left') return w + ',0 0,' + (h / 2) + ' ' + w + ',' + h

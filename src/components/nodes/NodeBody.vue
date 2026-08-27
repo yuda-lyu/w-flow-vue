@@ -1,8 +1,10 @@
 <template>
   <div class="vue-flow__node-body" :style="bodyStyle">
     <NodeFace :node="node" :lastW="lastW" :lastH="lastH" />
-    <component
-      :is="nodeComponent"
+    <div class="vue-flow__node-content">
+      <div class="vue-flow__node-label" :style="labelStyle">{{ node.name }}</div>
+    </div>
+    <NodePorts
       :node="node"
       :connectable="connectable"
       :locked="locked"
@@ -22,20 +24,16 @@
 
 <script>
 import NodeFace from './NodeFace.vue'
-import DefaultNode from './DefaultNode.vue'
-import InputNode from './InputNode.vue'
-import OutputNode from './OutputNode.vue'
-import { nodeType } from '../../js/anchorPolicy.mjs'
+import NodePorts from './NodePorts.vue'
+import { labelOffsetStyle } from '../../js/nodeStyle.mjs'
 
-const builtInNodes = {
-    basic: DefaultNode,
-    input: InputNode,
-    output: OutputNode,
-}
-
+/**
+ * 節點本體: 形狀面(NodeFace)+ 文字 + 四連接點(NodePorts)+ 四角縮放。
+ * 節點無型別: 所有節點同一結構, 差異只在資料(形狀/尺寸/色彩)。
+ */
 export default {
     name: 'NodeBody',
-    components: { NodeFace, DefaultNode, InputNode, OutputNode },
+    components: { NodeFace, NodePorts },
     inject: { getDefNode: { default: () => () => ({}) } },
     props: {
         node: { type: Object, required: true },
@@ -55,9 +53,8 @@ export default {
         },
     },
     computed: {
-        nodeComponent() {
-            //有效型別經 anchorPolicy.nodeType 單一解析(與 class/表單/same-side/建線判定同一基準)
-            return builtInNodes[nodeType(this.node, this.getDefNode())] || DefaultNode
+        labelStyle() {
+            return labelOffsetStyle(this.node, this.getDefNode())
         },
         bodyStyle() {
             const w = this.lastW || this.node.width
@@ -74,6 +71,18 @@ export default {
 <style scoped>
 .vue-flow__node-body {
   box-sizing: border-box;
+}
+.vue-flow__node-content {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  padding: 10px 20px;
 }
 .vue-flow__resize {
   position: absolute;

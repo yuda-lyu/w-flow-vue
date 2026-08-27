@@ -4,18 +4,20 @@ describe('defaults', () => {
     describe('NODE_DEFAULTS', () => {
         test('has all required keys', () => {
             const keys = [
-                'type', 'shape', 'width', 'height',
+                'shape', 'width', 'height',
                 'fontSize', 'fontSizeMin', 'fontSizeMax', 'fontColor',
-                'faceColor', 'edgeColor', 'edgeWidth',
-                'toPosition', 'fromPosition', 'popupDirection',
+                'faceColor', 'edgeColor', 'edgeWidth', 'popupDirection',
+                'handleFaceColor', 'handleEdgeColor', 'handleEdgeWidth', 'handleSize',
             ]
             keys.forEach(k => {
                 expect(NODE_DEFAULTS).toHaveProperty(k)
             })
         })
 
-        test('type is basic', () => {
-            expect(NODE_DEFAULTS.type).toBe('basic')
+        test('no type / direction fields on nodes', () => {
+            expect(NODE_DEFAULTS.type).toBeUndefined()
+            expect(NODE_DEFAULTS.toPosition).toBeUndefined()
+            expect(NODE_DEFAULTS.fromPosition).toBeUndefined()
         })
 
         test('shape is rectangle', () => {
@@ -36,10 +38,8 @@ describe('defaults', () => {
             expect(NODE_DEFAULTS.edgeWidth).toBeGreaterThan(0)
         })
 
-        test('positions are valid', () => {
+        test('popupDirection is valid', () => {
             const valid = ['top', 'bottom', 'left', 'right']
-            expect(valid).toContain(NODE_DEFAULTS.toPosition)
-            expect(valid).toContain(NODE_DEFAULTS.fromPosition)
             expect(valid).toContain(NODE_DEFAULTS.popupDirection)
         })
 
@@ -55,7 +55,10 @@ describe('defaults', () => {
         test('has all required keys', () => {
             const keys = [
                 'type', 'fontSize', 'fontSizeMin', 'fontSizeMax', 'fontColor',
-                'edgeColor', 'edgeWidth', 'markerEnd', 'animated', 'defOffset',
+                'edgeColor', 'edgeWidth', 'animated', 'defOffset',
+                'fromPosition', 'toPosition',
+                'markerStart', 'markerStartSize', 'markerStartColor',
+                'markerEnd', 'markerEndSize', 'markerEndColor',
             ]
             keys.forEach(k => {
                 expect(CONN_DEFAULTS).toHaveProperty(k)
@@ -79,8 +82,16 @@ describe('defaults', () => {
             expect(CONN_DEFAULTS.defOffset).toBeGreaterThan(0)
         })
 
-        test('markerEnd is a string', () => {
-            expect(typeof CONN_DEFAULTS.markerEnd).toBe('string')
+        test('markers default to none, size 10', () => {
+            expect(CONN_DEFAULTS.markerStart).toBe('')
+            expect(CONN_DEFAULTS.markerEnd).toBe('')
+            expect(CONN_DEFAULTS.markerStartSize).toBe(10)
+            expect(CONN_DEFAULTS.markerEndSize).toBe(10)
+        })
+
+        test('anchor defaults: bottom → top', () => {
+            expect(CONN_DEFAULTS.fromPosition).toBe('bottom')
+            expect(CONN_DEFAULTS.toPosition).toBe('top')
         })
     })
 })

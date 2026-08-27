@@ -11,7 +11,7 @@
  *    但作為被刪節點之相鄰邊時仍連帶刪除(完整性優先)。
  * A7 locked 不擋 API。
  * A8 opt.confirm=false 靜默刪除(不呼叫 funConfirmDeleting); opt.from 自訂字串透傳至閘門與事件。
- * A9 type 變更移除不相容連線: 發 node-settings-update → update:conns → elements-deleted(from='node-type-change'); 不經閘門。
+ * A9 (已移除: 節點無 type)。
  * A10 快照深複製: 宿主改動 payload 不影響畫布; deleted.nodes/conns 為被刪當下內容。
  * A11 輔助狀態回收: nodeInternals / dragPositions 之被刪 key 移除; 選取清單移除被刪 id。
  * A12 await 期間新增相鄰邊 → stale, 不刪、不發事件。
@@ -24,9 +24,9 @@ import ConnSettingsForm from '../src/components/ui/ConnSettingsForm.vue'
 
 const mkOpt = (extra = {}) => ({
     nodes: [
-        { id: '1', type: 'basic', name: 'N1', position: { x: 0, y: 0 }, width: 100, height: 40 },
-        { id: '2', type: 'basic', name: 'N2', position: { x: 300, y: 0 }, width: 100, height: 40 },
-        { id: '3', type: 'basic', name: 'N3', position: { x: 0, y: 200 }, width: 100, height: 40 },
+        { id: '1', name: 'N1', position: { x: 0, y: 0 }, width: 100, height: 40 },
+        { id: '2', name: 'N2', position: { x: 300, y: 0 }, width: 100, height: 40 },
+        { id: '3', name: 'N3', position: { x: 0, y: 200 }, width: 100, height: 40 },
     ],
     conns: [
         { id: 'e1-2', from: '1', to: '2' },
@@ -243,7 +243,7 @@ describe('A6 deletable:false', () => {
     })
     test('表單刪除鈕於 deletable:false 時 disabled', () => {
         const provide = { getDeleteConfirming: () => false }
-        const nf = mount(NodeSettingsForm, { propsData: { node: { id: '1', type: 'basic', deletable: false }, defNode: {} }, provide })
+        const nf = mount(NodeSettingsForm, { propsData: { node: { id: '1', deletable: false }, defNode: {} }, provide })
         const cf = mount(ConnSettingsForm, { propsData: { conn: { id: 'e', from: '1', to: '2', deletable: false }, defConn: {} }, provide })
         expect(nf.find('.vue-flow__delete-btn').attributes('disabled')).toBe('disabled')
         expect(cf.find('.vue-flow__delete-btn').attributes('disabled')).toBe('disabled')
@@ -275,37 +275,11 @@ describe('A7/A8 locked 不擋 API; confirm:false 靜默; from 自訂', () => {
     })
 })
 
-describe('A9 type 變更移除不相容連線', () => {
-    test('發 node-settings-update → update:conns → elements-deleted(node-type-change), 不經閘門', async () => {
-        let calls = 0
-        const w = mountFlow(mkOpt({ funConfirmDeleting: async () => { calls++; return true } }))
-        trackOrder(w)
-        w.vm.onNodeSettingsUpdate({ node: { id: '2' }, key: 'type', value: 'input' })
-        expect(calls).toBe(0)
-        expect(seq(w)).toEqual(['node-settings-update', 'update:conns', 'elements-deleted'])
-        const p = w.emitted('elements-deleted')[0][0]
-        expect(shapeOf(p)).toEqual(PAYLOAD_KEYS)
-        expect(p.from).toBe('node-type-change')
-        expect(p.deleted.connIds).toEqual(['e1-2'])
-        expect(p.cascades).toEqual([{ nodeId: '2', connIds: ['e1-2'] }])
-        expect(w.vm.conns.map(c => c.id)).toEqual(['e2-3'])
-        expect(w.vm.nodes[1].type).toBe('input')
-        w.destroy()
-    })
-    test('無不相容連線時只發 node-settings-update', () => {
-        const w = mountFlow(mkOpt())
-        w.vm.onNodeSettingsUpdate({ node: { id: '1' }, key: 'type', value: 'input' })
-        expect(w.emitted('update:conns')).toBeFalsy()
-        expect(w.emitted('elements-deleted')).toBeFalsy()
-        w.destroy()
-    })
-})
-
 describe('A10 快照深複製', () => {
     test('宿主改動 payload 不影響畫布; 快照為被刪當下內容', async () => {
         const w = mountFlow(mkOpt())
         const r = await w.vm.deleteNodes(['1'])
-        expect(r.deleted.nodes[0]).toEqual({ id: '1', type: 'basic', name: 'N1', position: { x: 0, y: 0 }, width: 100, height: 40 })
+        expect(r.deleted.nodes[0]).toEqual({ id: '1', name: 'N1', position: { x: 0, y: 0 }, width: 100, height: 40 })
         r.deleted.nodes[0].name = 'HACK'
         r.deleted.conns[0].from = 'HACK'
         //剩餘資料不受影響, 且事件與回傳為同一份快照(同一 payload)
@@ -369,7 +343,7 @@ describe('A13 重複 id 警告', () => {
         //Vue 對重複 :key 亦會 console.error(Duplicate keys), 屬同一資料錯誤之下游現象, 靜音以保持測試輸出乾淨
         const errSpy = jest.spyOn(console, 'error').mockImplementation(() => {})
         const opt = mkOpt()
-        opt.nodes.push({ id: '1', type: 'basic', name: 'dup', position: { x: 0, y: 0 } })
+        opt.nodes.push({ id: '1', name: 'dup', position: { x: 0, y: 0 } })
         const w = mountFlow(opt)
         await w.vm.$nextTick()
         const hits = spy.mock.calls.filter(c => String(c[0]).includes('duplicate nodes id'))

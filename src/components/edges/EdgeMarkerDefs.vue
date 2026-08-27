@@ -1,28 +1,28 @@
 <template>
   <defs>
     <marker
-      v-for="marker in markers"
-      :key="marker.id"
-      :id="marker.id"
-      markerWidth="12.5"
-      markerHeight="12.5"
-      :viewBox="marker.viewBox"
-      refX="10"
-      refY="5"
-      orient="auto-start-reverse"
-      markerUnits="strokeWidth"
+      v-for="m in markers"
+      :key="m.id"
+      :id="m.id"
+      :markerWidth="m.markerWidth"
+      :markerHeight="m.markerHeight"
+      :viewBox="m.viewBox"
+      :refX="m.refX"
+      :refY="m.refY"
+      :orient="m.orient"
+      :markerUnits="m.markerUnits"
     >
-      <path
-        :d="marker.path"
-        :fill="marker.fill"
-        :stroke="marker.stroke"
-        stroke-width="1"
-      />
+      <path :d="m.path" :fill="m.fill" :stroke="m.stroke" :stroke-width="m.strokeWidth" />
     </marker>
   </defs>
 </template>
 
 <script>
+import { resolveMarker, markerDef } from '../../js/edgeMarker.mjs'
+
+/**
+ * 收集全部連線兩端之箭頭規格(edgeMarker.resolveMarker 單一來源, 與 EdgeWrapper 之 url 同一 id), 以 id 去重產 <defs>。
+ */
 export default {
     name: 'EdgeMarkerDefs',
     inject: { getDefConn: { default: () => () => ({}) } },
@@ -34,45 +34,12 @@ export default {
             const set = new Map()
             const defConn = this.getDefConn()
             this.conns.forEach(conn => {
-                const lineColor = conn.edgeColor || defConn.edgeColor
-                this.collectMarker(conn.markerStart, set, lineColor)
-                this.collectMarker(conn.markerEnd || defConn.markerEnd, set, lineColor)
+                for (const end of ['start', 'end']) {
+                    const spec = resolveMarker(conn, defConn, end)
+                    if (spec && !set.has(spec.id)) set.set(spec.id, markerDef(spec))
+                }
             })
             return Array.from(set.values())
-        },
-    },
-    methods: {
-        collectMarker(marker, set, lineColor) {
-            if (!marker) return
-            const config = typeof marker === 'string' ? { type: marker } : marker
-            // Fallback chain must match EdgeWrapper.getMarkerUrl so the ids agree.
-            const color = config.color || lineColor || '#b1b1b7'
-            const id = this.getMarkerId(config, color)
-            if (set.has(id)) return
-
-            if (config.type === 'arrowclosed') {
-                set.set(id, {
-                    id,
-                    viewBox: '0 0 12.5 12.5',
-                    path: 'M 0 0 L 10 5 L 0 10 z',
-                    fill: color,
-                    stroke: color,
-                })
-            }
-            else {
-                // 'arrow' - open
-                set.set(id, {
-                    id,
-                    viewBox: '0 0 12.5 12.5',
-                    path: 'M 0 0 L 10 5 L 0 10',
-                    fill: 'none',
-                    stroke: color,
-                })
-            }
-        },
-        getMarkerId(config, colorUse) {
-            const type = typeof config === 'string' ? config : config.type
-            return `vue-flow__${type}_${colorUse.replace('#', '')}`
         },
     },
 }

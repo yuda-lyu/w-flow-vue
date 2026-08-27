@@ -5,26 +5,34 @@ import { mount } from '@vue/test-utils'
 import WFlowVue from '../src/components/WFlowVue.vue'
 import NodeSettingsForm from '../src/components/ui/NodeSettingsForm.vue'
 import ConnSettingsForm from '../src/components/ui/ConnSettingsForm.vue'
+import { resolveMarker, markerId, markerUrl } from '../src/js/edgeMarker.mjs'
 
 const sampleNodes = [
-    { id: '1', type: 'input', name: 'Node 1', position: { x: 50, y: 50 }, width: 100, height: 40 },
-    { id: '2', type: 'output', name: 'Node 2', position: { x: 300, y: 300 }, width: 100, height: 40 },
-    { id: '3', type: 'basic', name: 'Node 3', position: { x: 200, y: 150 }, width: 100, height: 40 },
+    { id: '1', name: 'Node 1', position: { x: 50, y: 50 }, width: 100, height: 40 },
+    { id: '2', name: 'Node 2', position: { x: 300, y: 300 }, width: 100, height: 40 },
+    { id: '3', name: 'Node 3', position: { x: 200, y: 150 }, width: 100, height: 40 },
 ]
 const sampleConns = [
     { id: 'e1-3', from: '1', to: '3', name: 'conn 1-3' },
     { id: 'e3-2', from: '3', to: '2', name: 'conn 3-2', markerEnd: 'arrowclosed' },
 ]
+//節點無 type/toPosition/fromPosition(spec 項1-2); 把手樣式(handle*)四項取代舊 handleSource*/handleTarget* 八項
 const defNode = {
-    type: 'basic', shape: 'rectangle', width: 100, height: 40,
+    shape: 'rectangle', width: 100, height: 40,
     fontSize: 12, fontSizeMin: 1, fontSizeMax: 72,
     fontColor: '#333333', faceColor: '#ffffff', edgeColor: '#bbbbbb', edgeWidth: 1,
-    toPosition: 'bottom', fromPosition: 'top', popupDirection: 'right',
+    popupDirection: 'right',
+    handleFaceColor: '#555555', handleEdgeColor: '#ffffff', handleEdgeWidth: 1, handleSize: 10,
 }
+//連線新增兩端方位(fromPosition/toPosition)與雙向箭頭(markerStart/markerEnd 各 type/size/color)
 const defConn = {
     type: 'bezier', fontSize: 10, fontSizeMin: 1, fontSizeMax: 72,
-    fontColor: '#333333', edgeColor: '#b1b1b7', edgeWidth: 1,
-    edgeDasharray: '', markerEnd: '', animated: false, defOffset: 24,
+    fontColor: '#333333', edgeColor: '#b1b1b1', edgeWidth: 1,
+    edgeDasharray: '',
+    fromPosition: 'bottom', toPosition: 'top',
+    markerStart: '', markerStartSize: 10, markerStartColor: '',
+    markerEnd: '', markerEndSize: 10, markerEndColor: '',
+    animated: false, defOffset: 24,
 }
 
 function createWrapper(optOverrides = {}) {
@@ -42,7 +50,8 @@ function createWrapper(optOverrides = {}) {
 
 // 1. NodeSettingsForm
 describe('NodeSettingsForm', () => {
-    const node = { id: '1', type: 'basic', name: 'Test', description: 'desc', fontSize: 14, fontColor: '#000', faceColor: '#fff', edgeColor: '#ccc', edgeWidth: 2, shape: 'rectangle', popupDirection: 'right', fromPosition: 'top', toPosition: 'bottom' }
+    //節點無 type/fromPosition/toPosition(spec 項8): 表單不再有 Type / From Handle / To Handle 欄位
+    const node = { id: '1', name: 'Test', description: 'desc', fontSize: 14, fontColor: '#000', faceColor: '#fff', edgeColor: '#ccc', edgeWidth: 2, shape: 'rectangle', popupDirection: 'right' }
     function mountForm(ov = {}) {
         return mount(NodeSettingsForm, { propsData: { node: { ...node, ...ov }, defNode } })
     }
@@ -50,8 +59,9 @@ describe('NodeSettingsForm', () => {
     test('renders text inputs', () => { const w = mountForm(); expect(w.findAll('input[type="text"]').length).toBe(2); w.destroy() })
     test('emits update on name', async () => { const w = mountForm(); await w.findAll('input[type="text"]').at(0).setValue('X'); expect(w.emitted('update')[0]).toEqual(['name', 'X']); w.destroy() })
     test('emits update on description', async () => { const w = mountForm(); await w.findAll('input[type="text"]').at(1).setValue('D'); expect(w.emitted('update')[0]).toEqual(['description', 'D']); w.destroy() })
-    test('emits update on type', async () => { const w = mountForm(); const s = w.findAll('select').at(0); s.element.value = 'output'; await s.trigger('input'); expect(w.emitted('update').some(e => e[0] === 'type')).toBe(true); w.destroy() })
-    test('emits update on shape', async () => { const w = mountForm(); const s = w.findAll('select').at(1); s.element.value = 'diamond'; await s.trigger('input'); expect(w.emitted('update').some(e => e[0] === 'shape')).toBe(true); w.destroy() })
+    //Type 欄位已刪(節點無型別); 剩兩個 select: Shape(idx0), Popup Direction(idx1)
+    test('emits update on shape', async () => { const w = mountForm(); const s = w.findAll('select').at(0); s.element.value = 'diamond'; await s.trigger('input'); expect(w.emitted('update').some(e => e[0] === 'shape')).toBe(true); w.destroy() })
+    test('emits update on popupDirection', async () => { const w = mountForm(); const s = w.findAll('select').at(1); s.element.value = 'left'; await s.trigger('input'); expect(w.emitted('update').some(e => e[0] === 'popupDirection')).toBe(true); w.destroy() })
     test('fontSize ignores below min', () => { const w = mountForm(); w.vm.onFontSizeInput('0'); expect(w.emitted('update')).toBeFalsy(); w.destroy() })
     test('fontSize clamps to max', () => { const w = mountForm(); w.vm.onFontSizeInput('100'); expect(w.emitted('update')[0]).toEqual(['fontSize', 72]); w.destroy() })
     test('fontSize accepts valid', () => { const w = mountForm(); w.vm.onFontSizeInput('20'); expect(w.emitted('update')[0]).toEqual(['fontSize', 20]); w.destroy() })
@@ -74,33 +84,81 @@ describe('NodeSettingsForm', () => {
         expect(w.find('.vue-flow__settings-form').element.style.fontSize).toBe('16px')
         w.destroy()
     })
-    test('basic shows from/to handle', () => {
-        const w = mountForm({ type: 'basic' })
+    //舊「basic shows from/to handle」「input hides from handle」已無對應(節點無 type, 表單無 From/To Handle 欄位): 已刪除
+    test('no Type / From Handle / To Handle fields regardless of any stray legacy field on node data', () => {
+        const w = mountForm({ type: 'input', fromPosition: 'left', toPosition: 'right' })
         const t = w.findAll('label').wrappers.map(l => l.text())
-        expect(t.some(x => x.includes('From Handle'))).toBe(true)
-        expect(t.some(x => x.includes('To Handle'))).toBe(true)
-        w.destroy()
-    })
-    test('input hides from handle', () => {
-        const w = mountForm({ type: 'input' })
-        const t = w.findAll('label').wrappers.map(l => l.text())
+        expect(t.some(x => x.includes('Type'))).toBe(false)
         expect(t.some(x => x.includes('From Handle'))).toBe(false)
+        expect(t.some(x => x.includes('To Handle'))).toBe(false)
         w.destroy()
     })
 })
 
 // 2. ConnSettingsForm
 describe('ConnSettingsForm', () => {
-    const conn = { id: 'e1', from: '1', to: '2', name: 'C', type: 'bezier', fontSize: 10, fontColor: '#333', edgeColor: '#b1b1b7', edgeWidth: 1, markerEnd: '', animated: false }
+    const conn = { id: 'e1', from: '1', to: '2', name: 'C', type: 'bezier', fontSize: 10, fontColor: '#333', edgeColor: '#b1b1b1', edgeWidth: 1, markerEnd: '', animated: false }
     function mountForm(ov = {}) {
         return mount(ConnSettingsForm, { propsData: { conn: { ...conn, ...ov }, defConn } })
     }
+    //select 順序(模板固定): Type(0) / From Anchor(1) / To Anchor(2) / From Marker(3) / To Marker(4)
 
     test('renders text inputs', () => { const w = mountForm(); expect(w.findAll('input[type="text"]').length).toBe(2); w.destroy() })
     test('emits update on name', async () => { const w = mountForm(); await w.findAll('input[type="text"]').at(0).setValue('N'); expect(w.emitted('update')[0]).toEqual(['name', 'N']); w.destroy() })
     test('emits update on type', async () => { const w = mountForm(); const s = w.findAll('select').at(0); s.element.value = 'step'; await s.trigger('input'); expect(w.emitted('update').some(e => e[0] === 'type')).toBe(true); w.destroy() })
+    //新增: 兩端方位(From/To Anchor, spec 項8)——四值 select, 單一來源 anchorPolicy.connSourceSide/connTargetSide
+    test('emits update on fromPosition (From Anchor)', async () => {
+        const w = mountForm()
+        const s = w.findAll('select').at(1)
+        s.element.value = 'left'
+        await s.trigger('input')
+        expect(w.emitted('update')[0]).toEqual(['fromPosition', 'left'])
+        w.destroy()
+    })
+    test('emits update on toPosition (To Anchor)', async () => {
+        const w = mountForm()
+        const s = w.findAll('select').at(2)
+        s.element.value = 'right'
+        await s.trigger('input')
+        expect(w.emitted('update')[0]).toEqual(['toPosition', 'right'])
+        w.destroy()
+    })
     test('emits update on animated', async () => { const w = mountForm(); await w.find('input[type="checkbox"]').setChecked(true); expect(w.emitted('update').some(e => e[0] === 'animated')).toBe(true); w.destroy() })
-    test('emits update on markerEnd', async () => { const w = mountForm(); const s = w.findAll('select').at(1); s.element.value = 'arrowclosed'; await s.trigger('input'); expect(w.emitted('update').some(e => e[0] === 'markerEnd')).toBe(true); w.destroy() })
+    test('emits update on markerEnd', async () => { const w = mountForm(); const s = w.findAll('select').at(4); s.element.value = 'arrowclosed'; await s.trigger('input'); expect(w.emitted('update')[0]).toEqual(['markerEnd', 'arrowclosed']); w.destroy() })
+    //None 選項須 emit ''(不再是 undefined, spec 項8)
+    test('markerEnd None emits empty string, not undefined', async () => {
+        const w = mountForm({ markerEnd: 'arrow' })
+        const s = w.findAll('select').at(4)
+        s.element.value = ''
+        await s.trigger('input')
+        expect(w.emitted('update')[0]).toEqual(['markerEnd', ''])
+        w.destroy()
+    })
+    //Marker Size/Color 恆顯示(知道可改)但有條件才可改: Size 有箭頭時, Color 僅實心箭頭時; 其餘 disabled
+    test('marker size/color rows always present; size enabled when marker set, color enabled only for arrowclosed', () => {
+        const colorDisabled = (w) => w.findAll('.vue-flow__field').wrappers.filter(f => f.classes('vue-flow__field--disabled')).length
+        const w1 = mountForm({ markerEnd: '' })
+        const sizeInputs = () => w1.findAll('input[type="number"][min="4"]').wrappers
+        expect(sizeInputs().length).toBe(2) //From / To
+        expect(sizeInputs().every(i => i.element.disabled)).toBe(true)
+        expect(colorDisabled(w1)).toBe(2)
+        w1.destroy()
+        const w2 = mountForm({ markerEnd: 'arrow' })
+        const inputs2 = w2.findAll('input[type="number"][min="4"]').wrappers
+        expect(inputs2[0].element.disabled).toBe(true) //From(None)
+        expect(inputs2[1].element.disabled).toBe(false) //To(arrow)
+        expect(colorDisabled(w2)).toBe(2) //線式箭頭無填色 → color 仍 disabled
+        w2.destroy()
+        const w3 = mountForm({ markerEnd: 'arrowclosed' })
+        expect(colorDisabled(w3)).toBe(1) //僅 From 端 disabled
+        w3.destroy()
+    })
+    test('emits update on markerEndSize', async () => {
+        const w = mountForm({ markerEnd: 'arrow', markerEndSize: 10 })
+        w.vm.onMarkerSizeInput('markerEndSize', '20')
+        expect(w.emitted('update')[0]).toEqual(['markerEndSize', 20])
+        w.destroy()
+    })
     test('fontSize clamps', () => { const w = mountForm(); w.vm.onFontSizeInput('100'); expect(w.emitted('update')[0]).toEqual(['fontSize', 72]); w.destroy() })
     test('edgeWidth clamps', () => { const w = mountForm(); w.vm.onEdgeWidthInput('30'); expect(w.emitted('update')[0]).toEqual(['edgeWidth', 24]); w.destroy() })
     test('delete emits immediately (no built-in confirm step)', async () => {
@@ -388,8 +446,10 @@ describe('Snap-to-Grid integration', () => {
     })
 })
 
-// 10. EdgeMarkerDefs ID consistency
-describe('EdgeMarkerDefs ID consistency', () => {
+// 10/12. edgeMarker.mjs 單一來源(取代 EdgeMarkerDefs.getMarkerId 與 EdgeWrapper.getMarkerUrl, spec 項10):
+// EdgeMarkerDefs(<defs> 產生)與 EdgeWrapper(url(#id) 引用)皆經 resolveMarker/markerId/markerUrl, id 不可能分家。
+// conn.markerEnd/markerStart 恆為字串型別('' | 'arrow' | 'arrowclosed'), 不再接受 {type,color} 物件(色彩改由 markerXColor 欄位)。
+describe('edgeMarker 解析(EdgeMarkerDefs / EdgeWrapper 單一來源)', () => {
     test('marker ID matches between EdgeMarkerDefs and EdgeWrapper', () => {
         const w = createWrapper()
         // Find EdgeWrapper that has markerEnd='arrowclosed' (conn e3-2)
@@ -404,47 +464,38 @@ describe('EdgeMarkerDefs ID consistency', () => {
         const defs = w.findComponent({ name: 'EdgeMarkerDefs' })
         const markers = defs.vm.markers
         expect(markers.some(m => m.id === refId)).toBe(true)
+        //渲染出之 <marker> DOM 亦帶同一 id(defs 去重不遺漏)
+        expect(w.vm.$el.querySelector(`marker[id="${refId}"]`)).toBeTruthy()
         w.destroy()
     })
-    test('string marker and object marker produce same ID', () => {
-        const w = createWrapper()
-        const defs = w.findComponent({ name: 'EdgeMarkerDefs' })
-        const id1 = defs.vm.getMarkerId('arrowclosed', '#b1b1b7')
-        const id2 = defs.vm.getMarkerId({ type: 'arrowclosed' }, '#b1b1b7')
-        expect(id1).toBe(id2)
-        w.destroy()
+    test('resolveMarker: 相同規格(type/size/fill/stroke/strokeWidth)恆產生相同 id(供 defs 去重)', () => {
+        const connA = { markerEnd: 'arrowclosed', edgeColor: '#b1b1b1', edgeWidth: 1 }
+        const connB = { markerEnd: 'arrowclosed', edgeColor: '#b1b1b1', edgeWidth: 1 }
+        const specA = resolveMarker(connA, {}, 'end')
+        const specB = resolveMarker(connB, {}, 'end')
+        expect(specA.id).toBe(specB.id)
+        expect(markerId(specA)).toBe(specA.id)
     })
-})
-
-// 12. EdgeWrapper.getMarkerUrl
-describe('EdgeWrapper.getMarkerUrl', () => {
-    test('string marker returns correct URL', () => {
-        const w = createWrapper()
-        const ew = w.findAllComponents({ name: 'EdgeWrapper' }).at(0)
-        const url = ew.vm.getMarkerUrl('arrowclosed')
-        expect(url).toBe('url(#vue-flow__arrowclosed_b1b1b7)')
-        w.destroy()
+    test('arrow(線式): 無填充(fill=none); arrowclosed: fill=線色加深 20%(未給 markerXColor 時)', () => {
+        const line = { edgeColor: '#ff0000', edgeWidth: 2 }
+        expect(resolveMarker({ ...line, markerEnd: 'arrow' }, {}, 'end').fill).toBe('none')
+        expect(resolveMarker({ ...line, markerEnd: 'arrowclosed' }, {}, 'end').fill).toBe('#cc0000') //#ff0000 加深 20%
     })
-    test('object marker with color', () => {
-        const w = createWrapper()
-        const ew = w.findAllComponents({ name: 'EdgeWrapper' }).at(0)
-        const url = ew.vm.getMarkerUrl({ type: 'arrow', color: '#ff0000' })
-        expect(url).toBe('url(#vue-flow__arrow_ff0000)')
-        w.destroy()
+    test('markerEndColor 覆蓋 arrowclosed 之 fill(線式箭頭無填充故不受影響)', () => {
+        const conn = { markerEnd: 'arrowclosed', markerEndColor: '#00ff00', edgeColor: '#ff0000', edgeWidth: 1 }
+        expect(resolveMarker(conn, {}, 'end').fill).toBe('#00ff00')
     })
-    test('object marker without color uses default', () => {
-        const w = createWrapper()
-        const ew = w.findAllComponents({ name: 'EdgeWrapper' }).at(0)
-        const url = ew.vm.getMarkerUrl({ type: 'arrow' })
-        expect(url).toBe('url(#vue-flow__arrow_b1b1b7)')
-        w.destroy()
+    test('markerX 為 "" 或未給: 回 null(無箭頭)', () => {
+        expect(resolveMarker({ markerEnd: '' }, {}, 'end')).toBeNull()
+        expect(resolveMarker({}, {}, 'end')).toBeNull()
     })
-    test('null marker returns null', () => {
-        const w = createWrapper()
-        const ew = w.findAllComponents({ name: 'EdgeWrapper' }).at(0)
-        expect(ew.vm.getMarkerUrl(null)).toBeNull()
-        expect(ew.vm.getMarkerUrl('')).toBeNull()
-        w.destroy()
+    test('conn 明確給 "" 之 markerEnd 不落回 defConn(明確無, 非未給)', () => {
+        expect(resolveMarker({ markerEnd: '' }, { markerEnd: 'arrow' }, 'end')).toBeNull()
+    })
+    test('markerUrl(null) 回 null; 有效規格回 url(#id)', () => {
+        expect(markerUrl(null)).toBeNull()
+        const spec = resolveMarker({ markerEnd: 'arrow', edgeColor: '#b1b1b1', edgeWidth: 1 }, {}, 'end')
+        expect(markerUrl(spec)).toBe(`url(#${spec.id})`)
     })
 })
 
@@ -559,10 +610,10 @@ describe('updateNodeInternals', () => {
 })
 
 // 18. Settings icon visibility rules
-describe('Settings icon visibility', () => {
+describe('Settings icon visibility(hover 模式; 預設 dblclick 見 unit-settings-trigger)', () => {
     describe('NodeWrapper', () => {
         test('hidden when not hovered', () => {
-            const w = createWrapper()
+            const w = createWrapper({ nodesSettingsTrigger: 'hover', connsSettingsTrigger: 'hover' })
             const nw = w.findAllComponents({ name: 'NodeWrapper' }).at(0)
             expect(nw.vm.hovered).toBe(false)
             expect(nw.find('.vue-flow__node-settings-anchor').exists()).toBe(false)
@@ -570,7 +621,7 @@ describe('Settings icon visibility', () => {
         })
 
         test('shown when hovered', async () => {
-            const w = createWrapper()
+            const w = createWrapper({ nodesSettingsTrigger: 'hover', connsSettingsTrigger: 'hover' })
             const nw = w.findAllComponents({ name: 'NodeWrapper' }).at(0)
             nw.vm.hovered = true
             await w.vm.$nextTick()
@@ -579,7 +630,7 @@ describe('Settings icon visibility', () => {
         })
 
         test('stays when popup open and mouse leaves', async () => {
-            const w = createWrapper()
+            const w = createWrapper({ nodesSettingsTrigger: 'hover', connsSettingsTrigger: 'hover' })
             const nw = w.findAllComponents({ name: 'NodeWrapper' }).at(0)
             nw.vm.hovered = true
             nw.vm.settingsPopupShow = true
@@ -591,7 +642,7 @@ describe('Settings icon visibility', () => {
         })
 
         test('hides when popup closed and not hovered', async () => {
-            const w = createWrapper()
+            const w = createWrapper({ nodesSettingsTrigger: 'hover', connsSettingsTrigger: 'hover' })
             const nw = w.findAllComponents({ name: 'NodeWrapper' }).at(0)
             nw.vm.hovered = false
             nw.vm.settingsPopupShow = false
@@ -601,7 +652,7 @@ describe('Settings icon visibility', () => {
         })
 
         test('hidden when locked even if hovered', async () => {
-            const w = createWrapper()
+            const w = createWrapper({ nodesSettingsTrigger: 'hover', connsSettingsTrigger: 'hover' })
             const nw = w.findAllComponents({ name: 'NodeWrapper' }).at(0)
             nw.vm.hovered = true
             await w.vm.$nextTick()
@@ -614,7 +665,7 @@ describe('Settings icon visibility', () => {
 
     describe('EdgeWrapper', () => {
         test('hidden when not hovered', () => {
-            const w = createWrapper()
+            const w = createWrapper({ nodesSettingsTrigger: 'hover', connsSettingsTrigger: 'hover' })
             const ew = w.findAllComponents({ name: 'EdgeWrapper' }).at(0)
             expect(ew.vm.hovered).toBe(false)
             expect(ew.find('.vue-flow__edge-settings-anchor').exists()).toBe(false)
@@ -622,7 +673,7 @@ describe('Settings icon visibility', () => {
         })
 
         test('shown when hovered', async () => {
-            const w = createWrapper()
+            const w = createWrapper({ nodesSettingsTrigger: 'hover', connsSettingsTrigger: 'hover' })
             const ew = w.findAllComponents({ name: 'EdgeWrapper' }).at(0)
             ew.vm.hovered = true
             await w.vm.$nextTick()
@@ -631,7 +682,7 @@ describe('Settings icon visibility', () => {
         })
 
         test('stays when popup open and mouse leaves', async () => {
-            const w = createWrapper()
+            const w = createWrapper({ nodesSettingsTrigger: 'hover', connsSettingsTrigger: 'hover' })
             const ew = w.findAllComponents({ name: 'EdgeWrapper' }).at(0)
             ew.vm.hovered = true
             ew.vm.settingsPopupShow = true
@@ -643,7 +694,7 @@ describe('Settings icon visibility', () => {
         })
 
         test('hides when popup closed and not hovered', async () => {
-            const w = createWrapper()
+            const w = createWrapper({ nodesSettingsTrigger: 'hover', connsSettingsTrigger: 'hover' })
             const ew = w.findAllComponents({ name: 'EdgeWrapper' }).at(0)
             ew.vm.hovered = false
             ew.vm.settingsPopupShow = false
@@ -653,7 +704,7 @@ describe('Settings icon visibility', () => {
         })
 
         test('hidden when locked even if hovered', async () => {
-            const w = createWrapper()
+            const w = createWrapper({ nodesSettingsTrigger: 'hover', connsSettingsTrigger: 'hover' })
             const ew = w.findAllComponents({ name: 'EdgeWrapper' }).at(0)
             ew.vm.hovered = true
             await w.vm.$nextTick()
@@ -878,7 +929,7 @@ describe('info popup programmatic open', () => {
         w.destroy()
     })
     test('conn click opens info popup when conn has name', () => {
-        const w = createWrapper()
+        const w = createWrapper({ connsSettingsTrigger: 'hover' }) //hover 模式: 資訊 popup 立即開(dblclick 模式延後雙擊判定窗)
         const ew = w.findAllComponents({ name: 'EdgeWrapper' }).at(0)
         ew.vm.onClick(new MouseEvent('click'))
         expect(ew.vm.infoPopupShow).toBe(true)
@@ -886,7 +937,7 @@ describe('info popup programmatic open', () => {
         w.destroy()
     })
     test('conn click opens info popup when unnamed conn has description', () => {
-        const w = createWrapper({ conns: [{ id: 'e1-3', from: '1', to: '3', description: 'desc' }] })
+        const w = createWrapper({ conns: [{ id: 'e1-3', from: '1', to: '3', description: 'desc' }], connsSettingsTrigger: 'hover' })
         const ew = w.findAllComponents({ name: 'EdgeWrapper' }).at(0)
         expect(ew.find('.vue-flow__edge-popup-anchor').exists()).toBe(true)
         ew.vm.onClick(new MouseEvent('click'))

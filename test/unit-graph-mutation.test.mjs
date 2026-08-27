@@ -10,11 +10,10 @@
  * G6 cascades 描述因果: 兩端皆被刪之邊單一歸屬於 from 端。
  * G7 requested 去重, 忽略 null/undefined; empty 於 requested 為空時為 true。
  * G8 applyDelete 以 id 重新解析並就地 splice(陣列 identity 不變), 回傳實際移除之物件, 不存在者略過。
- * G9 previewNodeTypeChange: input 移除入邊(to===id), output 移除出邊(from===id), basic 不移除。
  * G10 findDuplicateIds 只列重複者且各一次; snapshotDeep 與來源脫鉤。
  * G11 id 為 opaque identity: 數字 id 以嚴格相等比對, 不轉字串。
  */
-import { previewDelete, applyDelete, previewNodeTypeChange, findDuplicateIds, snapshotDeep } from '../src/js/graphMutation.mjs'
+import { previewDelete, applyDelete, findDuplicateIds, snapshotDeep } from '../src/js/graphMutation.mjs'
 
 const mk = () => ({
     nodes: [
@@ -115,15 +114,6 @@ describe('G8 applyDelete 就地套用', () => {
         const g = mk()
         applyDelete(g, { nodeIds: ['2'] })
         expect(g.conns.map(c => c.id)).toEqual(['e1-2', 'e2-3', 'e3-4', 'e1-3'])
-    })
-})
-
-describe('G9 previewNodeTypeChange', () => {
-    test('input 移除入邊, output 移除出邊, basic 不移除', () => {
-        const g = mk()
-        expect(previewNodeTypeChange(g, '2', 'input').connIds).toEqual(['e1-2'])
-        expect(previewNodeTypeChange(g, '2', 'output').connIds).toEqual(['e2-3'])
-        expect(previewNodeTypeChange(g, '2', 'basic').connIds).toEqual([])
     })
 })
 

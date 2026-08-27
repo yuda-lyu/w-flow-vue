@@ -11,6 +11,7 @@
     @dblclick.stop="onDoubleClick"
     @contextmenu.stop="onContextMenu"
     @dragstart="onNativeDragStart"
+    @click="onRootClick"
   >
     <WPopup
       :value="infoPopupShow"
@@ -57,7 +58,9 @@
          元素若被patch替換, up落在新元素上使click(popup開啟訊號)根本不發生(已於e2e重現於edge齒輪);
          click時WPopup trigger之內層handler先跑(popup先開), 冒泡至此才轉移active, 同一手勢內完成且不掛@show -->
     <transition name="vue-flow__fade">
-    <div v-if="(hovered || settingsPopupShow) && draggable && !locked && settingsEnabled" class="vue-flow__node-settings-anchor" @click="onSettingsAnchorClick">
+    <!-- 齒輪錨區: hover 模式=移入顯示齒輪, 點齒輪開設定; click/dblclick 模式=不顯示齒輪, 該動作直接開設定 popup
+         (錨區仍於 popup 開啟時渲染供 WPopup 定位, 但齒輪 icon 以 --silent 隱藏) -->
+    <div v-if="(gearVisible || settingsPopupShow) && draggable && !locked && settingsEnabled" class="vue-flow__node-settings-anchor" :class="{ 'vue-flow__node-settings-anchor--silent': settingsTrigger !== 'hover' }" @click="onSettingsAnchorClick">
       <!-- 受控而非v-model: 開啟請求須經onSettingsPopupInput裁決(複選模式中拒開);
            WPopup非isolated, trigger點擊只是$emit請求, @show跟隨實際開啟故拒開時不會幽靈emit -->
       <WPopup
@@ -103,7 +106,10 @@ import NodeSettingsForm from '../ui/NodeSettingsForm.vue'
 import SlotOutlet from '../ui/SlotOutlet.vue'
 import WPopup from 'w-component-vue/src/components/WPopup.vue'
 import { classifyHit, isAffordanceHit } from '../../js/hitTest.mjs'
-import { nodeType } from '../../js/anchorPolicy.mjs'
+import { nodeShape, isTriangleShape } from '../../js/nodeStyle.mjs'
+
+//雙擊判定窗(ms): dblclick 模式下單擊之資訊 popup 延後此時間再開, 期間雙擊即取消
+const DBL_MS = 250
 
 export default {
     name: 'NodeWrapper',
@@ -142,21 +148,26 @@ export default {
         inforPopupDescriptionTextFontSize: { type: String, default: '10px' },
         snapGridSize: { type: Number, default: null },
         settingsEnabled: { type: Boolean, default: true },
+        //設定入口方式: 'hover'(移入顯示齒輪, 點齒輪開設定) | 'click' | 'dblclick'(該動作直接開設定 popup, 不顯示齒輪)
+        settingsTrigger: { type: String, default: 'dblclick' },
         settingsExcludes: { type: Array, default: () => [] },
     },
     computed: {
         dn() {
             return this.getDefNode()
         },
+        //有效形狀(nodeStyle.nodeShape 單一解析; 與節點面/把手/邊端點同一基準)
+        shape() {
+            return nodeShape(this.node, this.dn)
+        },
         isDiamond() {
-            return this.node.shape === 'diamond'
+            return this.shape === 'diamond'
         },
         isEllipse() {
-            return this.node.shape === 'ellipse'
+            return this.shape === 'ellipse'
         },
         isTriangle() {
-            let s = this.node.shape
-            return s === 'triangle' || s === 'triangle-right' || s === 'triangle-down' || s === 'triangle-left'
+            return isTriangleShape(this.shape)
         },
         isSvgShape() {
             return this.isDiamond || this.isEllipse || this.isTriangle
@@ -165,13 +176,16 @@ export default {
         multiSelectActive() {
             return this.getMultiSelectActive()
         },
+        //齒輪可見: 只有 hover 模式於移入時顯示; click/dblclick 模式不顯示齒輪(直接開 popup)
+        gearVisible() {
+            return this.settingsTrigger === 'hover' && this.hovered
+        },
         classes() {
             const nodeClasses = this.node.class
                 ? (Array.isArray(this.node.class) ? this.node.class : [this.node.class])
                 : []
             return [
                 'vue-flow__node',
-                `vue-flow__node-${nodeType(this.node, this.dn)}`,
                 ...nodeClasses,
                 {
                     'vue-flow__node--selected': this.selected,
@@ -202,12 +216,16 @@ export default {
             }
             if (w) style.width = typeof w === 'number' ? `${w}px` : w
             if (h) style.height = typeof h === 'number' ? `${h}px` : h
+            //外框色/寬亦以 CSS 變數供選取態使用(選取態外框加粗 1px: 矩形以 box-shadow ring 外加, 不改 border 以免 padding box 位移使把手漂移;
+            //SVG 形狀以 stroke-width 加 1px)
+            let eColor = n.edgeColor || d.edgeColor
+            let eWidth = n.edgeWidth !== undefined ? n.edgeWidth : d.edgeWidth
+            if (eColor) style['--vf-node-edge'] = eColor
+            style['--vf-node-ew'] = (eWidth !== undefined ? eWidth : 1) + 'px'
             if (!this.isSvgShape) {
                 let fColor = n.faceColor || d.faceColor
                 if (fColor) style.background = fColor
-                let eColor = n.edgeColor || d.edgeColor
                 if (eColor) style.borderColor = eColor
-                let eWidth = n.edgeWidth !== undefined ? n.edgeWidth : d.edgeWidth
                 if (eWidth !== undefined) style.borderWidth = eWidth + 'px'
             }
             let fs = n.fontSize || d.fontSize
@@ -250,6 +268,7 @@ export default {
         this.reportDimensions()
     },
     beforeDestroy() {
+        this.cancelPendingInfo()
         //拖曳/縮放進行中被銷毀時, 掛在document上的監聽器與插入document.head之全域游標樣式
         //都不會自行移除, 於此一併收尾
         this.endMouseGesture(false)
@@ -388,8 +407,17 @@ export default {
             const dy = event.clientY - this._mouseDownPos.y
             this._mouseDownPos = null
             if (Math.abs(dx) < 3 && Math.abs(dy) < 3) {
+                //click 模式: 點擊節點本體直接開設定 popup——於 click 事件(document mouseup 之後)開啟,
+                //此刻 mousedown 武裝之拖曳手勢已收尾(popup 閘門於手勢中拒開; 節點 mouseup 先於 document mouseup 觸發)
+                if (this.settingsTrigger === 'click') this._settingsClickPending = true
                 this.$emit('node-click', { node: this.node, event })
             }
+        },
+        onRootClick(event) {
+            if (!this._settingsClickPending) return
+            this._settingsClickPending = false
+            if (this.isAffordanceEvent(event)) return
+            this.openSettingsPopup(event)
         },
         //affordance(齒輪/四角/把手)上的雙擊/右鍵不代表節點(spec §3): 與 EdgeWrapper 之 isGestureTarget 對稱
         //(修正前: root 之 @dblclick/@contextmenu 無條件接收後代事件, 雙擊齒輪發 node-double-click、右鍵把手發 node-context-menu, 實測已重現)
@@ -398,7 +426,19 @@ export default {
         },
         onDoubleClick(event) {
             if (this.isAffordanceEvent(event)) return
+            //dblclick 模式: 雙擊節點本體直接開設定 popup; 取消單擊排定之資訊 popup(不閃現)
+            if (this.settingsTrigger === 'dblclick') {
+                this.cancelPendingInfo()
+                this.openSettingsPopup(event)
+            }
             this.$emit('node-double-click', { node: this.node, event })
+        },
+        //click/dblclick 模式之直接開啟: 走同一閘門(複選/手勢中拒開), 並如點齒輪般使本節點成為唯一 active
+        openSettingsPopup(event) {
+            if (!this.draggable || this.locked || !this.settingsEnabled) return
+            if (!this.canOpenPopup()) return
+            this.settingsPopupShow = true
+            this.$emit('node-activate', { node: this.node, event })
         },
         //popup 開啟閘門(overlay 規則 spec §6): 複選模式 或 任何手勢進行中 一律拒開;
         //判準用multiSelectActive而非「鍵被按下」——選取不可用時(鎖定/檢視模式)該鍵無複選語義, 點擊仍應照常開popup
@@ -411,7 +451,25 @@ export default {
             if (val && !this.canOpenPopup()) {
                 return
             }
+            //click 模式: 點擊即開設定 popup, 資訊 popup 讓位(兩者同為點擊觸發, 不可同時)
+            if (val && this.settingsTrigger === 'click' && this.settingsEnabled && this.draggable && !this.locked) return
+            //dblclick 模式: 瀏覽器於雙擊前必先派發 click, 資訊 popup 若立即開啟會先閃現再被設定 popup 取代;
+            //故延後一個雙擊判定窗(DBL_MS)再開, 期間收到 dblclick 即取消——使用者看到的只有「單擊=資訊, 雙擊=設定」
+            if (val && this.settingsTrigger === 'dblclick' && this.settingsEnabled && this.draggable && !this.locked) {
+                this.cancelPendingInfo()
+                this._infoTimer = setTimeout(() => {
+                    this._infoTimer = null
+                    if (this.canOpenPopup()) this.infoPopupShow = true
+                }, DBL_MS)
+                return
+            }
             this.infoPopupShow = val
+        },
+        cancelPendingInfo() {
+            if (this._infoTimer) {
+                clearTimeout(this._infoTimer)
+                this._infoTimer = null
+            }
         },
         //設定popup之開關同樣由本元件裁決(拒開條件同上; 關閉請求一律放行)
         onSettingsPopupInput(val) {
@@ -598,11 +656,10 @@ export default {
 .vue-flow__node:hover {
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
 }
-.vue-flow__node--selected {
-  box-shadow: 0 0 8px 2px rgba(220, 38, 38, 0.5);
-}
+/* 選取態: 外框加粗 1px(box-shadow ring, 顏色同外框; 不改 border 以免版面/把手位移)+ 淡光暈 rgba(0,0,0,0.1) */
+.vue-flow__node--selected,
 .vue-flow__node--selected:hover {
-  box-shadow: 0 0 8px 2px rgba(220, 38, 38, 0.5);
+  box-shadow: 0 0 0 1px var(--vf-node-edge, #bbb), 0 0 8px 2px rgba(0, 0, 0, 0.1);
 }
 /* 拖曳中僅改變游標, 刻意不提升z-index: 節點層級由node.zIndex/node.style決定(見:163),
    固定的1000 !important會把自訂較高層級之節點反向降級, 且1000亦壓不過另一顆自訂5000之節點,
@@ -612,6 +669,11 @@ export default {
 }
 
 /* Settings icon anchor (positioning only) */
+/* click/dblclick 模式: 錨區只供 popup 定位, 齒輪 icon 不可見亦不可點 */
+.vue-flow__node-settings-anchor--silent .vue-flow__node-settings {
+  visibility: hidden;
+  pointer-events: none;
+}
 .vue-flow__node-settings-anchor {
   position: absolute;
   top: -8px;
@@ -666,6 +728,11 @@ export default {
   border-color: transparent !important;
   box-shadow: none !important;
 }
+/* SVG 形狀外框之選取/hover 過場(stroke 加粗與光暈漸變, 與矩形 box-shadow 0.3s 一致) */
+.vue-flow__node ::v-deep .vue-flow__shape-svg polygon,
+.vue-flow__node ::v-deep .vue-flow__shape-svg ellipse {
+  transition: stroke-width 0.2s ease, filter 0.3s ease;
+}
 /* SVG shape hover */
 /* polygon/ellipse live inside the NodeFace child component, so ::v-deep is
    required — a plain scoped selector would pin this component's data-v
@@ -675,11 +742,12 @@ export default {
 .vue-flow__node--ellipse:hover ::v-deep .vue-flow__shape-svg ellipse {
   filter: drop-shadow(0 1px 4px rgba(0, 0, 0, 0.15));
 }
-/* SVG shape selected: red shadow */
+/* SVG shape selected: 外框 stroke 加粗 1px + 淡光暈 rgba(0,0,0,0.1)(與矩形同一語義) */
 .vue-flow__node--diamond.vue-flow__node--selected ::v-deep .vue-flow__shape-svg polygon,
 .vue-flow__node--triangle.vue-flow__node--selected ::v-deep .vue-flow__shape-svg polygon,
 .vue-flow__node--ellipse.vue-flow__node--selected ::v-deep .vue-flow__shape-svg ellipse {
-  filter: drop-shadow(0 0 6px rgba(220, 38, 38, 0.6));
+  stroke-width: calc(var(--vf-node-ew, 1px) + 1px);
+  filter: drop-shadow(0 0 6px rgba(0, 0, 0, 0.1));
 }
 /* Fade transition for settings icon and resize handles */
 .vue-flow__fade-enter-active,

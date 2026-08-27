@@ -11,16 +11,17 @@ export function clearStepCache() {
 export function calculateStepPoints(
     sourceX, sourceY, sourcePosition,
     targetX, targetY, targetPosition,
-    offset, allNodes, nodeInternals, connFromId, connToId
+    offset, allNodes, nodeInternals
 ) {
     // --- Per-frame cache ---
     let frame = Math.floor(Date.now() / 16)
     if (frame !== _cacheFrame) {
         _cache.clear(); _cacheFrame = frame
     }
+    let hOff = offset || 24
     let ck = Math.round(sourceX / 10) + ',' + Math.round(sourceY / 10) + ',' +
         Math.round(targetX / 10) + ',' + Math.round(targetY / 10) + ',' +
-        sourcePosition + ',' + targetPosition
+        sourcePosition + ',' + targetPosition + ',' + hOff
     let cached = _cache.get(ck)
     if (cached) return cached
 
@@ -39,11 +40,13 @@ export function calculateStepPoints(
 
     let sObs = findObstacleAt(obs, sourceX, sourceY)
     let tObs = findObstacleAt(obs, targetX, targetY)
-    let hOff = offset || 24
 
     let result = lookupRoute(sourceX, sourceY, sourcePosition, targetX, targetY, targetPosition, sObs, tObs, hOff)
     if (!result) {
-        result = segmentFallback(sourceX, sourceY, targetX, targetY, sObs, tObs)
+        //端點無節點矩形(建線預覽之游標端)時: 以兩端法線 stub 保證射出/射入方向; 兩矩形皆在但過近: 沿用 draw.io SegmentConnector
+        result = (!sObs || !tObs)
+            ? stubFallback(sourceX, sourceY, sourcePosition, targetX, targetY, targetPosition, hOff)
+            : segmentFallback(sourceX, sourceY, targetX, targetY, sObs, tObs)
     }
 
     if (_cache.size > 200) _cache.clear()
@@ -251,6 +254,44 @@ function lookupRoute(sourceX, sourceY, sourcePosition, targetX, targetY, targetP
             Math.abs(pts[i].y - result[result.length - 1].y) > 0.5) {
             result.push(pts[i])
         }
+    }
+    return result
+}
+
+/**
+ * 方向保證之 fallback(任一端無節點矩形時, 如建線預覽之游標端):
+ * 兩端各沿外向法線走 stub, 兩 stub 端點間以 L/Z 形直角相連。
+ */
+function stubFallback(sx, sy, sPos, tx, ty, tPos, stub) {
+    let dir = (p) => (p === 'top' ? [0, -1] : p === 'left' ? [-1, 0] : p === 'right' ? [1, 0] : [0, 1])
+    let sd = dir(sPos)
+    let td = dir(tPos)
+    let s1 = { x: sx + sd[0] * stub, y: sy + sd[1] * stub }
+    let t1 = { x: tx + td[0] * stub, y: ty + td[1] * stub }
+    let pts = [{ x: sx, y: sy }, s1]
+    let sHoriz = sd[0] !== 0
+    if (s1.x !== t1.x && s1.y !== t1.y) {
+        //離開 stub 後先走與 stub 垂直之軸
+        if (sHoriz) {
+            let my = (s1.y + t1.y) / 2
+            if (td[0] !== 0) {
+                pts.push({ x: s1.x, y: my }); pts.push({ x: t1.x, y: my })
+            }
+            else pts.push({ x: s1.x, y: t1.y })
+        }
+        else {
+            let mx = (s1.x + t1.x) / 2
+            if (td[1] !== 0) {
+                pts.push({ x: mx, y: s1.y }); pts.push({ x: mx, y: t1.y })
+            }
+            else pts.push({ x: t1.x, y: s1.y })
+        }
+    }
+    pts.push(t1)
+    pts.push({ x: tx, y: ty })
+    let result = [pts[0]]
+    for (let i = 1; i < pts.length; i++) {
+        if (Math.abs(pts[i].x - result[result.length - 1].x) > 0.5 || Math.abs(pts[i].y - result[result.length - 1].y) > 0.5) result.push(pts[i])
     }
     return result
 }

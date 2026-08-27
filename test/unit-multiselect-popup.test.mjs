@@ -34,6 +34,7 @@ function createWrapper(optOverrides = {}) {
             opt: {
                 nodes: JSON.parse(JSON.stringify(sampleNodes)),
                 conns: JSON.parse(JSON.stringify(sampleConns)),
+                nodesSettingsTrigger: 'hover', connsSettingsTrigger: 'hover', //本檔驗 popup 閘門, 以 hover 模式(資訊 popup 立即開)語義斷言
                 ...optOverrides,
             },
         },

@@ -39,15 +39,20 @@ function normalizeConnPoints(points) {
 function orthogonalizeThroughPoints(
     sourceX, sourceY, sourcePosition,
     targetX, targetY, targetPosition,
-    waypoints
+    waypoints, stub = 20
 ) {
     const pts = [{ x: sourceX, y: sourceY }]
     const push = (p) => {
         const last = pts[pts.length - 1]
         if (Math.abs(p.x - last.x) > 0.5 || Math.abs(p.y - last.y) > 0.5) pts.push({ x: p.x, y: p.y })
     }
-    // Axis of the first sub-segment when leaving the previous point
-    let leaveHoriz = sourcePosition === 'left' || sourcePosition === 'right'
+    //兩端先沿外向法線走一段 stub(方向契約: 邊於連接點沿該邊法線射出/射入, 轉折點位置不得反向), 再於 stub 端點轉向
+    const sn = sideNormal(sourcePosition)
+    const tn = sideNormal(targetPosition)
+    push({ x: sourceX + sn.x * stub, y: sourceY + sn.y * stub })
+    const targetStub = { x: targetX + tn.x * stub, y: targetY + tn.y * stub }
+    // Axis of the first sub-segment when leaving the stub point: perpendicular to the stub
+    let leaveHoriz = !(sourcePosition === 'left' || sourcePosition === 'right')
 
     for (let i = 0; i < waypoints.length; i++) {
         const w = waypoints[i]
@@ -66,12 +71,13 @@ function orthogonalizeThroughPoints(
         leaveHoriz = !arriveHoriz //bend point: turn at the waypoint
     }
 
-    // Final hop: approach the target along its anchor axis
+    // Final hop: reach the target stub point (perpendicular to the target normal), then enter along the normal
     const prev = pts[pts.length - 1]
     const targetHoriz = targetPosition === 'left' || targetPosition === 'right'
-    if (Math.abs(targetX - prev.x) > 0.5 && Math.abs(targetY - prev.y) > 0.5) {
-        push(targetHoriz ? { x: prev.x, y: targetY } : { x: targetX, y: prev.y })
+    if (Math.abs(targetStub.x - prev.x) > 0.5 && Math.abs(targetStub.y - prev.y) > 0.5) {
+        push(targetHoriz ? { x: targetStub.x, y: prev.y } : { x: prev.x, y: targetStub.y })
     }
+    push(targetStub)
     push({ x: targetX, y: targetY })
     return pts
 }
@@ -125,6 +131,17 @@ function buildRoundedPath(points, borderRadius) {
     return { path, labelX: label.x, labelY: label.y }
 }
 
+/** 邊之外向單位法向量(方位 → 方向) */
+function sideNormal(position) {
+    switch (position) {
+    case 'top': return { x: 0, y: -1 }
+    case 'bottom': return { x: 0, y: 1 }
+    case 'left': return { x: -1, y: 0 }
+    case 'right': return { x: 1, y: 0 }
+    default: return { x: 0, y: 1 }
+    }
+}
+
 /**
  * Calculate the control point offset for bezier curves based on handle position.
  */
@@ -152,16 +169,30 @@ export function getBezierPath({
     const wps = normalizeConnPoints(points)
     if (wps) {
         const pts = [{ x: sourceX, y: sourceY }, ...wps, { x: targetX, y: targetY }]
+        //兩端切線沿外向法線(方向契約), 中間點沿 Catmull-Rom
+        const sn = sideNormal(sourcePosition)
+        const tn = sideNormal(targetPosition)
+        const segLen = (a, b) => Math.sqrt((b.x - a.x) ** 2 + (b.y - a.y) ** 2)
         let path = `M ${pts[0].x},${pts[0].y}`
         for (let i = 0; i < pts.length - 1; i++) {
             const p0 = pts[i - 1] || pts[i]
             const p1 = pts[i]
             const p2 = pts[i + 1]
             const p3 = pts[i + 2] || p2
-            const c1x = p1.x + (p2.x - p0.x) / 6
-            const c1y = p1.y + (p2.y - p0.y) / 6
-            const c2x = p2.x - (p3.x - p1.x) / 6
-            const c2y = p2.y - (p3.y - p1.y) / 6
+            let c1x = p1.x + (p2.x - p0.x) / 6
+            let c1y = p1.y + (p2.y - p0.y) / 6
+            let c2x = p2.x - (p3.x - p1.x) / 6
+            let c2y = p2.y - (p3.y - p1.y) / 6
+            if (i === 0) {
+                const k = Math.max(segLen(p1, p2) / 3, 25)
+                c1x = p1.x + sn.x * k
+                c1y = p1.y + sn.y * k
+            }
+            if (i === pts.length - 2) {
+                const k = Math.max(segLen(p1, p2) / 3, 25)
+                c2x = p2.x + tn.x * k
+                c2y = p2.y + tn.y * k
+            }
             path += ` C ${c1x},${c1y} ${c2x},${c2y} ${p2.x},${p2.y}`
         }
         const label = labelAtHalfLength(pts)
@@ -215,17 +246,17 @@ export function getStepPath({
     sourceX, sourceY, sourcePosition = 'bottom',
     targetX, targetY, targetPosition = 'top',
     offset = 20,
-    allNodes, nodeInternals, connFromId, connToId,
+    allNodes, nodeInternals,
     points,
 }) {
     // Forced waypoints bypass automatic routing (anchors still honored at both ends)
     const wps = normalizeConnPoints(points)
     const pts = wps
-        ? orthogonalizeThroughPoints(sourceX, sourceY, sourcePosition, targetX, targetY, targetPosition, wps)
+        ? orthogonalizeThroughPoints(sourceX, sourceY, sourcePosition, targetX, targetY, targetPosition, wps, offset)
         : calculateStepPoints(
             sourceX, sourceY, sourcePosition,
             targetX, targetY, targetPosition,
-            offset, allNodes, nodeInternals, connFromId, connToId
+            offset, allNodes, nodeInternals
         )
     const path = pts.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x},${p.y}`).join(' ')
     const label = labelAtHalfLength(pts)
@@ -241,17 +272,17 @@ export function getSmoothStepPath({
     targetX, targetY, targetPosition = 'top',
     borderRadius = 5,
     offset = 20,
-    allNodes, nodeInternals, connFromId, connToId,
+    allNodes, nodeInternals,
     points,
 }) {
     // Forced waypoints bypass automatic routing (anchors still honored at both ends)
     const wps = normalizeConnPoints(points)
     const pts = wps
-        ? orthogonalizeThroughPoints(sourceX, sourceY, sourcePosition, targetX, targetY, targetPosition, wps)
+        ? orthogonalizeThroughPoints(sourceX, sourceY, sourcePosition, targetX, targetY, targetPosition, wps, offset)
         : calculateStepPoints(
             sourceX, sourceY, sourcePosition,
             targetX, targetY, targetPosition,
-            offset, allNodes, nodeInternals, connFromId, connToId
+            offset, allNodes, nodeInternals
         )
 
     return buildRoundedPath(pts, borderRadius)

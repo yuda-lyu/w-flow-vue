@@ -145,17 +145,17 @@ export default {
                 if (bx < 10) bx = 10
                 if (by < 10) by = 10
                 vo.opt.nodes = [
-                    { id: 'A', type: 'basic', name: 'A', position: { x: vo.CENTER_X, y: vo.CENTER_Y }, width: vo.NODE_W, height: vo.NODE_H, toPosition: vo.srcHandle },
-                    { id: 'B', type: 'basic', name: 'B', position: { x: bx, y: by }, width: vo.NODE_W, height: vo.NODE_H, fromPosition: vo.tgtHandle },
+                    { id: 'A', name: 'A', position: { x: vo.CENTER_X, y: vo.CENTER_Y }, width: vo.NODE_W, height: vo.NODE_H },
+                    { id: 'B', name: 'B', position: { x: bx, y: by }, width: vo.NODE_W, height: vo.NODE_H },
                 ]
                 vo.opt.conns = [
-                    { id: 'eA-B', from: 'A', to: 'B', type: 'step', name: vo.caseLabel },
+                    { id: 'eA-B', from: 'A', to: 'B', type: 'step', name: vo.caseLabel, fromPosition: vo.srcHandle, toPosition: vo.tgtHandle },
                 ]
             }
             else {
-                // Update handle positions and conn name, preserve node positions
-                vo.opt.nodes[0].toPosition = vo.srcHandle
-                vo.opt.nodes[1].fromPosition = vo.tgtHandle
+                // Update conn anchors and name, preserve node positions
+                vo.opt.conns[0].fromPosition = vo.srcHandle
+                vo.opt.conns[0].toPosition = vo.tgtHandle
                 vo.opt.conns[0].name = vo.caseLabel
             }
         },

@@ -13,10 +13,13 @@ import { classifyHit, isAffordanceHit, isCanvasBlank } from '../src/js/hitTest.m
 
 const mkOpt = () => ({
     nodes: [
-        { id: '1', type: 'basic', name: 'N1', position: { x: 0, y: 0 }, width: 100, height: 40 },
-        { id: '2', type: 'basic', name: 'N2', position: { x: 300, y: 0 }, width: 100, height: 40 },
+        { id: '1', name: 'N1', position: { x: 0, y: 0 }, width: 100, height: 40 },
+        { id: '2', name: 'N2', position: { x: 300, y: 0 }, width: 100, height: 40 },
     ],
     conns: [{ id: 'e1', from: '1', to: '2', name: 'L', points: [[150, 100]] }],
+    //本檔以 hover 使齒輪出現後測 hit 分類, 顯式指定 hover 模式(預設 dblclick)
+    nodesSettingsTrigger: 'hover',
+    connsSettingsTrigger: 'hover',
 })
 const mountFlow = () => mount(WFlowVue, { propsData: { opt: mkOpt() }, attachTo: document.body })
 const hover = async (w, sel) => { await w.find(sel).trigger('mouseenter') }
@@ -88,7 +91,7 @@ describe('T3 工具列不代表畫布', () => {
 describe('T4 節點 affordance 不代表節點(與邊對稱)', () => {
     test.each([
         ['齒輪', '.vue-flow__node[data-id="1"] .vue-flow__node-settings'],
-        ['把手', '.vue-flow__node[data-id="1"] .vue-flow__handle--source'],
+        ['把手', '.vue-flow__node[data-id="1"] .vue-flow__handle--bottom'],
         ['四角', '.vue-flow__node[data-id="1"] .vue-flow__resize'],
     ])('%s 之 dblclick / contextmenu 不發事件', async (_l, sel) => {
         const w = mountFlow()

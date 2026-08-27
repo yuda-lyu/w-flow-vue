@@ -150,26 +150,6 @@ export function applyDelete(graph, plan) {
 }
 
 /**
- * 預覽節點 type 變更之副作用: 回傳因新 type 不具對應把手而須移除之邊 id
- * (input 無入邊/有出邊, output 有入邊/無出邊, basic 兩者皆有; 依圖內順序)
- *
- * @param {Object} graph { nodes, conns }
- * @param {*} nodeId
- * @param {String} type 新 type
- * @returns {Object} { connIds }
- */
-export function previewNodeTypeChange(graph, nodeId, type) {
-    const conns = (graph && graph.conns) || []
-    const hasTo = type === 'input' || type === 'basic'
-    const hasFrom = type === 'output' || type === 'basic'
-    const connIds = []
-    for (const c of conns) {
-        if ((!hasTo && c.from === nodeId) || (!hasFrom && c.to === nodeId)) connIds.push(c.id)
-    }
-    return { connIds }
-}
-
-/**
  * 找出集合內重複之 id(宿主資料錯誤之防呆; 重複 id 會使一切以 id 為鍵之查找/對帳/Vue key 失效)
  *
  * @param {Array} list

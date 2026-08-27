@@ -1,177 +1,47 @@
-import { nodeSameSide } from './anchorPolicy.mjs'
+import { nodeShape } from './nodeStyle.mjs'
 
 /**
- * Calculate the absolute position of a handle on the canvas.
- * @param {Object} [defNode] - 節點層級預設(opt.defNode*); same-side 判定併入 defNode 層,
- *                             與把手/邊之錨點解析(anchorPolicy)同一基準
+ * 連接點幾何 —— 單一事實來源(把手渲染 nodeStyle.handlePlacementStyle 與邊端點 getHandlePosition 同用 sideAnchorFraction)。
+ *
+ * 契約(spec/流程_互動契約.md §4.1): 節點四邊各一連接點, 位於形狀「該邊」之中點——
+ *   矩形/菱形/橢圓: 外接矩形四邊中點(菱形為四頂點, 橢圓為四極點)
+ *   三角形: 頂點所在邊=頂點; 底邊=底邊中點; 兩斜邊=斜邊中點(仍落在外接矩形之 1/4 或 3/4 處)
+ * 射出方向恆為外接矩形該邊之法向量(由 side 決定, 與點位無關), 三角形斜邊上之連接點亦水平/垂直射出。
  */
-export function getHandlePosition(node, handlePosition, nodeInternals, handleType, defNode) {
+
+const RECT_FRACTION = {
+    top: { fx: 0.5, fy: 0 },
+    right: { fx: 1, fy: 0.5 },
+    bottom: { fx: 0.5, fy: 1 },
+    left: { fx: 0, fy: 0.5 },
+}
+//三角形: 斜邊中點落在外接矩形之 1/4、3/4(上下向三角形斜邊在左右; 左右向三角形斜邊在上下)
+const TRI_VERTICAL_FRACTION = { ...RECT_FRACTION, left: { fx: 0.25, fy: 0.5 }, right: { fx: 0.75, fy: 0.5 } }
+const TRI_HORIZONTAL_FRACTION = { ...RECT_FRACTION, top: { fx: 0.5, fy: 0.25 }, bottom: { fx: 0.5, fy: 0.75 } }
+
+/**
+ * 形狀 × 邊 → 連接點於外接矩形之比例座標 { fx, fy } ∈ [0,1]
+ */
+export function sideAnchorFraction(shape, side) {
+    let table = RECT_FRACTION
+    if (shape === 'triangle' || shape === 'triangle-down') table = TRI_VERTICAL_FRACTION
+    else if (shape === 'triangle-right' || shape === 'triangle-left') table = TRI_HORIZONTAL_FRACTION
+    return table[side] || table.bottom
+}
+
+/**
+ * 節點某邊連接點之畫布絕對座標(邊端點與把手圓心同一基準)。
+ * @param {Object} node
+ * @param {string} side 'top'|'right'|'bottom'|'left'
+ * @param {Object} [nodeInternals] 量測尺寸 { width, height }(優先於 node.width/height)
+ * @param {Object} [defNode] 節點預設(形狀之 defNode 層, 經 nodeStyle.nodeShape 單一解析)
+ */
+export function getHandlePosition(node, side, nodeInternals, defNode) {
     const internals = nodeInternals || {}
     const w = (internals.width) || node.width || 150
     const h = (internals.height) || node.height || 40
-    const x = node.position.x
-    const y = node.position.y
-    const isDiamond = node.shape === 'diamond'
-    const isEllipse = node.shape === 'ellipse'
-    const ns = node.shape
-    const isTriangle = ns === 'triangle' || ns === 'triangle-right' || ns === 'triangle-down' || ns === 'triangle-left'
-
-    // Check if this is a default node with source and target on the same side
-    const sameSide = nodeSameSide(node, defNode)
-    let ratio = 0.5
-    if (sameSide && handleType === 'target') ratio = 0.33
-    if (sameSide && handleType === 'source') ratio = 0.67
-
-    // Diamond same-side: position along diamond edges
-    if (isDiamond && sameSide) {
-        return getDiamondEdgePoint(x, y, w, h, handlePosition, ratio)
-    }
-
-    // Ellipse: position on the ellipse border
-    if (isEllipse) {
-        return getEllipseEdgePoint(x, y, w, h, handlePosition, ratio)
-    }
-
-    // Triangle: position on the triangle edges
-    if (isTriangle) {
-        return getTriangleEdgePoint(x, y, w, h, handlePosition, ratio, ns)
-    }
-
-    switch (handlePosition) {
-    case 'top': return { x: x + w * ratio, y }
-    case 'bottom': return { x: x + w * ratio, y: y + h }
-    case 'left': return { x, y: y + h * ratio }
-    case 'right': return { x: x + w, y: y + h * ratio }
-    default: return { x: x + w / 2, y: y + h }
-    }
-}
-
-/**
- * Get a point on the diamond edge for same-side handles.
- * Each "side" of the diamond is split into two edges meeting at the vertex.
- * ratio < 0.5: on the first edge, ratio >= 0.5: on the second edge.
- */
-function getDiamondEdgePoint(x, y, w, h, side, ratio) {
-    let halfW = w / 2
-    let halfH = h / 2
-
-    switch (side) {
-    case 'top':
-        if (ratio <= 0.5) {
-            let t = ratio * 2
-            return { x: x + t * halfW, y: y + halfH - t * halfH }
-        }
-        else {
-            let t = (ratio - 0.5) * 2
-            return { x: x + halfW + t * halfW, y: y + t * halfH }
-        }
-    case 'bottom':
-        if (ratio <= 0.5) {
-            let t = ratio * 2
-            return { x: x + t * halfW, y: y + halfH + t * halfH }
-        }
-        else {
-            let t = (ratio - 0.5) * 2
-            return { x: x + halfW + t * halfW, y: y + h - t * halfH }
-        }
-    case 'left':
-        if (ratio <= 0.5) {
-            let t = ratio * 2
-            return { x: x + halfW - t * halfW, y: y + t * halfH }
-        }
-        else {
-            let t = (ratio - 0.5) * 2
-            return { x: x + t * halfW, y: y + halfH + t * halfH }
-        }
-    case 'right':
-        if (ratio <= 0.5) {
-            let t = ratio * 2
-            return { x: x + halfW + t * halfW, y: y + t * halfH }
-        }
-        else {
-            let t = (ratio - 0.5) * 2
-            return { x: x + w - t * halfW, y: y + halfH + t * halfH }
-        }
-    default:
-        return { x: x + halfW, y: y + h }
-    }
-}
-
-/**
- * Get a point on the ellipse edge for handle positioning.
- * Maps ratio (0..1) to a parametric angle based on the side.
- */
-function getEllipseEdgePoint(x, y, w, h, side, ratio) {
-    let cx = x + w / 2
-    let cy = y + h / 2
-    let rx = w / 2
-    let ry = h / 2
-    let angle
-
-    switch (side) {
-    case 'top':
-        angle = Math.PI * (1 - ratio); break
-    case 'bottom':
-        angle = Math.PI * (ratio - 1); break
-    case 'left':
-        angle = Math.PI * (0.5 + ratio); break
-    case 'right':
-        angle = Math.PI * (0.5 - ratio); break
-    default:
-        angle = 0
-    }
-
-    return {
-        x: cx + rx * Math.cos(angle),
-        y: cy - ry * Math.sin(angle)
-    }
-}
-
-/**
- * Get a point on the triangle edge for handle positioning.
- * Supports 4 directions: triangle (up), triangle-right, triangle-down, triangle-left.
- */
-function getTriangleEdgePoint(x, y, w, h, side, ratio, shape) {
-    // Get absolute vertices based on direction
-    let apex, baseA, baseB, apexSide, baseSide, edgeA, edgeB
-    if (shape === 'triangle-right') {
-        apex = { x: x + w, y: y + h / 2 }; baseA = { x, y }; baseB = { x, y: y + h }
-        apexSide = 'right'; baseSide = 'left'; edgeA = 'top'; edgeB = 'bottom'
-    }
-    else if (shape === 'triangle-down') {
-        apex = { x: x + w / 2, y: y + h }; baseA = { x, y }; baseB = { x: x + w, y }
-        apexSide = 'bottom'; baseSide = 'top'; edgeA = 'left'; edgeB = 'right'
-    }
-    else if (shape === 'triangle-left') {
-        apex = { x, y: y + h / 2 }; baseA = { x: x + w, y }; baseB = { x: x + w, y: y + h }
-        apexSide = 'left'; baseSide = 'right'; edgeA = 'top'; edgeB = 'bottom'
-    }
-    else {
-    // triangle (up)
-        apex = { x: x + w / 2, y }; baseA = { x, y: y + h }; baseB = { x: x + w, y: y + h }
-        apexSide = 'top'; baseSide = 'bottom'; edgeA = 'left'; edgeB = 'right'
-    }
-
-    if (side === apexSide) {
-        if (ratio <= 0.5) {
-            let t = ratio * 2
-            return { x: baseA.x + (apex.x - baseA.x) * t, y: baseA.y + (apex.y - baseA.y) * t }
-        }
-        else {
-            let t2 = (ratio - 0.5) * 2
-            return { x: apex.x + (baseB.x - apex.x) * t2, y: apex.y + (baseB.y - apex.y) * t2 }
-        }
-    }
-    if (side === baseSide) {
-        return { x: baseA.x + (baseB.x - baseA.x) * ratio, y: baseA.y + (baseB.y - baseA.y) * ratio }
-    }
-    if (side === edgeA) {
-        return { x: apex.x + (baseA.x - apex.x) * ratio, y: apex.y + (baseA.y - apex.y) * ratio }
-    }
-    if (side === edgeB) {
-        return { x: apex.x + (baseB.x - apex.x) * ratio, y: apex.y + (baseB.y - apex.y) * ratio }
-    }
-    return { x: x + w / 2, y: y + h / 2 }
+    const f = sideAnchorFraction(nodeShape(node, defNode), side)
+    return { x: node.position.x + w * f.fx, y: node.position.y + h * f.fy }
 }
 
 /**

@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    
+    <meta charset="utf-8">
+    <title>components/nodes/NodeBody.vue - Documentation</title>
+    
+    
+    <script src="scripts/prettify/prettify.js"></script>
+    <script src="scripts/prettify/lang-css.js"></script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc.css">
+    <script src="scripts/nav.js" defer></script>
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body>
+
+<input type="checkbox" id="nav-trigger" class="nav-trigger" />
+<label for="nav-trigger" class="navicon-button x">
+  <div class="navicon"></div>
+</label>
+
+<label for="nav-trigger" class="overlay"></label>
+
+<nav >
+    
+    
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-EdgeMarkerDefs.html">EdgeMarkerDefs</a></li><li><a href="module-Handle.html">Handle</a></li><li><a href="module-NodeBody.html">NodeBody</a></li><li><a href="module-NodePorts.html">NodePorts</a></li></ul><h3>Events</h3><ul><li><a href="global.html#event:elements-deleted%25E6%2589%2580%25E6%259C%2589%25E5%2588%25AA%25E9%2599%25A4%25E8%25B7%25AF%25E5%25BE%2591%25E5%25AE%258C%25E6%2588%2590%25E5%25BE%258C%25E7%259A%2586%25E7%2599%25BC%25E5%2587%25BA(%25E6%2596%25BCupdate:*%25E4%25B9%258B%25E5%25BE%258C%25E3%2580%2581%25E6%259C%2580%25E5%25BE%258C%25E7%2599%25BC%25E5%2587%25BA),payload:%257Bfrom,requested:%257BnodeIds,connIds%257D,deleted:%257BnodeIds,connIds,nodes,conns%257D,cascades:%255B%257BnodeId,connIds%257D%255D,notFound:%257BnodeIds,connIds%257D,excluded:%257BnodeIds,connIds%257D%257D-deleted.nodes/conns%25E7%2582%25BA%25E8%25A2%25AB%25E5%2588%25AA%25E7%2595%25B6%25E4%25B8%258B%25E4%25B9%258B%25E6%25B7%25B1%25E8%25A4%2587%25E8%25A3%25BD%25E5%25BF%25AB%25E7%2585%25A7(JSON%25E5%25BE%2580%25E8%25BF%2594,%25E5%2590%258CgetFlowData);id%25E6%25B8%2585%25E5%2596%25AE%25E4%25BE%259B%25E8%25BC%2595%25E9%2587%258F%25E8%25A8%2598%25E5%25B8%25B3;-cascades%25E5%258F%25AA%25E6%258F%258F%25E8%25BF%25B0%25E5%259B%25A0%25E6%259E%259C(%25E5%2593%25AA%25E6%25A2%259D%25E9%2582%258A%25E5%259B%25A0%25E5%2593%25AA%25E5%2580%258B%25E7%25AF%2580%25E9%25BB%259E%25E8%2580%258C%25E5%2588%25AA),%25E8%25A8%2598%25E5%25B8%25B3%25E4%25BB%25A5deleted.*Ids%25E7%2582%25BA%25E6%25BA%2596(%25E5%25B7%25B2%25E5%258E%25BB%25E9%2587%258D);-%25E4%25B8%258D%25E5%2590%25AB%25E5%2588%25AA%25E5%25BE%258C%25E5%2585%25A8%25E9%2587%258F%25E5%25BF%25AB%25E7%2585%25A7(remain):%25E9%259C%2580%25E8%25A6%2581%25E8%2580%2585%25E5%2591%25BC%25E5%258F%25ABgetFlowData()%25E6%2588%2596%25E6%25B2%25BF%25E7%2594%25A8update:nodes/update:conns%25E3%2580%2582%25E5%2588%25AA%25E9%2599%25A4%25E5%258F%25AA%25E6%259C%2589%25E9%2580%2599%25E4%25B8%2580%25E5%2580%258B%25E5%25AE%258C%25E6%2588%2590%25E4%25BA%258B%25E4%25BB%25B6%25E3%2580%2582%25E6%2589%2580%25E6%259C%2589%25E5%2585%25A5%25E5%258F%25A3%25E5%2590%258C%25E4%25B8%2580%25E5%25BA%258F%25E5%2588%2597:(%25E5%2583%2585%25E5%25AF%25A6%25E9%259A%259B%25E8%25AE%258A%25E5%258B%2595%25E4%25B9%258B%25E9%259B%2586%25E5%2590%2588)update:nodes%25E2%2586%2592update:conns%25E2%2586%2592elements-deleted%25E3%2580%2582">elements-deleted 所有刪除路徑完成後皆發出(於 update:* 之後、最後發出),payload:
+  { from, requested:{nodeIds,connIds}, deleted:{nodeIds,connIds,nodes,conns}, cascades:[{nodeId,connIds}],
+    notFound:{nodeIds,connIds}, excluded:{nodeIds,connIds} }
+  - deleted.nodes/conns 為被刪當下之深複製快照(JSON 往返,同 getFlowData);id 清單供輕量記帳;
+  - cascades 只描述因果(哪條邊因哪個節點而刪),記帳以 deleted.*Ids 為準(已去重);
+  - 不含刪後全量快照(remain):需要者呼叫 getFlowData() 或沿用 update:nodes / update:conns。
+  刪除只有這一個完成事件。所有入口同一序列:(僅實際變動之集合)update:nodes → update:conns → elements-deleted。</a></li></ul><h3>Global</h3><ul><li><a href="global.html#CONN_SETTING_KEYS">CONN_SETTING_KEYS</a></li><li><a href="global.html#MARKER_TYPES">MARKER_TYPES</a></li><li><a href="global.html#NODE_DEFAULTS">NODE_DEFAULTS</a></li><li><a href="global.html#NODE_SETTING_KEYS">NODE_SETTING_KEYS</a></li><li><a href="global.html#RECT_FRACTION">RECT_FRACTION</a></li><li><a href="global.html#SETTINGS_TRIGGERS">SETTINGS_TRIGGERS</a></li><li><a href="global.html#SIDES">SIDES</a></li><li><a href="global.html#applyDelete">applyDelete</a></li><li><a href="global.html#assessConnection">assessConnection</a></li><li><a href="global.html#assessGraphConnection">assessGraphConnection</a></li><li><a href="global.html#buildConnectionCandidate">buildConnectionCandidate</a></li><li><a href="global.html#buildRoundedPath">buildRoundedPath</a></li><li><a href="global.html#clampPosition">clampPosition</a></li><li><a href="global.html#classifyHit">classifyHit</a></li><li><a href="global.html#connSourceSide">connSourceSide</a></li><li><a href="global.html#connTargetSide">connTargetSide</a></li><li><a href="global.html#darkenColor">darkenColor</a></li><li><a href="global.html#describeHandleEndpoint">describeHandleEndpoint</a></li><li><a href="global.html#findDuplicateIds">findDuplicateIds</a></li><li><a href="global.html#findHandleElAt">findHandleElAt</a></li><li><a href="global.html#fixSvgNs">fixSvgNs</a></li><li><a href="global.html#generateId">generateId</a></li><li><a href="global.html#getBezierPath">getBezierPath</a></li><li><a href="global.html#getControlOffset">getControlOffset</a></li><li><a href="global.html#getHandlePosition">getHandlePosition</a></li><li><a href="global.html#getOverlappingNodes">getOverlappingNodes</a></li><li><a href="global.html#getSmoothStepPath">getSmoothStepPath</a></li><li><a href="global.html#getStepPath">getStepPath</a></li><li><a href="global.html#getStraightPath">getStraightPath</a></li><li><a href="global.html#handlePlacementStyle">handlePlacementStyle</a></li><li><a href="global.html#handleStyleVars">handleStyleVars</a></li><li><a href="global.html#isAffordanceHit">isAffordanceHit</a></li><li><a href="global.html#isCanvasBlank">isCanvasBlank</a></li><li><a href="global.html#isSide">isSide</a></li><li><a href="global.html#isValidConnection">isValidConnection</a></li><li><a href="global.html#labelAtHalfLength">labelAtHalfLength</a></li><li><a href="global.html#labelOffsetStyle">labelOffsetStyle</a></li><li><a href="global.html#lookupRoute">lookupRoute</a></li><li><a href="global.html#markerDef">markerDef</a></li><li><a href="global.html#markerId">markerId</a></li><li><a href="global.html#markerUrl">markerUrl</a></li><li><a href="global.html#nodeBorderWidth">nodeBorderWidth</a></li><li><a href="global.html#nodeShape">nodeShape</a></li><li><a href="global.html#normalizeConnPoints">normalizeConnPoints</a></li><li><a href="global.html#oppositeSide">oppositeSide</a></li><li><a href="global.html#orthogonalizeThroughPoints">orthogonalizeThroughPoints</a></li><li><a href="global.html#pairEndpoints">pairEndpoints</a></li><li><a href="global.html#pickMenuValue">pickMenuValue</a></li><li><a href="global.html#previewDelete">previewDelete</a></li><li><a href="global.html#rectsOverlap">rectsOverlap</a></li><li><a href="global.html#resolveLineStyle">resolveLineStyle</a></li><li><a href="global.html#resolveMarker">resolveMarker</a></li><li><a href="global.html#segmentFallback">segmentFallback</a></li><li><a href="global.html#setDomFlag">setDomFlag</a></li><li><a href="global.html#setHandleConnectRole">setHandleConnectRole</a></li><li><a href="global.html#setHandleConnectStatus">setHandleConnectStatus</a></li><li><a href="global.html#sideAnchorFraction">sideAnchorFraction</a></li><li><a href="global.html#sideNormal">sideNormal</a></li><li><a href="global.html#snapPosition">snapPosition</a></li><li><a href="global.html#snapshotDeep">snapshotDeep</a></li><li><a href="global.html#stubFallback">stubFallback</a></li><li><a href="global.html#uniq">uniq</a></li></ul>
+    
+</nav>
+
+<div id="main">
+    
+    <h1 class="page-title">components/nodes/NodeBody.vue</h1>
+    
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>&lt;template>
+  &lt;div class="vue-flow__node-body" :style="bodyStyle">
+    &lt;NodeFace :node="node" :lastW="lastW" :lastH="lastH" />
+    &lt;div class="vue-flow__node-content">
+      &lt;div class="vue-flow__node-label" :style="labelStyle">{{ node.name }}&lt;/div>
+    &lt;/div>
+    &lt;NodePorts
+      :node="node"
+      :connectable="connectable"
+      :locked="locked"
+      @connect-start="$emit('connect-start', $event)"
+    />
+    &lt;!-- Corner resize handles (4 corners only) -->
+    &lt;transition name="vue-flow__fade">
+      &lt;div v-if="resizable &amp;&amp; !locked &amp;&amp; (selected || hovered)" class="vue-flow__resize-group">
+        &lt;div class="vue-flow__resize vue-flow__resize--top-left" @mousedown.stop="onResizeMouseDown($event, 'top-left')">&lt;/div>
+        &lt;div class="vue-flow__resize vue-flow__resize--top-right" @mousedown.stop="onResizeMouseDown($event, 'top-right')">&lt;/div>
+        &lt;div class="vue-flow__resize vue-flow__resize--bottom-left" @mousedown.stop="onResizeMouseDown($event, 'bottom-left')">&lt;/div>
+        &lt;div class="vue-flow__resize vue-flow__resize--bottom-right" @mousedown.stop="onResizeMouseDown($event, 'bottom-right')">&lt;/div>
+      &lt;/div>
+    &lt;/transition>
+  &lt;/div>
+&lt;/template>
+
+&lt;script>
+import NodeFace from './NodeFace.vue'
+import NodePorts from './NodePorts.vue'
+import { labelOffsetStyle } from '../../js/nodeStyle.mjs'
+
+/**
+ * 節點本體: 形狀面(NodeFace)+ 文字 + 四連接點(NodePorts)+ 四角縮放。
+ * 節點無型別: 所有節點同一結構, 差異只在資料(形狀/尺寸/色彩)。
+ */
+export default {
+    name: 'NodeBody',
+    components: { NodeFace, NodePorts },
+    inject: { getDefNode: { default: () => () => ({}) } },
+    props: {
+        node: { type: Object, required: true },
+        connectable: { type: Boolean, default: true },
+        selected: { type: Boolean, default: false },
+        resizable: { type: Boolean, default: true },
+        locked: { type: Boolean, default: false },
+        hovered: { type: Boolean, default: false },
+        lastW: { type: Number, default: 0 },
+        lastH: { type: Number, default: 0 },
+    },
+    methods: {
+        //僅主鍵啟動縮放(判準與把手/節點拖曳/畫布平移一致, spec/流程_互動契約.md §3): 右鍵/中鍵按在四角不得啟動縮放手勢
+        onResizeMouseDown(event, edge) {
+            if (event.button !== 0) return
+            this.$emit('resize-start', { event, edge })
+        },
+    },
+    computed: {
+        labelStyle() {
+            return labelOffsetStyle(this.node, this.getDefNode())
+        },
+        bodyStyle() {
+            const w = this.lastW || this.node.width
+            const h = this.lastH || this.node.height
+            const s = {}
+            if (w) s.width = (typeof w === 'number' ? w + 'px' : w)
+            if (h) s.height = (typeof h === 'number' ? h + 'px' : h)
+            return s
+        },
+    },
+}
+&lt;/script>
+
+&lt;style scoped>
+.vue-flow__node-body {
+  box-sizing: border-box;
+}
+.vue-flow__node-content {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  padding: 10px 20px;
+}
+.vue-flow__resize {
+  position: absolute;
+  pointer-events: all;
+}
+.vue-flow__resize--top-left,
+.vue-flow__resize--top-right,
+.vue-flow__resize--bottom-left,
+.vue-flow__resize--bottom-right {
+  width: 10px;
+  height: 10px;
+  z-index: 1;
+  border-radius: 2px;
+  background: #fff;
+  border: 1.5px solid #bbb;
+  transition: border-color 0.15s ease;
+}
+.vue-flow__resize--top-left:hover,
+.vue-flow__resize--top-right:hover,
+.vue-flow__resize--bottom-left:hover,
+.vue-flow__resize--bottom-right:hover {
+  border-color: #0041d0;
+  background: #e8f0fe;
+}
+.vue-flow__resize--top-left { top: -5px; left: -5px; cursor: nwse-resize; }
+.vue-flow__resize--top-right { top: -5px; right: -5px; cursor: nesw-resize; }
+.vue-flow__resize--bottom-left { bottom: -5px; left: -5px; cursor: nesw-resize; }
+.vue-flow__resize--bottom-right { bottom: -5px; right: -5px; cursor: nwse-resize; }
+.vue-flow__fade-enter-active,
+.vue-flow__fade-leave-active {
+  transition: opacity 0.15s ease;
+}
+.vue-flow__fade-enter,
+.vue-flow__fade-leave-to {
+  opacity: 0;
+}
+&lt;/style>
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+    
+    
+</div>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 4.0.5</a> on Thu Aug 27 2026 22:28:38 GMT+0800 (台北標準時間) using the <a href="https://github.com/clenemt/docdash">docdash</a> theme.
+</footer>
+
+<script>prettyPrint();</script>
+<script src="scripts/polyfill.js"></script>
+<script src="scripts/linenumber.js"></script>
+
+
+
+</body>
+</html>

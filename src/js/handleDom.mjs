@@ -16,7 +16,8 @@ export function findHandleElAt(clientX, clientY) {
 }
 
 /**
- * 把手元素 → endpoint descriptor。
+ * 把手元素 → endpoint descriptor { nodeId, position, connectable, element }。
+ * 把手之身分即「節點 × 邊」(四邊中點, 無連出/連入之分)。
  * flowId 歸屬檢查: 把手必須屬於本 flow 實例(頁面可能有多個/巢狀 flow,
  * elementFromPoint 可能撿到他 flow 之把手; 以最近之 [data-flow-id] 祖先比對, 不符即回 null)。
  */
@@ -28,8 +29,6 @@ export function describeHandleEndpoint(handleEl, flowId) {
     if (!nodeEl || !nodeEl.dataset.id) return null
     return {
         nodeId: nodeEl.dataset.id,
-        handleId: handleEl.dataset.handleId || null,
-        type: handleEl.dataset.handleType || null,
         position: handleEl.dataset.handlePosition || null,
         connectable: !handleEl.classList.contains('vue-flow__handle--not-connectable'),
         element: handleEl,
@@ -55,7 +54,7 @@ export function setHandleConnectRole(handleEl, role) {
 }
 
 /**
- * 通用 dataset 旗標(建線根標記 data-connect-from、出發節點 data-connect-origin-node、手勢擁有者 data-gesture-owner):
+ * 通用 dataset 旗標(出發節點 data-connect-origin-node、手勢擁有者 data-gesture-owner):
  * 與把手標記同理——未列於模板之 data-* 屬性不受 Vue patch 影響, 純 CSS 即可據以切換視覺, 不觸發任何重渲染。
  * value 為空即移除。
  */

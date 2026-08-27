@@ -43,7 +43,7 @@
     />
 
     <!-- w-flow-vue -->
-    <script src="https://cdn.jsdelivr.net/npm/w-flow-vue@1.0.39/dist/w-flow-vue.umd.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/w-flow-vue@1.0.40/dist/w-flow-vue.umd.js"></script>
 
     <!-- lodash -->
     <script src="https://cdn.jsdelivr.net/npm/lodash/lodash.min.js"></script>
@@ -258,30 +258,34 @@
           vo.opt.nodes = [
             {
               id: "A",
-              type: "basic",
               name: "A",
               position: { x: vo.CENTER_X, y: vo.CENTER_Y },
               width: vo.NODE_W,
-              height: vo.NODE_H,
-              toPosition: vo.srcHandle
+              height: vo.NODE_H
             },
             {
               id: "B",
-              type: "basic",
               name: "B",
               position: { x: bx, y: by },
               width: vo.NODE_W,
-              height: vo.NODE_H,
-              fromPosition: vo.tgtHandle
+              height: vo.NODE_H
             }
           ];
           vo.opt.conns = [
-            { id: "eA-B", from: "A", to: "B", type: "step", name: vo.caseLabel }
+            {
+              id: "eA-B",
+              from: "A",
+              to: "B",
+              type: "step",
+              name: vo.caseLabel,
+              fromPosition: vo.srcHandle,
+              toPosition: vo.tgtHandle
+            }
           ];
         } else {
-          // Update handle positions and conn name, preserve node positions
-          vo.opt.nodes[0].toPosition = vo.srcHandle;
-          vo.opt.nodes[1].fromPosition = vo.tgtHandle;
+          // Update conn anchors and name, preserve node positions
+          vo.opt.conns[0].fromPosition = vo.srcHandle;
+          vo.opt.conns[0].toPosition = vo.tgtHandle;
           vo.opt.conns[0].name = vo.caseLabel;
         }
       },

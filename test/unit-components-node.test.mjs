@@ -1,122 +1,83 @@
 import { mount } from '@vue/test-utils'
 import Handle from '../src/components/nodes/Handle.vue'
-import DefaultNode from '../src/components/nodes/DefaultNode.vue'
-import InputNode from '../src/components/nodes/InputNode.vue'
-import OutputNode from '../src/components/nodes/OutputNode.vue'
+import NodePorts from '../src/components/nodes/NodePorts.vue'
 import NodeBody from '../src/components/nodes/NodeBody.vue'
 import NodeWrapper from '../src/components/nodes/NodeWrapper.vue'
+import { SIDES } from '../src/js/anchorPolicy.mjs'
 
 describe('Handle', () => {
-    test('renders with correct classes', () => {
+    //節點無型別, 把手無 source/target 之分(spec §1-§3): 單一種把手, 樣式/行為由 position 決定
+    test('renders with correct classes (no source/target distinction)', () => {
         const wrapper = mount(Handle, {
-            propsData: { type: 'source', position: 'bottom' },
+            propsData: { position: 'bottom' },
         })
         expect(wrapper.classes()).toContain('vue-flow__handle')
         expect(wrapper.classes()).toContain('vue-flow__handle--bottom')
-        expect(wrapper.classes()).toContain('vue-flow__handle--source')
+        expect(wrapper.classes()).not.toContain('vue-flow__handle--source')
+        expect(wrapper.classes()).not.toContain('vue-flow__handle--target')
+        expect(wrapper.attributes('data-handle-position')).toBe('bottom')
+        expect(wrapper.attributes('data-handle-type')).toBeUndefined()
+        expect(wrapper.attributes('data-handle-id')).toBeUndefined()
     })
 
-    test('emits connect-start on mousedown', () => {
+    test('emits connect-start on mousedown with handlePosition payload', () => {
         const wrapper = mount(Handle, {
-            propsData: { type: 'source', position: 'bottom', connectable: true },
+            propsData: { position: 'bottom', connectable: true },
         })
-        wrapper.trigger('mousedown')
+        wrapper.trigger('mousedown', { button: 0 })
         expect(wrapper.emitted('connect-start')).toBeTruthy()
-        expect(wrapper.emitted('connect-start')[0][0]).toHaveProperty('handleType', 'source')
+        expect(wrapper.emitted('connect-start')[0][0]).toHaveProperty('handlePosition', 'bottom')
     })
 
     test('does not emit when not connectable', () => {
         const wrapper = mount(Handle, {
-            propsData: { type: 'source', position: 'bottom', connectable: false },
+            propsData: { position: 'bottom', connectable: false },
         })
-        wrapper.trigger('mousedown')
+        wrapper.trigger('mousedown', { button: 0 })
         expect(wrapper.emitted('connect-start')).toBeFalsy()
     })
 })
 
-describe('DefaultNode', () => {
-    const node = { id: '1', type: 'basic', name: 'Test', position: { x: 0, y: 0 } }
+describe('NodePorts (取代 DefaultNode/InputNode/OutputNode 之把手佈局: 節點無型別, 恆四把手完全對稱)', () => {
+    const node = { id: '1', name: 'Test', position: { x: 0, y: 0 } }
 
+    test('has exactly four handles', () => {
+        const wrapper = mount(NodePorts, { propsData: { node } })
+        const handles = wrapper.findAllComponents(Handle)
+        expect(handles).toHaveLength(4)
+    })
+
+    test('four handles cover top/right/bottom/left exactly once, no type distinction', () => {
+        const wrapper = mount(NodePorts, { propsData: { node } })
+        const handles = wrapper.findAllComponents(Handle)
+        const positions = handles.wrappers.map(h => h.props('position')).sort()
+        expect(positions).toEqual([...SIDES].sort())
+    })
+})
+
+describe('NodeBody(單一結構: 無型別分支, 恆渲染 NodePorts 四把手)', () => {
     test('renders label', () => {
-        const wrapper = mount(DefaultNode, { propsData: { node } })
+        const node = { id: '1', name: 'Test', position: { x: 0, y: 0 } }
+        const wrapper = mount(NodeBody, { propsData: { node } })
         expect(wrapper.text()).toContain('Test')
     })
 
-    test('has two handles', () => {
-        const wrapper = mount(DefaultNode, { propsData: { node } })
-        const handles = wrapper.findAllComponents(Handle)
-        expect(handles).toHaveLength(2)
-    })
-
-    test('has target handle on top and source on bottom', () => {
-        const wrapper = mount(DefaultNode, { propsData: { node } })
-        const handles = wrapper.findAllComponents(Handle)
-        const types = handles.wrappers.map(h => h.props('type'))
-        expect(types).toContain('target')
-        expect(types).toContain('source')
-    })
-})
-
-describe('InputNode', () => {
-    const node = { id: '1', type: 'input', name: 'Start', position: { x: 0, y: 0 } }
-
-    test('renders label', () => {
-        const wrapper = mount(InputNode, { propsData: { node } })
-        expect(wrapper.text()).toContain('Start')
-    })
-
-    test('has one source handle', () => {
-        const wrapper = mount(InputNode, { propsData: { node } })
-        const handles = wrapper.findAllComponents(Handle)
-        expect(handles).toHaveLength(1)
-        expect(handles.at(0).props('type')).toBe('source')
-    })
-})
-
-describe('OutputNode', () => {
-    const node = { id: '1', type: 'output', name: 'End', position: { x: 0, y: 0 } }
-
-    test('renders label', () => {
-        const wrapper = mount(OutputNode, { propsData: { node } })
-        expect(wrapper.text()).toContain('End')
-    })
-
-    test('has one target handle', () => {
-        const wrapper = mount(OutputNode, { propsData: { node } })
-        const handles = wrapper.findAllComponents(Handle)
-        expect(handles).toHaveLength(1)
-        expect(handles.at(0).props('type')).toBe('target')
-    })
-})
-
-describe('NodeBody', () => {
-    test('renders DefaultNode for type basic', () => {
-        const node = { id: '1', type: 'basic', name: 'Test', position: { x: 0, y: 0 } }
+    test('renders NodePorts with four handles regardless of node.type field (type no longer read)', () => {
+        const node = { id: '1', name: 'Test', position: { x: 0, y: 0 } }
         const wrapper = mount(NodeBody, { propsData: { node } })
-        expect(wrapper.findComponent(DefaultNode).exists()).toBe(true)
+        expect(wrapper.findComponent(NodePorts).exists()).toBe(true)
+        expect(wrapper.findAllComponents(Handle)).toHaveLength(4)
     })
 
-    test('renders InputNode for type input', () => {
+    test('a stray legacy type field on the node data is ignored (no type-based branching left)', () => {
         const node = { id: '1', type: 'input', name: 'Test', position: { x: 0, y: 0 } }
         const wrapper = mount(NodeBody, { propsData: { node } })
-        expect(wrapper.findComponent(InputNode).exists()).toBe(true)
-    })
-
-    test('renders OutputNode for type output', () => {
-        const node = { id: '1', type: 'output', name: 'Test', position: { x: 0, y: 0 } }
-        const wrapper = mount(NodeBody, { propsData: { node } })
-        expect(wrapper.findComponent(OutputNode).exists()).toBe(true)
-    })
-
-    test('falls back to DefaultNode for unknown type', () => {
-        const node = { id: '1', type: 'unknown', name: 'Test', position: { x: 0, y: 0 } }
-        const wrapper = mount(NodeBody, { propsData: { node } })
-        expect(wrapper.findComponent(DefaultNode).exists()).toBe(true)
+        expect(wrapper.findAllComponents(Handle)).toHaveLength(4)
     })
 })
 
 describe('NodeWrapper', () => {
-    const node = { id: '1', type: 'basic', name: 'Test', position: { x: 100, y: 50 } }
+    const node = { id: '1', name: 'Test', position: { x: 100, y: 50 } }
 
     test('renders with correct transform', () => {
         const wrapper = mount(NodeWrapper, { propsData: { node } })

@@ -1,164 +1,136 @@
 /**
- * connectPolicy 純函式驗收(建線可行性政策之 domain 層)。
+ * connectPolicy 純函式驗收(建線可行性政策之 domain 層; spec/流程_互動契約.md §4)。
  *
  * 規格:
- * P1 buildConnectionCandidate: 候選只有 { from, to }, 把手方位不寫入(邊沒有自己的方位)。
- * P2 assessGraphConnection: 端點缺漏/不存在、自我連線、output 起點、input 終點、同向重複、
- *    custom validator, 逐項拒絕並回報 reason; 全過即 valid。
- * P3 反向邊契約: A→B 已存在時 B→A 仍允許(方向圖語義, 鎖定現狀)。
- * P4 assessConnection: 能力層(方向語義/connectable)先於圖層; candidate 形狀與 commit 完全一致,
- *    custom validator 收到與 commit 相同之 { from, to }。
- * P5 isValidConnection(graph.mjs)委派本政策: 端點不存在即 false(舊版誤判為 true 之修正)。
- * P6 雙向出發正規化(spec/流程_互動契約.md §4): 自 target 出發落於 source, 候選仍為 { from: source 端, to: target 端 };
- *    候選不含方位, 與出發方向無關。
- * P7 reason 優先序: unknown-handle → self(同節點任何把手, 含拖回出發把手自身與同類) → same-kind → not-connectable → 圖層級。
- * P8 output.target → input.source 之反向出發: 正規化後 input→output 合法(不得因反向而漏判/誤判)。
+ * P1 buildConnectionCandidate: { from: 出發節點, to: 落點節點, fromPosition: 出發邊, toPosition: 落點邊 }。
+ * P2 assessGraphConnection: 端點缺漏/不存在、自我連線、同向重複、custom validator, 逐項拒絕並回報 reason; 全過即 valid。
+ * P3 反向邊契約: A→B 已存在時 B→A 仍允許(方向圖語義)。
+ * P4 assessConnection: 能力層(unknown-handle/self/not-connectable)先於圖層; validator 收到與 commit 相同之候選。
+ * P5 isValidConnection(graph.mjs)委派本政策: 端點不存在即 false。
+ * P6 四把手對稱: 任一出發邊 × 任一落點邊之組合皆合法(他節點), 且候選方位即兩把手所在邊。
+ * P7 reason 優先序: no-endpoint → unknown-handle → self(同節點任一把手, 含出發把手自身) → not-connectable → 圖層級。
+ * P8 duplicate 不看方位: 同向同節點對即重複, 方位不同亦然。
  */
 import { buildConnectionCandidate, assessGraphConnection, assessConnection, pairEndpoints } from '../src/js/connectPolicy.mjs'
 import { isValidConnection } from '../src/js/graph'
 
 const nodes = [
-    { id: 'i1', type: 'input' },
-    { id: 'b1', type: 'basic' },
-    { id: 'b2' }, //type 未指定=basic
-    { id: 'o1', type: 'output' },
+    { id: 'a' },
+    { id: 'b' },
+    { id: 'c', type: 'output' }, //節點 type 不再有語義
 ]
-const ep = (nodeId, type, extra = {}) => ({ nodeId, type, position: null, connectable: true, handleId: null, element: null, ...extra })
+const ep = (nodeId, position = 'bottom', extra = {}) => ({ nodeId, position, connectable: true, element: null, ...extra })
+const SIDES = ['top', 'right', 'bottom', 'left']
 
-describe('P1 候選只有 { from, to }(邊沒有自己的方位)', () => {
-    test('把手方位不寫入候選', () => {
-        expect(buildConnectionCandidate(ep('b1', 'source', { position: 'left' }), ep('b2', 'target', { position: 'right' })))
-            .toEqual({ from: 'b1', to: 'b2' })
+describe('P1 候選形狀', () => {
+    test('from/to + 兩端方位', () => {
+        expect(buildConnectionCandidate(ep('a', 'left'), ep('b', 'right')))
+            .toEqual({ from: 'a', to: 'b', fromPosition: 'left', toPosition: 'right' })
     })
 })
 
 describe('P2 圖層級判定逐項拒絕', () => {
     test('端點缺漏: no-endpoint', () => {
-        expect(assessGraphConnection({ from: '', to: 'b2' }, nodes, [])).toEqual({ valid: false, reason: 'no-endpoint' })
+        expect(assessGraphConnection({ from: '', to: 'b' }, nodes, [])).toEqual({ valid: false, reason: 'no-endpoint' })
         expect(assessGraphConnection(null, nodes, [])).toEqual({ valid: false, reason: 'no-endpoint' })
     })
     test('自我連線: self', () => {
-        expect(assessGraphConnection({ from: 'b1', to: 'b1' }, nodes, [])).toEqual({ valid: false, reason: 'self' })
+        expect(assessGraphConnection({ from: 'a', to: 'a' }, nodes, [])).toEqual({ valid: false, reason: 'self' })
     })
     test('端點不存在於圖中: missing-node', () => {
-        expect(assessGraphConnection({ from: 'b1', to: 'ghost' }, nodes, [])).toEqual({ valid: false, reason: 'missing-node' })
-        expect(assessGraphConnection({ from: 'ghost', to: 'b1' }, nodes, [])).toEqual({ valid: false, reason: 'missing-node' })
+        expect(assessGraphConnection({ from: 'a', to: 'ghost' }, nodes, [])).toEqual({ valid: false, reason: 'missing-node' })
+        expect(assessGraphConnection({ from: 'ghost', to: 'a' }, nodes, [])).toEqual({ valid: false, reason: 'missing-node' })
     })
-    test('output 不可作為起點 / input 不可作為終點', () => {
-        expect(assessGraphConnection({ from: 'o1', to: 'b1' }, nodes, [])).toEqual({ valid: false, reason: 'from-output' })
-        expect(assessGraphConnection({ from: 'b1', to: 'i1' }, nodes, [])).toEqual({ valid: false, reason: 'to-input' })
-    })
-    test('同向重複: duplicate(即使方位不同亦算)', () => {
-        const conns = [{ id: 'e1', from: 'b1', to: 'b2', fromPosition: 'left' }]
-        expect(assessGraphConnection({ from: 'b1', to: 'b2' }, nodes, conns)).toEqual({ valid: false, reason: 'duplicate' })
+    test('同向重複: duplicate', () => {
+        const conns = [{ id: 'e1', from: 'a', to: 'b' }]
+        expect(assessGraphConnection({ from: 'a', to: 'b' }, nodes, conns)).toEqual({ valid: false, reason: 'duplicate' })
     })
     test('custom validator 拒絕: custom', () => {
-        expect(assessGraphConnection({ from: 'b1', to: 'b2' }, nodes, [], () => false)).toEqual({ valid: false, reason: 'custom' })
+        expect(assessGraphConnection({ from: 'a', to: 'b' }, nodes, [], () => false)).toEqual({ valid: false, reason: 'custom' })
     })
-    test('全過即 valid', () => {
-        expect(assessGraphConnection({ from: 'i1', to: 'b2' }, nodes, [])).toEqual({ valid: true, reason: null })
+    test('全過即 valid; 節點 type 欄位無語義(output 可為起點)', () => {
+        expect(assessGraphConnection({ from: 'c', to: 'a' }, nodes, [])).toEqual({ valid: true, reason: null })
+        expect(assessGraphConnection({ from: 'a', to: 'c' }, nodes, [])).toEqual({ valid: true, reason: null })
     })
 })
 
-describe('P3 反向邊契約(鎖定現狀)', () => {
+describe('P3 反向邊契約', () => {
     test('A→B 已存在時, B→A 仍允許', () => {
-        const conns = [{ id: 'e1', from: 'b1', to: 'b2' }]
-        expect(assessGraphConnection({ from: 'b2', to: 'b1' }, nodes, conns)).toEqual({ valid: true, reason: null })
+        const conns = [{ id: 'e1', from: 'a', to: 'b' }]
+        expect(assessGraphConnection({ from: 'b', to: 'a' }, nodes, conns)).toEqual({ valid: true, reason: null })
     })
 })
 
 describe('P4 完整判定: 能力層先於圖層, validator 收到完整形狀', () => {
     test('endpoint 缺: no-endpoint', () => {
-        expect(assessConnection(null, ep('b2', 'target'), { nodes, conns: [] }))
+        expect(assessConnection(null, ep('b'), { nodes, conns: [] }))
             .toEqual({ valid: false, reason: 'no-endpoint', connection: null })
     })
-    test('配對語義: 他節點之同類把手即拒絕 same-kind(不進圖層判定; 雙向皆然)', () => {
-        expect(assessConnection(ep('b1', 'source'), ep('b2', 'source'), { nodes, conns: [] }))
-            .toEqual({ valid: false, reason: 'same-kind', connection: null })
-        expect(assessConnection(ep('b1', 'target'), ep('b2', 'target'), { nodes, conns: [] }))
-            .toEqual({ valid: false, reason: 'same-kind', connection: null })
-    })
-    test('connectable=false 拒絕', () => {
-        expect(assessConnection(ep('b1', 'source'), ep('b2', 'target', { connectable: false }), { nodes, conns: [] }))
+    test('connectable=false 拒絕(任一端)', () => {
+        expect(assessConnection(ep('a'), ep('b', 'top', { connectable: false }), { nodes, conns: [] }))
             .toEqual({ valid: false, reason: 'not-connectable', connection: null })
+        expect(assessConnection(ep('a', 'top', { connectable: false }), ep('b'), { nodes, conns: [] }).reason).toBe('not-connectable')
     })
-    test('validator 收到與 commit 同形狀之候選 { from, to }', () => {
+    test('validator 收到與 commit 同形狀之候選', () => {
         const seen = []
-        const validator = (c) => { seen.push(c); return true }
-        const r = assessConnection(
-            ep('b1', 'source', { position: 'left' }),
-            ep('b2', 'target', { position: 'right' }),
-            { nodes, conns: [], validator },
-        )
+        const validator = (c) => {
+            seen.push(c); return true
+        }
+        const r = assessConnection(ep('a', 'left'), ep('b', 'right'), { nodes, conns: [], validator })
         expect(r.valid).toBe(true)
-        expect(seen).toEqual([{ from: 'b1', to: 'b2' }])
-        expect(r.connection).toEqual({ from: 'b1', to: 'b2' })
+        expect(seen).toEqual([{ from: 'a', to: 'b', fromPosition: 'left', toPosition: 'right' }])
+        expect(r.connection).toEqual({ from: 'a', to: 'b', fromPosition: 'left', toPosition: 'right' })
+    })
+    test('能力層拒絕時 connection 為 null, 不呼叫 validator', () => {
+        const validator = jest.fn(() => true)
+        expect(assessConnection(ep('a'), ep('a', 'top'), { nodes, conns: [], validator }).connection).toBeNull()
+        expect(validator).not.toHaveBeenCalled()
     })
 })
 
 describe('P5 isValidConnection 委派政策', () => {
-    test('端點不存在即 false(舊版漏洞修正)', () => {
-        expect(isValidConnection({ from: 'ghost', to: 'b1' }, nodes, [])).toBe(false)
+    test('端點不存在即 false', () => {
+        expect(isValidConnection({ from: 'ghost', to: 'a' }, nodes, [])).toBe(false)
     })
-    test('合法連線仍為 true(相容)', () => {
-        expect(isValidConnection({ from: 'b1', to: 'b2' }, nodes, [])).toBe(true)
-    })
-    test('自我連線/重複邊仍為 false(相容)', () => {
-        expect(isValidConnection({ from: 'b1', to: 'b1' }, nodes, [])).toBe(false)
-        expect(isValidConnection({ from: 'b1', to: 'b2' }, nodes, [{ from: 'b1', to: 'b2' }])).toBe(false)
+    test('合法連線 true; 自我連線/重複邊 false', () => {
+        expect(isValidConnection({ from: 'a', to: 'b' }, nodes, [])).toBe(true)
+        expect(isValidConnection({ from: 'a', to: 'a' }, nodes, [])).toBe(false)
+        expect(isValidConnection({ from: 'a', to: 'b' }, nodes, [{ from: 'a', to: 'b' }])).toBe(false)
     })
 })
 
-describe('P6 雙向出發正規化', () => {
-    test('自 b2.target 出發落於 b1.source → { from: b1, to: b2 }', () => {
-        const r = assessConnection(ep('b2', 'target'), ep('b1', 'source'), { nodes, conns: [] })
-        expect(r).toEqual({ valid: true, reason: null, connection: { from: 'b1', to: 'b2' } })
-    })
-    test('反向出發之候選同樣不含任何方位', () => {
-        const r = assessConnection(
-            ep('b2', 'target', { position: 'right' }),
-            ep('b1', 'source', { position: 'left' }),
-            { nodes, conns: [] },
-        )
-        expect(r.connection).toEqual({ from: 'b1', to: 'b2' })
-    })
-    test('反向出發與正向出發對同一對端點得相同候選(validator 形狀不變)', () => {
-        const seen = []
-        const validator = (c) => { seen.push(c); return true }
-        assessConnection(ep('b1', 'source'), ep('b2', 'target'), { nodes, conns: [], validator })
-        assessConnection(ep('b2', 'target'), ep('b1', 'source'), { nodes, conns: [], validator })
-        expect(seen[0]).toEqual(seen[1])
-    })
-    test('反向出發之重複邊仍被擋', () => {
-        const r = assessConnection(ep('b2', 'target'), ep('b1', 'source'), { nodes, conns: [{ from: 'b1', to: 'b2' }] })
-        expect(r).toEqual({ valid: false, reason: 'duplicate', connection: { from: 'b1', to: 'b2' } })
+describe('P6 四把手對稱: 16 種邊組合皆合法且方位即所在邊', () => {
+    const cases = []
+    for (const f of SIDES) for (const t of SIDES) cases.push([f, t])
+    test.each(cases)('a.%s → b.%s', (f, t) => {
+        const r = assessConnection(ep('a', f), ep('b', t), { nodes, conns: [] })
+        expect(r).toEqual({ valid: true, reason: null, connection: { from: 'a', to: 'b', fromPosition: f, toPosition: t } })
     })
 })
 
 describe('P7 reason 優先序', () => {
-    test('unknown-handle 先於一切能力層', () => {
-        expect(pairEndpoints(ep('b1', null), ep('b1', 'source'))).toEqual({ reason: 'unknown-handle' })
-        expect(assessConnection(ep('b1', 'source'), ep('b2', 'weird'), { nodes, conns: [] }).reason).toBe('unknown-handle')
+    test('unknown-handle 先於一切能力層(方位非四值)', () => {
+        expect(pairEndpoints(ep('a', null), ep('a', 'top'))).toEqual({ reason: 'unknown-handle' })
+        expect(pairEndpoints(ep('a', 'source'), ep('b', 'top'))).toEqual({ reason: 'unknown-handle' })
+        expect(assessConnection(ep('a'), ep('b', 'weird'), { nodes, conns: [] }).reason).toBe('unknown-handle')
     })
-    test('self 先於 same-kind: 拖回自己節點任何把手(含出發把手自身、同類、異類)皆 self', () => {
-        expect(pairEndpoints(ep('b1', 'source'), ep('b1', 'source'))).toEqual({ reason: 'self' })
-        expect(pairEndpoints(ep('b1', 'source'), ep('b1', 'target'))).toEqual({ reason: 'self' })
-        expect(pairEndpoints(ep('b1', 'target'), ep('b1', 'target'))).toEqual({ reason: 'self' })
-        expect(pairEndpoints(ep('b1', 'target'), ep('b1', 'source'))).toEqual({ reason: 'self' })
+    test('self: 拖回自己節點任一把手(含出發把手自身)', () => {
+        for (const s of SIDES) expect(pairEndpoints(ep('a', 'bottom'), ep('a', s))).toEqual({ reason: 'self' })
     })
-    test('same-kind 先於 not-connectable; not-connectable 先於圖層級', () => {
-        expect(pairEndpoints(ep('b1', 'source'), ep('b2', 'source', { connectable: false }))).toEqual({ reason: 'same-kind' })
-        expect(assessConnection(ep('o1', 'target'), ep('i1', 'source', { connectable: false }), { nodes, conns: [] }).reason).toBe('not-connectable')
+    test('self 先於 not-connectable; not-connectable 先於圖層級', () => {
+        expect(pairEndpoints(ep('a'), ep('a', 'top', { connectable: false }))).toEqual({ reason: 'self' })
+        expect(assessConnection(ep('a'), ep('ghost', 'top', { connectable: false }), { nodes, conns: [] }).reason).toBe('not-connectable')
+    })
+    test('可配對時回空物件', () => {
+        expect(pairEndpoints(ep('a'), ep('b', 'top'))).toEqual({})
     })
 })
 
-describe('P8 output/input 節點之反向出發', () => {
-    test('自 o1.target 出發落於 i1.source → 正規化 i1→o1 合法', () => {
-        const r = assessConnection(ep('o1', 'target'), ep('i1', 'source'), { nodes, conns: [] })
-        expect(r).toEqual({ valid: true, reason: null, connection: { from: 'i1', to: 'o1' } })
-    })
-    test('自 i1.source 出發落於 o1.target 與上例得相同候選', () => {
-        const r = assessConnection(ep('i1', 'source'), ep('o1', 'target'), { nodes, conns: [] })
-        expect(r.connection).toEqual({ from: 'i1', to: 'o1' })
+describe('P8 duplicate 不看方位', () => {
+    test('a→b 已存在(bottom→top): 自 a.right 拉至 b.left 仍 duplicate', () => {
+        const conns = [{ id: 'e1', from: 'a', to: 'b', fromPosition: 'bottom', toPosition: 'top' }]
+        const r = assessConnection(ep('a', 'right'), ep('b', 'left'), { nodes, conns })
+        expect(r.reason).toBe('duplicate')
+        expect(r.connection).toEqual({ from: 'a', to: 'b', fromPosition: 'right', toPosition: 'left' })
     })
 })

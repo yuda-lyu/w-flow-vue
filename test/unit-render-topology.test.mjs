@@ -103,7 +103,8 @@ describe('R3 建線期間全樹靜止', () => {
         await tick(w, 2)
         document.elementFromPoint = () => null
 
-        const src = w.findAll('.vue-flow__handle--source')
+        //四把手對稱, 任一邊皆可出發(取 bottom 示範一邊)
+        const src = w.findAll('.vue-flow__handle--bottom')
         expect(src.length).toBeGreaterThan(0)
         src.at(0).trigger('mousedown', { button: 0 })
         await tick(w)
@@ -168,6 +169,7 @@ describe('R4 宿主自訂 popup slot 之行為不變', () => {
                 { id: 'b', name: 'B', position: { x: 300, y: 0 }, width: 100, height: 40 },
             ],
             conns: [{ id: 'eab', from: 'a', to: 'b' }], //刻意無 name / description
+            connsSettingsTrigger: 'hover', //驗資訊 popup 立即開啟
         }
         const Host = {
             components: { WFlowVue },

@@ -3,13 +3,13 @@
  *
  * 規格:
  * F1 出發把手於建線期間帶 data-connect-role="origin"; 根元素帶 .vue-flow--connecting。
- * F2 hover 他節點之同類把手 → data-connect-status="invalid"(same-kind; 自 target 出發時他節點 source 為 valid, 對稱)。
- * F3 hover 自己節點之 target 把手 → invalid(自我連線禁止)。
- * F4 hover 合法 target 把手 → valid, 且 connectionVisual.toPosition 跟隨該把手方位(預覽線進入方向)。
- * F5 hover 已有同向邊之節點 target 把手 → invalid(duplicate)。
- * F6 游標離開把手 → 標記清除, dropStatus 回 'none', toPosition 回 'top'。
+ * F2 節點無連出/連入之分, 四把手完全對稱: hover 他節點之任一方位把手皆為合法落點(無 same-kind 限制)。
+ * F3 hover 自己節點之其他把手(任一方位, 含出發把手自身) → invalid(自我連線禁止)。
+ * F4 hover 合法他節點把手 → valid, 且 connectionVisual.toPosition 跟隨該把手方位(預覽線進入方向)。
+ * F5 hover 已有同向邊之節點把手 → invalid(duplicate; 方位不參與判定, 見 connectPolicy)。
+ * F6 游標離開把手 → 標記清除, dropStatus 回 'none', toPosition 回出發邊之對邊。
  * F7 validator 呼叫紀律: 僅於 hover 目標變更時呼叫一次(同把手上連續 mousemove 不重複呼叫),
- *    且收到與 commit 完全相同形狀之候選。
+ *    且收到與 commit 完全相同形狀之候選 { from, to, fromPosition, toPosition }。
  * F8 他 flow 實例之把手: 不標記(status 'none'), 於其上放開亦不建線(flow 歸屬檢查)。
  * F9 preview==commit 不變量: hover 判定 valid 之落點放開必建線; invalid 之落點放開必不建線。
  * F10 hover 判定不觸發 Node/EdgeWrapper 重渲染(細粒度鐵律)。
@@ -21,10 +21,10 @@ import EdgeWrapper from '../src/components/edges/EdgeWrapper.vue'
 
 const mkOpt = (extra = {}) => ({
     nodes: [
-        { id: '1', type: 'input', name: 'N1', position: { x: 0, y: 0 }, width: 100, height: 40 },
-        { id: '2', type: 'output', name: 'N2', position: { x: 300, y: 200 }, width: 100, height: 40 },
-        { id: '3', type: 'basic', name: 'N3', position: { x: 0, y: 200 }, width: 100, height: 40 },
-        { id: '4', type: 'basic', name: 'N4', position: { x: 300, y: 0 }, width: 100, height: 40 },
+        { id: '1', name: 'N1', position: { x: 0, y: 0 }, width: 100, height: 40 },
+        { id: '2', name: 'N2', position: { x: 300, y: 200 }, width: 100, height: 40 },
+        { id: '3', name: 'N3', position: { x: 0, y: 200 }, width: 100, height: 40 },
+        { id: '4', name: 'N4', position: { x: 300, y: 0 }, width: 100, height: 40 },
     ],
     conns: [],
     ...extra,
@@ -32,9 +32,10 @@ const mkOpt = (extra = {}) => ({
 
 const mountFlow = (opt) => mount(WFlowVue, { propsData: { opt }, attachTo: document.body })
 
-const handleEl = (w, nodeId, type) => w.findAll(`.vue-flow__node[data-id="${nodeId}"] .vue-flow__handle[data-handle-type="${type}"]`).at(0).element
+const handleEl = (w, nodeId, position) => w.findAll(`.vue-flow__node[data-id="${nodeId}"] .vue-flow__handle[data-handle-position="${position}"]`).at(0).element
+//出發一律取 bottom 邊(四把手對稱, 任一邊皆等價; 固定一邊使測試座標/預期方位可預測)
 const startConnect = (w, nodeId) => {
-    w.findAll(`.vue-flow__node[data-id="${nodeId}"] .vue-flow__handle[data-handle-type="source"]`).at(0)
+    w.findAll(`.vue-flow__node[data-id="${nodeId}"] .vue-flow__handle[data-handle-position="bottom"]`).at(0)
         .trigger('mousedown', { button: 0 })
 }
 //建線中之拖曳移動: buttons=1(主鍵按住), 游標下元素由 elementFromPoint stub 決定
@@ -56,7 +57,7 @@ describe('F1 出發把手與根元素之建線標記', () => {
         const w = mountFlow(mkOpt())
         await w.vm.$nextTick()
         startConnect(w, '1')
-        const src = handleEl(w, '1', 'source')
+        const src = handleEl(w, '1', 'bottom')
         expect(src.getAttribute('data-connect-role')).toBe('origin')
         await w.vm.$nextTick()
         expect(w.vm.$el.classList.contains('vue-flow--connecting')).toBe(true)
@@ -66,59 +67,69 @@ describe('F1 出發把手與根元素之建線標記', () => {
     })
 })
 
-describe('F2 他節點之同類把手為不合法落點(same-kind, 雙向對稱)', () => {
-    test('自 source 出發 hover 他節點 source → invalid', async () => {
+describe('F2 四把手完全對稱: 他節點任一方位把手皆為合法落點(無 same-kind 限制)', () => {
+    test('自節點1之 bottom 出發 hover 他節點3之 bottom(同方位) → valid', async () => {
         const w = mountFlow(mkOpt())
         await w.vm.$nextTick()
         startConnect(w, '1')
-        const otherSrc = handleEl(w, '3', 'source')
-        moveOver(otherSrc)
-        expect(otherSrc.getAttribute('data-connect-status')).toBe('invalid')
-        expect(w.vm.connectionVisual.dropStatus).toBe('invalid')
+        const otherBottom = handleEl(w, '3', 'bottom')
+        moveOver(otherBottom)
+        expect(otherBottom.getAttribute('data-connect-status')).toBe('valid')
+        expect(w.vm.connectionVisual.dropStatus).toBe('valid')
         dropAt(null)
         w.destroy()
     })
-    test('自 target 出發 hover 他節點 target → invalid; hover 他節點 source → valid 且 toPosition 跟隨', async () => {
+    test('自節點2之 top 出發 hover 他節點3之 top(同方位) → valid; hover 他節點3之 bottom → 亦 valid 且 toPosition 跟隨', async () => {
         const w = mountFlow(mkOpt())
         await w.vm.$nextTick()
-        //自 output 節點 2 之 target 出發
-        handleEl(w, '2', 'target').dispatchEvent(new MouseEvent('mousedown', { bubbles: true, button: 0 }))
+        //自節點2之 top 把手出發(對稱: 任一邊皆可出發, 非固定 bottom)
+        handleEl(w, '2', 'top').dispatchEvent(new MouseEvent('mousedown', { bubbles: true, button: 0 }))
         expect(w.vm.isConnecting).toBe(true)
-        const otherTgt = handleEl(w, '3', 'target')
-        moveOver(otherTgt)
-        expect(otherTgt.getAttribute('data-connect-status')).toBe('invalid')
-        const src = handleEl(w, '3', 'source')
-        moveOver(src)
-        expect(src.getAttribute('data-connect-status')).toBe('valid')
-        expect(w.vm.connectionVisual.toPosition).toBe(src.dataset.handlePosition)
-        //preview==commit: 放開即建 3→2
-        dropAt(src)
+        const otherTop = handleEl(w, '3', 'top')
+        moveOver(otherTop)
+        expect(otherTop.getAttribute('data-connect-status')).toBe('valid')
+        const otherBottom = handleEl(w, '3', 'bottom')
+        moveOver(otherBottom)
+        expect(otherBottom.getAttribute('data-connect-status')).toBe('valid')
+        expect(w.vm.connectionVisual.toPosition).toBe(otherBottom.dataset.handlePosition)
+        //preview==commit: 放開即建 2→3
+        dropAt(otherBottom)
         expect(w.vm.conns.length).toBe(1)
-        expect(w.vm.conns[0]).toMatchObject({ from: '3', to: '2' })
+        expect(w.vm.conns[0]).toMatchObject({ from: '2', to: '3', fromPosition: 'top', toPosition: 'bottom' })
         w.destroy()
     })
 })
 
-describe('F3 自己節點之把手為不合法落點(自我連線禁止)', () => {
-    test('hover 自己節點之 target 把手 → invalid', async () => {
+describe('F3 自己節點之其他把手為不合法落點(自我連線禁止)', () => {
+    test('hover 自己節點之其他方位把手 → invalid', async () => {
         const w = mountFlow(mkOpt())
         await w.vm.$nextTick()
         startConnect(w, '3')
-        const ownTgt = handleEl(w, '3', 'target')
-        moveOver(ownTgt)
-        expect(ownTgt.getAttribute('data-connect-status')).toBe('invalid')
+        const ownOther = handleEl(w, '3', 'top')
+        moveOver(ownOther)
+        expect(ownOther.getAttribute('data-connect-status')).toBe('invalid')
         expect(w.vm.connectionVisual.dropStatus).toBe('invalid')
+        dropAt(null)
+        w.destroy()
+    })
+    test('hover 出發把手自身 → invalid(self)', async () => {
+        const w = mountFlow(mkOpt())
+        await w.vm.$nextTick()
+        startConnect(w, '3')
+        const origin = handleEl(w, '3', 'bottom')
+        moveOver(origin)
+        expect(origin.getAttribute('data-connect-status')).toBe('invalid')
         dropAt(null)
         w.destroy()
     })
 })
 
 describe('F4 合法落點標 valid, 預覽線進入方向跟隨把手方位', () => {
-    test('hover output 節點之 target 把手 → valid + toPosition', async () => {
+    test('hover 他節點之任一把手 → valid + toPosition', async () => {
         const w = mountFlow(mkOpt())
         await w.vm.$nextTick()
         startConnect(w, '1')
-        const tgt = handleEl(w, '2', 'target')
+        const tgt = handleEl(w, '2', 'left')
         moveOver(tgt)
         expect(tgt.getAttribute('data-connect-status')).toBe('valid')
         expect(w.vm.connectionVisual.dropStatus).toBe('valid')
@@ -128,12 +139,12 @@ describe('F4 合法落點標 valid, 預覽線進入方向跟隨把手方位', ()
     })
 })
 
-describe('F5 同向重複邊之落點為 invalid', () => {
-    test('已存在 1→3: hover 節點3之 target → invalid', async () => {
+describe('F5 同向重複邊之落點為 invalid(方位不參與判定)', () => {
+    test('已存在 1→3: hover 節點3之任一把手(不論方位) → invalid', async () => {
         const w = mountFlow(mkOpt({ conns: [{ id: 'e1-3', from: '1', to: '3' }] }))
         await w.vm.$nextTick()
         startConnect(w, '1')
-        const tgt = handleEl(w, '3', 'target')
+        const tgt = handleEl(w, '3', 'right') //刻意選與既有邊 toPosition 不同之方位, 驗證 duplicate 不看方位
         moveOver(tgt)
         expect(tgt.getAttribute('data-connect-status')).toBe('invalid')
         dropAt(null)
@@ -142,17 +153,17 @@ describe('F5 同向重複邊之落點為 invalid', () => {
 })
 
 describe('F6 離開把手後標記清除', () => {
-    test('移離後 status 移除, dropStatus/toPosition 復位', async () => {
+    test('移離後 status 移除, dropStatus 回 none, toPosition 回出發邊之對邊', async () => {
         const w = mountFlow(mkOpt())
         await w.vm.$nextTick()
-        startConnect(w, '1')
-        const tgt = handleEl(w, '2', 'target')
+        startConnect(w, '1') //出發邊為 bottom
+        const tgt = handleEl(w, '2', 'top')
         moveOver(tgt)
         expect(tgt.hasAttribute('data-connect-status')).toBe(true)
         moveOver(null) //游標移到空白處
         expect(tgt.hasAttribute('data-connect-status')).toBe(false)
         expect(w.vm.connectionVisual.dropStatus).toBe('none')
-        expect(w.vm.connectionVisual.toPosition).toBe('top')
+        expect(w.vm.connectionVisual.toPosition).toBe('top') //bottom 之對邊
         dropAt(null)
         w.destroy()
     })
@@ -164,7 +175,7 @@ describe('F7 validator 呼叫紀律與形狀', () => {
         const w = mountFlow(mkOpt({ funValidConnCreating: (c) => { seen.push(JSON.parse(JSON.stringify(c))) ; return true } }))
         await w.vm.$nextTick()
         startConnect(w, '1')
-        const tgt = handleEl(w, '2', 'target')
+        const tgt = handleEl(w, '2', 'top')
         moveOver(tgt, 40, 40)
         moveOver(tgt, 41, 41)
         moveOver(tgt, 42, 42)
@@ -172,6 +183,7 @@ describe('F7 validator 呼叫紀律與形狀', () => {
         dropAt(tgt)
         expect(seen).toHaveLength(2) //commit 再驗一次
         expect(seen[0]).toEqual(seen[1]) //preview 與 commit 同形狀
+        expect(seen[0]).toEqual({ from: '1', to: '2', fromPosition: 'bottom', toPosition: 'top' })
         w.destroy()
     })
 })
@@ -183,7 +195,7 @@ describe('F8 他 flow 實例之把手不參與本 flow 建線', () => {
         await w1.vm.$nextTick()
         await w2.vm.$nextTick()
         startConnect(w1, '1')
-        const foreignTgt = handleEl(w2, '3', 'target')
+        const foreignTgt = handleEl(w2, '3', 'top')
         moveOver(foreignTgt)
         expect(foreignTgt.hasAttribute('data-connect-status')).toBe(false)
         expect(w1.vm.connectionVisual.dropStatus).toBe('none')
@@ -201,7 +213,7 @@ describe('F9 preview==commit 不變量', () => {
         const w = mountFlow(mkOpt())
         await w.vm.$nextTick()
         startConnect(w, '1')
-        const tgt = handleEl(w, '3', 'target')
+        const tgt = handleEl(w, '3', 'top')
         moveOver(tgt)
         expect(tgt.getAttribute('data-connect-status')).toBe('valid')
         dropAt(tgt)
@@ -213,7 +225,7 @@ describe('F9 preview==commit 不變量', () => {
         const w = mountFlow(mkOpt({ conns: [{ id: 'e1-3', from: '1', to: '3' }] }))
         await w.vm.$nextTick()
         startConnect(w, '1')
-        const tgt = handleEl(w, '3', 'target')
+        const tgt = handleEl(w, '3', 'top')
         moveOver(tgt)
         expect(tgt.getAttribute('data-connect-status')).toBe('invalid')
         dropAt(tgt)
@@ -233,8 +245,8 @@ describe('F10 hover 判定不觸發 wrapper 重渲染(細粒度鐵律)', () => {
         w.findAllComponents(NodeWrapper).wrappers.forEach(c => c.vm.$on('hook:updated', () => { counts.node++ }))
         w.findAllComponents(EdgeWrapper).wrappers.forEach(c => c.vm.$on('hook:updated', () => { counts.edge++ }))
         startConnect(w, '1')
-        const tgt = handleEl(w, '2', 'target')
-        const src = handleEl(w, '3', 'source')
+        const tgt = handleEl(w, '2', 'top')
+        const src = handleEl(w, '3', 'top')
         for (let i = 0; i < 20; i++) {
             moveOver(i % 3 === 0 ? tgt : (i % 3 === 1 ? src : null), 40 + i, 40 + i)
             await w.vm.$nextTick()

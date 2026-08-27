@@ -6,13 +6,6 @@
     <label v-if="!isEx('description')">Description
       <input type="text" :value="node.description || ''" @input="$emit('update', 'description', $event.target.value)">
     </label>
-    <label v-if="!isEx('type')">Type
-      <select :value="effType" @input="$emit('update', 'type', $event.target.value)">
-        <option value="input">Input</option>
-        <option value="basic">Basic</option>
-        <option value="output">Output</option>
-      </select>
-    </label>
     <label v-if="!isEx('shape')">Shape
       <select :value="node.shape || defNode.shape" @input="$emit('update', 'shape', $event.target.value)">
         <option value="rectangle">Rectangle</option>
@@ -36,50 +29,35 @@
       <input type="number" :value="node.fontSize || defNode.fontSize" :min="defNode.fontSizeMin" :max="defNode.fontSizeMax" @input="onFontSizeInput($event.target.value)">
     </label>
     <label v-if="!isEx('fontColor')">Font Color
-      <WColorSelect :value="node.fontColor || defNode.fontColor" :size="160" :colorBlockSize="16" :showColorText="false" @input="$emit('update', 'fontColor', $event)" />
+      <WColorSelect :value="node.fontColor || defNode.fontColor" :size="160" :colorBlockSize="16" :showColorText="false" :btnText="colorConfirmText" @input="$emit('update', 'fontColor', $event)" />
     </label>
     <label v-if="!isEx('faceColor')">Face Color
-      <WColorSelect :value="node.faceColor || defNode.faceColor" :size="160" :colorBlockSize="16" :showColorText="false" @input="$emit('update', 'faceColor', $event)" />
+      <WColorSelect :value="node.faceColor || defNode.faceColor" :size="160" :colorBlockSize="16" :showColorText="false" :btnText="colorConfirmText" @input="$emit('update', 'faceColor', $event)" />
     </label>
     <label v-if="!isEx('edgeColor')">Edge Color
-      <WColorSelect :value="node.edgeColor || defNode.edgeColor" :size="160" :colorBlockSize="16" :showColorText="false" @input="$emit('update', 'edgeColor', $event)" />
+      <WColorSelect :value="node.edgeColor || defNode.edgeColor" :size="160" :colorBlockSize="16" :showColorText="false" :btnText="colorConfirmText" @input="$emit('update', 'edgeColor', $event)" />
     </label>
     <label v-if="!isEx('edgeWidth')">Edge Width
       <input type="number" :value="node.edgeWidth !== undefined ? node.edgeWidth : defNode.edgeWidth" min="1" max="24" @input="onEdgeWidthInput($event.target.value)">
     </label>
-    <label v-if="!isEx('fromPosition') && (effType === 'output' || effType === 'basic')">From Handle
-      <select :value="node.fromPosition || defNode.fromPosition" @input="$emit('update', 'fromPosition', $event.target.value)">
-        <option value="top">Top</option>
-        <option value="right">Right</option>
-        <option value="bottom">Bottom</option>
-        <option value="left">Left</option>
-      </select>
-    </label>
-    <label v-if="!isEx('toPosition') && (effType === 'input' || effType === 'basic')">To Handle
-      <select :value="node.toPosition || defNode.toPosition" @input="$emit('update', 'toPosition', $event.target.value)">
-        <option value="top">Top</option>
-        <option value="right">Right</option>
-        <option value="bottom">Bottom</option>
-        <option value="left">Left</option>
-      </select>
-    </label>
     <!-- 刪除不做內建二次確認: 是否需要確認由宿主以 opt.funConfirmDeleting(async)決定, 未提供即直接刪除。
          等待宿主確認期間按鈕 disabled(pending): 慢流程若毫無回饋會被當成沒反應而連點 -->
     <div class="vue-flow__delete-area">
-      <button class="vue-flow__delete-btn" :disabled="deleteConfirming || node.deletable === false" @click="$emit('delete')">刪除節點</button>
+      <button class="vue-flow__delete-btn" :disabled="deleteConfirming || node.deletable === false" @click="$emit('delete')">{{ deleteText }}</button>
     </div>
   </div>
 </template>
 
 <script>
 import WColorSelect from 'w-component-vue/src/components/WColorSelect.vue'
-import { nodeType } from '../../js/anchorPolicy.mjs'
 
 export default {
     components: { WColorSelect },
     inject: {
         //刪除確認進行中(getter注入, 預設值使本元件可獨立掛載): 等待宿主回覆期間刪除鈕 disabled
         getDeleteConfirming: { default: () => () => false },
+        //設定表單文字(刪除鈕/色票確認鈕; 由 WFlowVue 依 opt 注入, 預設英文)
+        getSettingsText: { default: () => () => ({}) },
     },
     props: {
         node: { type: Object, required: true },
@@ -88,12 +66,14 @@ export default {
         excludes: { type: Array, default: () => [] },
     },
     computed: {
-        //有效型別(anchorPolicy.nodeType 單一解析): 缺省 type 之節點依 defNode.type 顯示對應欄位
-        effType() {
-            return nodeType(this.node, this.defNode)
-        },
         deleteConfirming() {
             return this.getDeleteConfirming()
+        },
+        deleteText() {
+            return this.getSettingsText().nodeDelete || 'Delete'
+        },
+        colorConfirmText() {
+            return this.getSettingsText().colorConfirm || 'Confirm'
         },
         formStyle() {
             let s = {}

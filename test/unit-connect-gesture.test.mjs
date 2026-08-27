@@ -6,13 +6,15 @@
  *    data-connect-status)手勢以任何方式結束後皆不得殘留。
  *    殘留之後果具體: 根 class 之樣式含齒輪/縮放把手 opacity:0 與 pointer-events:none,
  *    殘留會使該 flow 齒輪與縮放把手隱形且不可點; 把手殘留 status 標記則顯示錯誤的可連性狀態。
- * S2 建線雙向出發(spec/流程_互動契約.md §4): source 與 target handle 皆可出發; 候選正規化為 from=source 端;
- *    出發時根元素標 data-connect-from、出發節點標 data-connect-origin-node, 結束後一併清除。
+ * S2 節點四邊把手完全對稱, 皆可出發亦皆可為落點(spec/流程_互動契約.md §4): 出發把手所在節點=from,
+ *    落點把手所在節點=to, 兩端方位=各自所在之邊; 無「正規化」——自任一節點之任一把手拉到他節點之任一把手,
+ *    方向恆為「出發→落點」。出發時出發把手標 data-connect-role="origin"、出發節點標 data-connect-origin-node,
+ *    結束後一併清除; 根元素不再有 data-connect-from(節點無 source/target 之分)。
  * S3 非主鍵不啟動建線(Handle 判 event.button); 建線進行中再次收到 connect-start 亦不得重跑
  *    啟動流程(縱深第二層)。
  * S4 落點判定只能以「放開當下」之座標為準。視窗失焦與 buttons 補收尾皆無此座標,
  *    故該二路徑一律取消建線, 不得建立連線。
- * S5 正常於 target handle 上放開仍須建立連線 —— S1..S4 之修正不得波及正常路徑。
+ * S5 正常於他節點把手上放開仍須建立連線 —— S1..S4 之修正不得波及正常路徑。
  */
 import { mount } from '@vue/test-utils'
 import WFlowVue from '../src/components/WFlowVue.vue'
@@ -32,9 +34,10 @@ function createWrapper(optOverrides = {}) {
     })
 }
 
-const sourceHandles = (w) => w.findAll('.vue-flow__handle--source')
-const targetHandles = (w) => w.findAll('.vue-flow__handle--target')
-const targetHandleElOf = (w, nodeId) => targetHandles(w).wrappers
+//四把手完全對稱(spec §4 5.5), 測試以 bottom 作為「出發邊」、top 作為「落點邊」示範一組, 無特殊語意
+const originHandles = (w) => w.findAll('.vue-flow__handle--bottom')
+const otherSideHandles = (w) => w.findAll('.vue-flow__handle--top')
+const otherSideHandleElOf = (w, nodeId) => otherSideHandles(w).wrappers
     .map(x => x.element)
     .find(el => el.closest('.vue-flow__node').dataset.id === nodeId)
 
@@ -53,7 +56,7 @@ describe('S1 建線暫態(根class與把手標記)為手勢期間之暫態', () 
     test('正常放開後不殘留', async () => {
         const w = createWrapper()
         expect(countMarks()).toBe(0)
-        sourceHandles(w).at(0).trigger('mousedown', { button: 0 })
+        originHandles(w).at(0).trigger('mousedown', { button: 0 })
         expect(w.vm.isConnecting).toBe(true)
         expect(countMarks()).toBe(1) //出發把手之 origin 標記
         await w.vm.$nextTick()
@@ -69,7 +72,7 @@ describe('S1 建線暫態(根class與把手標記)為手勢期間之暫態', () 
 
     test('建線途中銷毀元件後不殘留', () => {
         const w = createWrapper()
-        sourceHandles(w).at(0).trigger('mousedown', { button: 0 })
+        originHandles(w).at(0).trigger('mousedown', { button: 0 })
         expect(countMarks()).toBe(1)
 
         w.destroy()
@@ -78,7 +81,7 @@ describe('S1 建線暫態(根class與把手標記)為手勢期間之暫態', () 
 
     test('建線途中視窗失焦後不殘留, 且狀態一併收尾', () => {
         const w = createWrapper()
-        sourceHandles(w).at(0).trigger('mousedown', { button: 0 })
+        originHandles(w).at(0).trigger('mousedown', { button: 0 })
         expect(countMarks()).toBe(1)
 
         window.dispatchEvent(new Event('blur'))
@@ -90,7 +93,7 @@ describe('S1 建線暫態(根class與把手標記)為手勢期間之暫態', () 
 
     test('payload 之節點不存在時不留下狀態與標記', () => {
         const w = createWrapper()
-        w.vm.onConnectStart({ nodeId: 'no-such-node', handleType: 'source', handlePosition: 'right' })
+        w.vm.onConnectStart({ nodeId: 'no-such-node', handlePosition: 'right' })
         expect(w.vm.isConnecting).toBe(false)
         expect(countMarks()).toBe(0)
         w.destroy()
@@ -98,8 +101,8 @@ describe('S1 建線暫態(根class與把手標記)為手勢期間之暫態', () 
 
     test('commit 途中拋錯(validator)仍不得殘留狀態與標記', () => {
         const w = createWrapper({ funValidConnCreating: () => { throw new Error('host validator boom') } })
-        sourceHandles(w).at(0).trigger('mousedown', { button: 0 })
-        document.elementFromPoint = () => targetHandleElOf(w, '2')
+        originHandles(w).at(0).trigger('mousedown', { button: 0 })
+        document.elementFromPoint = () => otherSideHandleElOf(w, '2')
         //endConnect 之清理位於 finally: 拋錯不得黏死建線狀態(原版循序清理會被中斷)。
         //直呼 endConnect 驗證: DOM dispatchEvent 依規格不把 listener 例外拋回呼叫端, 無從斷言
         expect(() => {
@@ -112,52 +115,52 @@ describe('S1 建線暫態(根class與把手標記)為手勢期間之暫態', () 
     })
 })
 
-describe('S2 建線雙向出發: target handle 亦可出發, 落於他節點 source 建立正規化連線', () => {
-    const sourceHandleElOf = (w, nodeId) => sourceHandles(w).wrappers
-        .map(x => x.element)
-        .find(el => el.closest('.vue-flow__node').dataset.id === nodeId)
-
-    test('對 target handle 之 mousedown 啟動建線, 出發標記與根/節點標記齊備', async () => {
+describe('S2 四把手完全對稱: 任一把手皆可出發, 方向=出發→落點, 不正規化', () => {
+    test('對任一把手之 mousedown 皆可啟動建線, 出發標記與節點標記齊備; 根元素無 data-connect-from', async () => {
         const w = createWrapper()
-        const tgt = targetHandleElOf(w, '2')
-        tgt.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, button: 0 }))
+        const origin = otherSideHandleElOf(w, '2') //自節點2之 top 把手出發(示範:非固定bottom亦可出發)
+        origin.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, button: 0 }))
         expect(w.vm.isConnecting).toBe(true)
-        expect(w.vm.connectionVisual.originType).toBe('target')
-        expect(tgt.getAttribute('data-connect-role')).toBe('origin')
-        expect(w.vm.$el.getAttribute('data-connect-from')).toBe('target')
-        expect(tgt.closest('.vue-flow__node').hasAttribute('data-connect-origin-node')).toBe(true)
-        //遠端預設方位: 落點是 source 把手 → 'bottom'
+        expect(origin.getAttribute('data-connect-role')).toBe('origin')
+        expect(w.vm.$el.hasAttribute('data-connect-from')).toBe(false)
+        expect(origin.closest('.vue-flow__node').hasAttribute('data-connect-origin-node')).toBe(true)
+        //遠端預設方位: 無 hover 時取出發邊之對邊(top 之對邊為 bottom)
         expect(w.vm.connectionVisual.toPosition).toBe('bottom')
         docMouseUp()
         expect(w.vm.isConnecting).toBe(false)
         expect(countMarks()).toBe(0)
-        expect(w.vm.$el.hasAttribute('data-connect-from')).toBe(false)
-        expect(tgt.closest('.vue-flow__node').hasAttribute('data-connect-origin-node')).toBe(false)
+        expect(origin.closest('.vue-flow__node').hasAttribute('data-connect-origin-node')).toBe(false)
         w.destroy()
     })
 
-    test('自 2 之 target 出發, 於 1 之 source 放開 → 建立 1→2(正規化 from=source 端)', () => {
+    test('自節點2出發, 於節點1把手放開 → 建立 2→1(方向=出發→落點, 無正規化)', () => {
         const w = createWrapper()
-        targetHandleElOf(w, '2').dispatchEvent(new MouseEvent('mousedown', { bubbles: true, button: 0 }))
-        document.elementFromPoint = () => sourceHandleElOf(w, '1')
-        document.dispatchEvent(new MouseEvent('mouseup', { bubbles: true, clientX: 20, clientY: 60 }))
-        expect(w.vm.conns.length).toBe(1)
-        expect(w.vm.conns[0]).toMatchObject({ from: '1', to: '2' })
-        expect(w.emitted('connect')[0][0]).toEqual({ from: '1', to: '2' })
-        expect(w.emitted('connect-start')[0][0].handleType).toBe('target')
-        w.destroy()
-    })
-
-    test('自 target 出發落於他節點 target → same-kind 不建線; 落於自己節點 source → self', () => {
-        const w = createWrapper()
-        targetHandleElOf(w, '2').dispatchEvent(new MouseEvent('mousedown', { bubbles: true, button: 0 }))
-        document.elementFromPoint = () => targetHandleElOf(w, '1')
+        originHandles(w).wrappers.find(x => x.element.closest('.vue-flow__node').dataset.id === '2')
+            .element.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, button: 0 }))
+        document.elementFromPoint = () => otherSideHandleElOf(w, '1')
         document.dispatchEvent(new MouseEvent('mouseup', { bubbles: true, clientX: 20, clientY: 0 }))
-        expect(w.vm.conns.length).toBe(0)
-        expect(w.emitted('connect-end')[0][1].reason).toBe('same-kind')
+        expect(w.vm.conns.length).toBe(1)
+        expect(w.vm.conns[0]).toMatchObject({ from: '2', to: '1', fromPosition: 'bottom', toPosition: 'top' })
+        expect(w.emitted('connect')[0][0]).toEqual({ from: '2', to: '1', fromPosition: 'bottom', toPosition: 'top' })
+        expect(w.emitted('connect-start')[0][0]).toEqual({ nodeId: '2', handlePosition: 'bottom' })
+        w.destroy()
+    })
 
-        targetHandleElOf(w, '2').dispatchEvent(new MouseEvent('mousedown', { bubbles: true, button: 0 }))
-        document.elementFromPoint = () => sourceHandleElOf(w, '2')
+    test('落於同節點其他把手(任一邊, 含出發把手自身) → self 不建線', () => {
+        const w = createWrapper()
+        const origin2 = originHandles(w).wrappers.find(x => x.element.closest('.vue-flow__node').dataset.id === '2').element
+        origin2.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, button: 0 }))
+        //落於自己節點之另一邊(top)
+        document.elementFromPoint = () => otherSideHandleElOf(w, '2')
+        document.dispatchEvent(new MouseEvent('mouseup', { bubbles: true, clientX: 320, clientY: 0 }))
+        expect(w.vm.conns.length).toBe(0)
+        expect(w.emitted('connect-end')[0][1].reason).toBe('self')
+
+        originHandles(w).wrappers.find(x => x.element.closest('.vue-flow__node').dataset.id === '2').element
+            .dispatchEvent(new MouseEvent('mousedown', { bubbles: true, button: 0 }))
+        //落於出發把手自身
+        document.elementFromPoint = () => originHandles(w).wrappers
+            .find(x => x.element.closest('.vue-flow__node').dataset.id === '2').element
         document.dispatchEvent(new MouseEvent('mouseup', { bubbles: true, clientX: 320, clientY: 60 }))
         expect(w.vm.conns.length).toBe(0)
         expect(w.emitted('connect-end')[1][1].reason).toBe('self')
@@ -168,7 +171,7 @@ describe('S2 建線雙向出發: target handle 亦可出發, 落於他節點 sou
 describe('S3 非主鍵不啟動; 進行中不得重入', () => {
     test('右鍵 mousedown 不啟動建線(Handle 之 button 守衛)', () => {
         const w = createWrapper()
-        sourceHandles(w).at(0).trigger('mousedown', { button: 2 })
+        originHandles(w).at(0).trigger('mousedown', { button: 2 })
         expect(w.vm.isConnecting).toBe(false)
         expect(countMarks()).toBe(0)
         w.destroy()
@@ -176,12 +179,12 @@ describe('S3 非主鍵不啟動; 進行中不得重入', () => {
 
     test('進行中他途再送 connect-start 不重跑啟動流程, 起點不被改寫', () => {
         const w = createWrapper()
-        sourceHandles(w).at(0).trigger('mousedown', { button: 0 })
+        originHandles(w).at(0).trigger('mousedown', { button: 0 })
         const first = w.vm._connectOrigin.nodeId
         expect(countMarks()).toBe(1)
 
         //縱深第二層: 即使事件由他途送達(繞過 Handle 之 button 守衛), 重入守衛仍須擋下
-        w.vm.onConnectStart({ nodeId: '2', handleType: 'source', handlePosition: 'bottom' })
+        w.vm.onConnectStart({ nodeId: '2', handlePosition: 'bottom' })
         expect(w.vm._connectOrigin.nodeId).toBe(first)
         expect(countMarks()).toBe(1)
 
@@ -194,10 +197,10 @@ describe('S3 非主鍵不啟動; 進行中不得重入', () => {
 describe('S4 無有效放開座標之路徑一律取消, 不建立連線', () => {
     test('buttons 補收尾之 mousemove 不得被當作 drop 落點', () => {
         const w = createWrapper()
-        sourceHandles(w).at(0).trigger('mousedown', { button: 0 })
+        originHandles(w).at(0).trigger('mousedown', { button: 0 })
 
-        //模擬「回到視窗後第一次移動時, 游標恰位於節點2之 target handle 上」
-        const tgtEl = targetHandleElOf(w, '2')
+        //模擬「回到視窗後第一次移動時, 游標恰位於節點2之把手上」
+        const tgtEl = otherSideHandleElOf(w, '2')
         expect(tgtEl).toBeTruthy()
         document.elementFromPoint = () => tgtEl
 
@@ -213,17 +216,17 @@ describe('S4 無有效放開座標之路徑一律取消, 不建立連線', () =>
 
     test('取消路徑仍發 connect-end 供宿主收尾自身 UI, 且酬載標明 cancelled', () => {
         const w = createWrapper()
-        sourceHandles(w).at(0).trigger('mousedown', { button: 0 })
+        originHandles(w).at(0).trigger('mousedown', { button: 0 })
         window.dispatchEvent(new Event('blur'))
         expect(w.emitted('connect-end')).toHaveLength(1)
         expect(w.emitted('connect-end')[0][1]).toEqual({ valid: false, reason: 'cancelled', connection: null })
         w.destroy()
     })
 
-    test('視窗失焦不得建立連線, 即使游標下就是 target handle', () => {
+    test('視窗失焦不得建立連線, 即使游標下就是他節點把手', () => {
         const w = createWrapper()
-        sourceHandles(w).at(0).trigger('mousedown', { button: 0 })
-        document.elementFromPoint = () => targetHandleElOf(w, '2')
+        originHandles(w).at(0).trigger('mousedown', { button: 0 })
+        document.elementFromPoint = () => otherSideHandleElOf(w, '2')
 
         window.dispatchEvent(new Event('blur'))
         expect(w.vm.conns.length).toBe(0)
@@ -233,12 +236,12 @@ describe('S4 無有效放開座標之路徑一律取消, 不建立連線', () =>
 })
 
 describe('S5 正常路徑不得被上述修正波及', () => {
-    test('於 target handle 上放開仍建立連線並發出事件', () => {
+    test('於他節點把手上放開仍建立連線並發出事件', () => {
         const w = createWrapper()
-        sourceHandles(w).at(0).trigger('mousedown', { button: 0 })
+        originHandles(w).at(0).trigger('mousedown', { button: 0 })
         expect(w.vm.isConnecting).toBe(true)
 
-        document.elementFromPoint = () => targetHandleElOf(w, '2')
+        document.elementFromPoint = () => otherSideHandleElOf(w, '2')
         document.dispatchEvent(new MouseEvent('mouseup', { bubbles: true, clientX: 320, clientY: 20 }))
 
         expect(w.vm.conns.length).toBe(1)
@@ -247,16 +250,16 @@ describe('S5 正常路徑不得被上述修正波及', () => {
         expect(w.emitted('connect')).toHaveLength(1)
         expect(w.emitted('update:conns')).toHaveLength(1)
         expect(w.emitted('connect-end')).toHaveLength(1)
-        //connect-end 酬載(additive 第二參數): 宿主可據以說明結果
+        //connect-end 酬載(additive 第二參數): 宿主可據 reason 說明為何未建線
         expect(w.emitted('connect-end')[0][1].valid).toBe(true)
-        expect(w.emitted('connect-end')[0][1].connection).toEqual({ from: '1', to: '2' })
+        expect(w.emitted('connect-end')[0][1].connection).toEqual({ from: '1', to: '2', fromPosition: 'bottom', toPosition: 'top' })
         expect(countMarks()).toBe(0)
         w.destroy()
     })
 
-    test('未落在 handle 上放開: 不建立連線但仍正常收尾', () => {
+    test('未落在把手上放開: 不建立連線但仍正常收尾', () => {
         const w = createWrapper()
-        sourceHandles(w).at(0).trigger('mousedown', { button: 0 })
+        originHandles(w).at(0).trigger('mousedown', { button: 0 })
         document.elementFromPoint = () => null
         document.dispatchEvent(new MouseEvent('mouseup', { bubbles: true, clientX: 500, clientY: 500 }))
 
@@ -271,9 +274,9 @@ describe('S5 正常路徑不得被上述修正波及', () => {
     test('locked 時不啟動建線(連接點不渲染, 且程式層另有守衛)', () => {
         const w = createWrapper({ locked: true })
         //第一層: 上鎖時連接點不渲染, 使用者無從按下
-        expect(sourceHandles(w).length).toBe(0)
+        expect(originHandles(w).length).toBe(0)
         //第二層: 即使事件由他途送達, onConnectStart 仍須早退且不留下狀態與標記
-        w.vm.onConnectStart({ nodeId: '1', handleType: 'source', handlePosition: 'right' })
+        w.vm.onConnectStart({ nodeId: '1', handlePosition: 'right' })
         expect(w.vm.isConnecting).toBe(false)
         expect(countMarks()).toBe(0)
         w.destroy()

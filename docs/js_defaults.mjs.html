@@ -29,7 +29,13 @@
 <nav >
     
     
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-Handle.html">Handle</a></li></ul><h3>Events</h3><ul><li><a href="global.html#event:elements-deleted%25E6%2589%2580%25E6%259C%2589%25E5%2588%25AA%25E9%2599%25A4%25E8%25B7%25AF%25E5%25BE%2591%25E5%25AE%258C%25E6%2588%2590%25E5%25BE%258C%25E7%259A%2586%25E7%2599%25BC%25E5%2587%25BA(%25E6%2596%25BCupdate:*%25E4%25B9%258B%25E5%25BE%258C%25E3%2580%2581%25E6%259C%2580%25E5%25BE%258C%25E7%2599%25BC%25E5%2587%25BA),payload:%257Bfrom,requested:%257BnodeIds,connIds%257D,deleted:%257BnodeIds,connIds,nodes,conns%257D,cascades:%255B%257BnodeId,connIds%257D%255D,notFound:%257BnodeIds,connIds%257D,excluded:%257BnodeIds,connIds%257D%257D-deleted.nodes/conns%25E7%2582%25BA%25E8%25A2%25AB%25E5%2588%25AA%25E7%2595%25B6%25E4%25B8%258B%25E4%25B9%258B%25E6%25B7%25B1%25E8%25A4%2587%25E8%25A3%25BD%25E5%25BF%25AB%25E7%2585%25A7(JSON%25E5%25BE%2580%25E8%25BF%2594,%25E5%2590%258CgetFlowData);id%25E6%25B8%2585%25E5%2596%25AE%25E4%25BE%259B%25E8%25BC%2595%25E9%2587%258F%25E8%25A8%2598%25E5%25B8%25B3;-cascades%25E5%258F%25AA%25E6%258F%258F%25E8%25BF%25B0%25E5%259B%25A0%25E6%259E%259C(%25E5%2593%25AA%25E6%25A2%259D%25E9%2582%258A%25E5%259B%25A0%25E5%2593%25AA%25E5%2580%258B%25E7%25AF%2580%25E9%25BB%259E%25E8%2580%258C%25E5%2588%25AA),%25E8%25A8%2598%25E5%25B8%25B3%25E4%25BB%25A5deleted.*Ids%25E7%2582%25BA%25E6%25BA%2596(%25E5%25B7%25B2%25E5%258E%25BB%25E9%2587%258D);-%25E4%25B8%258D%25E5%2590%25AB%25E5%2588%25AA%25E5%25BE%258C%25E5%2585%25A8%25E9%2587%258F%25E5%25BF%25AB%25E7%2585%25A7(remain):%25E9%259C%2580%25E8%25A6%2581%25E8%2580%2585%25E5%2591%25BC%25E5%258F%25ABgetFlowData()%25E6%2588%2596%25E6%25B2%25BF%25E7%2594%25A8update:nodes/update:conns%25E3%2580%2582%25E5%2588%25AA%25E9%2599%25A4%25E5%258F%25AA%25E6%259C%2589%25E9%2580%2599%25E4%25B8%2580%25E5%2580%258B%25E5%25AE%258C%25E6%2588%2590%25E4%25BA%258B%25E4%25BB%25B6%25E3%2580%2582%25E6%2589%2580%25E6%259C%2589%25E5%2585%25A5%25E5%258F%25A3%25E5%2590%258C%25E4%25B8%2580%25E5%25BA%258F%25E5%2588%2597:(%25E5%2583%2585%25E5%25AF%25A6%25E9%259A%259B%25E8%25AE%258A%25E5%258B%2595%25E4%25B9%258B%25E9%259B%2586%25E5%2590%2588)update:nodes%25E2%2586%2592update:conns%25E2%2586%2592elements-deleted;type%25E8%25AE%258A%25E6%259B%25B4:node-settings-update%25E2%2586%2592update:conns%25E2%2586%2592elements-deleted%25E3%2580%2582">elements-deleted 所有刪除路徑完成後皆發出(於 update:* 之後、最後發出),payload:  { from, requested:{nodeIds,connIds}, deleted:{nodeIds,connIds,nodes,conns}, cascades:[{nodeId,connIds}],    notFound:{nodeIds,connIds}, excluded:{nodeIds,connIds} }  - deleted.nodes/conns 為被刪當下之深複製快照(JSON 往返,同 getFlowData);id 清單供輕量記帳;  - cascades 只描述因果(哪條邊因哪個節點而刪),記帳以 deleted.*Ids 為準(已去重);  - 不含刪後全量快照(remain):需要者呼叫 getFlowData() 或沿用 update:nodes / update:conns。  刪除只有這一個完成事件。所有入口同一序列:(僅實際變動之集合)update:nodes → update:conns → elements-deleted;  type 變更:node-settings-update → update:conns → elements-deleted。</a></li></ul><h3>Global</h3><ul><li><a href="global.html#NODE_DEFAULTS">NODE_DEFAULTS</a></li><li><a href="global.html#SOURCE_FALLBACK">SOURCE_FALLBACK</a></li><li><a href="global.html#applyDelete">applyDelete</a></li><li><a href="global.html#assessConnection">assessConnection</a></li><li><a href="global.html#assessGraphConnection">assessGraphConnection</a></li><li><a href="global.html#buildConnectionCandidate">buildConnectionCandidate</a></li><li><a href="global.html#buildRoundedPath">buildRoundedPath</a></li><li><a href="global.html#clampPosition">clampPosition</a></li><li><a href="global.html#classifyHit">classifyHit</a></li><li><a href="global.html#describeHandleEndpoint">describeHandleEndpoint</a></li><li><a href="global.html#findDuplicateIds">findDuplicateIds</a></li><li><a href="global.html#findHandleElAt">findHandleElAt</a></li><li><a href="global.html#fixSvgNs">fixSvgNs</a></li><li><a href="global.html#generateId">generateId</a></li><li><a href="global.html#getBezierPath">getBezierPath</a></li><li><a href="global.html#getControlOffset">getControlOffset</a></li><li><a href="global.html#getDiamondEdgePoint">getDiamondEdgePoint</a></li><li><a href="global.html#getEllipseEdgePoint">getEllipseEdgePoint</a></li><li><a href="global.html#getHandlePosition">getHandlePosition</a></li><li><a href="global.html#getOverlappingNodes">getOverlappingNodes</a></li><li><a href="global.html#getSmoothStepPath">getSmoothStepPath</a></li><li><a href="global.html#getStepPath">getStepPath</a></li><li><a href="global.html#getStraightPath">getStraightPath</a></li><li><a href="global.html#getTriangleEdgePoint">getTriangleEdgePoint</a></li><li><a href="global.html#handleStyleVars">handleStyleVars</a></li><li><a href="global.html#isAffordanceHit">isAffordanceHit</a></li><li><a href="global.html#isCanvasBlank">isCanvasBlank</a></li><li><a href="global.html#isSvgShape">isSvgShape</a></li><li><a href="global.html#isValidConnection">isValidConnection</a></li><li><a href="global.html#labelAtHalfLength">labelAtHalfLength</a></li><li><a href="global.html#lookupRoute">lookupRoute</a></li><li><a href="global.html#nodeBorderWidth">nodeBorderWidth</a></li><li><a href="global.html#nodeSameSide">nodeSameSide</a></li><li><a href="global.html#nodeSourceSide">nodeSourceSide</a></li><li><a href="global.html#nodeTargetSide">nodeTargetSide</a></li><li><a href="global.html#nodeType">nodeType</a></li><li><a href="global.html#normalizeConnPoints">normalizeConnPoints</a></li><li><a href="global.html#orthogonalizeThroughPoints">orthogonalizeThroughPoints</a></li><li><a href="global.html#pairEndpoints">pairEndpoints</a></li><li><a href="global.html#pickMenuValue">pickMenuValue</a></li><li><a href="global.html#previewDelete">previewDelete</a></li><li><a href="global.html#previewNodeTypeChange">previewNodeTypeChange</a></li><li><a href="global.html#rectsOverlap">rectsOverlap</a></li><li><a href="global.html#segmentFallback">segmentFallback</a></li><li><a href="global.html#setDomFlag">setDomFlag</a></li><li><a href="global.html#setHandleConnectRole">setHandleConnectRole</a></li><li><a href="global.html#setHandleConnectStatus">setHandleConnectStatus</a></li><li><a href="global.html#snapPosition">snapPosition</a></li><li><a href="global.html#snapshotDeep">snapshotDeep</a></li><li><a href="global.html#uniq">uniq</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-EdgeMarkerDefs.html">EdgeMarkerDefs</a></li><li><a href="module-Handle.html">Handle</a></li><li><a href="module-NodeBody.html">NodeBody</a></li><li><a href="module-NodePorts.html">NodePorts</a></li></ul><h3>Events</h3><ul><li><a href="global.html#event:elements-deleted%25E6%2589%2580%25E6%259C%2589%25E5%2588%25AA%25E9%2599%25A4%25E8%25B7%25AF%25E5%25BE%2591%25E5%25AE%258C%25E6%2588%2590%25E5%25BE%258C%25E7%259A%2586%25E7%2599%25BC%25E5%2587%25BA(%25E6%2596%25BCupdate:*%25E4%25B9%258B%25E5%25BE%258C%25E3%2580%2581%25E6%259C%2580%25E5%25BE%258C%25E7%2599%25BC%25E5%2587%25BA),payload:%257Bfrom,requested:%257BnodeIds,connIds%257D,deleted:%257BnodeIds,connIds,nodes,conns%257D,cascades:%255B%257BnodeId,connIds%257D%255D,notFound:%257BnodeIds,connIds%257D,excluded:%257BnodeIds,connIds%257D%257D-deleted.nodes/conns%25E7%2582%25BA%25E8%25A2%25AB%25E5%2588%25AA%25E7%2595%25B6%25E4%25B8%258B%25E4%25B9%258B%25E6%25B7%25B1%25E8%25A4%2587%25E8%25A3%25BD%25E5%25BF%25AB%25E7%2585%25A7(JSON%25E5%25BE%2580%25E8%25BF%2594,%25E5%2590%258CgetFlowData);id%25E6%25B8%2585%25E5%2596%25AE%25E4%25BE%259B%25E8%25BC%2595%25E9%2587%258F%25E8%25A8%2598%25E5%25B8%25B3;-cascades%25E5%258F%25AA%25E6%258F%258F%25E8%25BF%25B0%25E5%259B%25A0%25E6%259E%259C(%25E5%2593%25AA%25E6%25A2%259D%25E9%2582%258A%25E5%259B%25A0%25E5%2593%25AA%25E5%2580%258B%25E7%25AF%2580%25E9%25BB%259E%25E8%2580%258C%25E5%2588%25AA),%25E8%25A8%2598%25E5%25B8%25B3%25E4%25BB%25A5deleted.*Ids%25E7%2582%25BA%25E6%25BA%2596(%25E5%25B7%25B2%25E5%258E%25BB%25E9%2587%258D);-%25E4%25B8%258D%25E5%2590%25AB%25E5%2588%25AA%25E5%25BE%258C%25E5%2585%25A8%25E9%2587%258F%25E5%25BF%25AB%25E7%2585%25A7(remain):%25E9%259C%2580%25E8%25A6%2581%25E8%2580%2585%25E5%2591%25BC%25E5%258F%25ABgetFlowData()%25E6%2588%2596%25E6%25B2%25BF%25E7%2594%25A8update:nodes/update:conns%25E3%2580%2582%25E5%2588%25AA%25E9%2599%25A4%25E5%258F%25AA%25E6%259C%2589%25E9%2580%2599%25E4%25B8%2580%25E5%2580%258B%25E5%25AE%258C%25E6%2588%2590%25E4%25BA%258B%25E4%25BB%25B6%25E3%2580%2582%25E6%2589%2580%25E6%259C%2589%25E5%2585%25A5%25E5%258F%25A3%25E5%2590%258C%25E4%25B8%2580%25E5%25BA%258F%25E5%2588%2597:(%25E5%2583%2585%25E5%25AF%25A6%25E9%259A%259B%25E8%25AE%258A%25E5%258B%2595%25E4%25B9%258B%25E9%259B%2586%25E5%2590%2588)update:nodes%25E2%2586%2592update:conns%25E2%2586%2592elements-deleted%25E3%2580%2582">elements-deleted 所有刪除路徑完成後皆發出(於 update:* 之後、最後發出),payload:
+  { from, requested:{nodeIds,connIds}, deleted:{nodeIds,connIds,nodes,conns}, cascades:[{nodeId,connIds}],
+    notFound:{nodeIds,connIds}, excluded:{nodeIds,connIds} }
+  - deleted.nodes/conns 為被刪當下之深複製快照(JSON 往返,同 getFlowData);id 清單供輕量記帳;
+  - cascades 只描述因果(哪條邊因哪個節點而刪),記帳以 deleted.*Ids 為準(已去重);
+  - 不含刪後全量快照(remain):需要者呼叫 getFlowData() 或沿用 update:nodes / update:conns。
+  刪除只有這一個完成事件。所有入口同一序列:(僅實際變動之集合)update:nodes → update:conns → elements-deleted。</a></li></ul><h3>Global</h3><ul><li><a href="global.html#CONN_SETTING_KEYS">CONN_SETTING_KEYS</a></li><li><a href="global.html#MARKER_TYPES">MARKER_TYPES</a></li><li><a href="global.html#NODE_DEFAULTS">NODE_DEFAULTS</a></li><li><a href="global.html#NODE_SETTING_KEYS">NODE_SETTING_KEYS</a></li><li><a href="global.html#RECT_FRACTION">RECT_FRACTION</a></li><li><a href="global.html#SETTINGS_TRIGGERS">SETTINGS_TRIGGERS</a></li><li><a href="global.html#SIDES">SIDES</a></li><li><a href="global.html#applyDelete">applyDelete</a></li><li><a href="global.html#assessConnection">assessConnection</a></li><li><a href="global.html#assessGraphConnection">assessGraphConnection</a></li><li><a href="global.html#buildConnectionCandidate">buildConnectionCandidate</a></li><li><a href="global.html#buildRoundedPath">buildRoundedPath</a></li><li><a href="global.html#clampPosition">clampPosition</a></li><li><a href="global.html#classifyHit">classifyHit</a></li><li><a href="global.html#connSourceSide">connSourceSide</a></li><li><a href="global.html#connTargetSide">connTargetSide</a></li><li><a href="global.html#darkenColor">darkenColor</a></li><li><a href="global.html#describeHandleEndpoint">describeHandleEndpoint</a></li><li><a href="global.html#findDuplicateIds">findDuplicateIds</a></li><li><a href="global.html#findHandleElAt">findHandleElAt</a></li><li><a href="global.html#fixSvgNs">fixSvgNs</a></li><li><a href="global.html#generateId">generateId</a></li><li><a href="global.html#getBezierPath">getBezierPath</a></li><li><a href="global.html#getControlOffset">getControlOffset</a></li><li><a href="global.html#getHandlePosition">getHandlePosition</a></li><li><a href="global.html#getOverlappingNodes">getOverlappingNodes</a></li><li><a href="global.html#getSmoothStepPath">getSmoothStepPath</a></li><li><a href="global.html#getStepPath">getStepPath</a></li><li><a href="global.html#getStraightPath">getStraightPath</a></li><li><a href="global.html#handlePlacementStyle">handlePlacementStyle</a></li><li><a href="global.html#handleStyleVars">handleStyleVars</a></li><li><a href="global.html#isAffordanceHit">isAffordanceHit</a></li><li><a href="global.html#isCanvasBlank">isCanvasBlank</a></li><li><a href="global.html#isSide">isSide</a></li><li><a href="global.html#isValidConnection">isValidConnection</a></li><li><a href="global.html#labelAtHalfLength">labelAtHalfLength</a></li><li><a href="global.html#labelOffsetStyle">labelOffsetStyle</a></li><li><a href="global.html#lookupRoute">lookupRoute</a></li><li><a href="global.html#markerDef">markerDef</a></li><li><a href="global.html#markerId">markerId</a></li><li><a href="global.html#markerUrl">markerUrl</a></li><li><a href="global.html#nodeBorderWidth">nodeBorderWidth</a></li><li><a href="global.html#nodeShape">nodeShape</a></li><li><a href="global.html#normalizeConnPoints">normalizeConnPoints</a></li><li><a href="global.html#oppositeSide">oppositeSide</a></li><li><a href="global.html#orthogonalizeThroughPoints">orthogonalizeThroughPoints</a></li><li><a href="global.html#pairEndpoints">pairEndpoints</a></li><li><a href="global.html#pickMenuValue">pickMenuValue</a></li><li><a href="global.html#previewDelete">previewDelete</a></li><li><a href="global.html#rectsOverlap">rectsOverlap</a></li><li><a href="global.html#resolveLineStyle">resolveLineStyle</a></li><li><a href="global.html#resolveMarker">resolveMarker</a></li><li><a href="global.html#segmentFallback">segmentFallback</a></li><li><a href="global.html#setDomFlag">setDomFlag</a></li><li><a href="global.html#setHandleConnectRole">setHandleConnectRole</a></li><li><a href="global.html#setHandleConnectStatus">setHandleConnectStatus</a></li><li><a href="global.html#sideAnchorFraction">sideAnchorFraction</a></li><li><a href="global.html#sideNormal">sideNormal</a></li><li><a href="global.html#snapPosition">snapPosition</a></li><li><a href="global.html#snapshotDeep">snapshotDeep</a></li><li><a href="global.html#stubFallback">stubFallback</a></li><li><a href="global.html#uniq">uniq</a></li></ul>
     
 </nav>
 
@@ -50,7 +56,6 @@
  */
 
 export const NODE_DEFAULTS = {
-    type: 'basic',
     shape: 'rectangle',
     width: 100,
     height: 40,
@@ -61,19 +66,13 @@ export const NODE_DEFAULTS = {
     faceColor: '#ffffff',
     edgeColor: '#bbbbbb',
     edgeWidth: 1,
-    toPosition: 'bottom',
-    fromPosition: 'top',
     popupDirection: 'right',
-    //連接點(把手)樣式: 連出點(source)深底白框, 連入點(target)白底深框(1.0.36 起互換, 使可拖曳建線之出發點更醒目)
-    //Size 為外徑(含框線, box-sizing:border-box); 舊版 8px 內寬 + 1px 框線 = 外徑 10px, 故預設 10 維持既有視覺尺寸
-    handleSourceFaceColor: '#555555',
-    handleSourceEdgeColor: '#ffffff',
-    handleSourceEdgeWidth: 1,
-    handleSourceSize: 10,
-    handleTargetFaceColor: '#ffffff',
-    handleTargetEdgeColor: '#1a1918',
-    handleTargetEdgeWidth: 1,
-    handleTargetSize: 10,
+    //連接點(把手)樣式: 節點四邊中點各一, 無連出/連入之分, 故單一組樣式
+    //Size 為外徑(含框線, box-sizing:border-box)
+    handleFaceColor: '#555555',
+    handleEdgeColor: '#ffffff',
+    handleEdgeWidth: 1,
+    handleSize: 10,
 }
 
 export const CONN_DEFAULTS = {
@@ -82,12 +81,38 @@ export const CONN_DEFAULTS = {
     fontSizeMin: 1,
     fontSizeMax: 72,
     fontColor: '#333333',
-    edgeColor: '#b1b1b7',
+    edgeColor: '#b1b1b1',
     edgeWidth: 1,
+    //兩端方位(邊自己持有; 未給時之預設)
+    fromPosition: 'bottom',
+    toPosition: 'top',
+    //兩端箭頭: type '' | 'arrow' | 'arrowclosed'; size px; color 為實心箭頭之填充色(未給即線色)
+    markerStart: '',
+    markerStartSize: 10,
+    markerStartColor: '',
     markerEnd: '',
+    markerEndSize: 10,
+    markerEndColor: '',
     animated: false,
     defOffset: 24,
 }
+
+/** 設定齒輪顯示方式 */
+export const SETTINGS_TRIGGERS = ['hover', 'click', 'dblclick']
+
+/** 節點設定更新入口受理之欄位(schema allowlist): 已移除之 type / toPosition / fromPosition 不在其中 */
+export const NODE_SETTING_KEYS = [
+    'name', 'description', 'shape', 'popupDirection', 'fontSize', 'fontColor', 'faceColor', 'edgeColor', 'edgeWidth',
+    'width', 'height', 'connectable', 'draggable', 'resizable', 'deletable', 'hidden', 'class', 'zIndex',
+]
+
+/** 連線設定更新入口受理之欄位(schema allowlist) */
+export const CONN_SETTING_KEYS = [
+    'name', 'description', 'type', 'fromPosition', 'toPosition', 'fontSize', 'fontColor', 'animated',
+    'edgeColor', 'edgeWidth', 'edgeDasharray', 'points', 'curvature',
+    'markerStart', 'markerStartSize', 'markerStartColor', 'markerEnd', 'markerEndSize', 'markerEndColor',
+    'deletable', 'hidden', 'class', 'style',
+]
 </code></pre>
         </article>
     </section>
@@ -102,7 +127,7 @@ export const CONN_DEFAULTS = {
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 4.0.5</a> on Thu Aug 27 2026 17:33:26 GMT+0800 (台北標準時間) using the <a href="https://github.com/clenemt/docdash">docdash</a> theme.
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 4.0.5</a> on Thu Aug 27 2026 22:28:38 GMT+0800 (台北標準時間) using the <a href="https://github.com/clenemt/docdash">docdash</a> theme.
 </footer>
 
 <script>prettyPrint();</script>

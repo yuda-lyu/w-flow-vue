@@ -1,49 +1,62 @@
 /**
- * anchorPolicy 純函式驗收 —— 方位之單一來源是節點(spec/流程_互動契約.md §4)。
+ * anchorPolicy 純函式驗收 —— 方位之單一來源是連線(spec/流程_互動契約.md §4)。
  *
  * 契約:
- *   source 端(連出): node.toPosition → defNode.toPosition → 'bottom'
- *   target 端(連入): node.fromPosition → defNode.fromPosition → 'top'
- *   邊資料不含方位欄位; 模組不提供任何讀取 conn 方位之介面。
+ *   from 端: conn.fromPosition → defConn.fromPosition → 'bottom'
+ *   to 端:   conn.toPosition   → defConn.toPosition   → 'top'
+ *   非四值之方位視為未給; oppositeSide 為對邊; 模組不讀取節點資料。
  */
 import * as ap from '../src/js/anchorPolicy.mjs'
 
-const { nodeSourceSide, nodeTargetSide, nodeSameSide } = ap
+const { connSourceSide, connTargetSide, oppositeSide, isSide, SIDES } = ap
 
-describe('連出側解析', () => {
-    test('node.toPosition 優先', () => {
-        expect(nodeSourceSide({ toPosition: 'right' }, { toPosition: 'top' })).toBe('right')
+describe('方位集合', () => {
+    test('SIDES 恰四值, isSide 只認四值', () => {
+        expect(SIDES).toEqual(['top', 'right', 'bottom', 'left'])
+        for (const s of SIDES) expect(isSide(s)).toBe(true)
+        expect(isSide('center')).toBe(false)
+        expect(isSide('')).toBe(false)
+        expect(isSide(null)).toBe(false)
     })
-    test('無 node 層 → defNode.toPosition', () => {
-        expect(nodeSourceSide({}, { toPosition: 'right' })).toBe('right')
+    test('oppositeSide 兩兩互為對邊; 非法值回 top', () => {
+        expect(oppositeSide('top')).toBe('bottom')
+        expect(oppositeSide('bottom')).toBe('top')
+        expect(oppositeSide('left')).toBe('right')
+        expect(oppositeSide('right')).toBe('left')
+        expect(oppositeSide('x')).toBe('top')
+    })
+})
+
+describe('from 端解析', () => {
+    test('conn.fromPosition 優先', () => {
+        expect(connSourceSide({ fromPosition: 'right' }, { fromPosition: 'top' })).toBe('right')
+    })
+    test('無 conn 層 → defConn.fromPosition', () => {
+        expect(connSourceSide({}, { fromPosition: 'right' })).toBe('right')
     })
     test('全無 → 內建 bottom', () => {
-        expect(nodeSourceSide({}, {})).toBe('bottom')
-        expect(nodeSourceSide(null, null)).toBe('bottom')
+        expect(connSourceSide({}, {})).toBe('bottom')
+        expect(connSourceSide(null, null)).toBe('bottom')
+    })
+    test('非法值視為未給', () => {
+        expect(connSourceSide({ fromPosition: 'center' }, { fromPosition: 'left' })).toBe('left')
+        expect(connSourceSide({ fromPosition: '' }, {})).toBe('bottom')
     })
 })
 
-describe('連入側解析', () => {
-    test('node.fromPosition → defNode.fromPosition → top', () => {
-        expect(nodeTargetSide({ fromPosition: 'left' }, { fromPosition: 'right' })).toBe('left')
-        expect(nodeTargetSide({}, { fromPosition: 'right' })).toBe('right')
-        expect(nodeTargetSide({}, {})).toBe('top')
+describe('to 端解析', () => {
+    test('conn.toPosition → defConn.toPosition → top', () => {
+        expect(connTargetSide({ toPosition: 'left' }, { toPosition: 'right' })).toBe('left')
+        expect(connTargetSide({}, { toPosition: 'right' })).toBe('right')
+        expect(connTargetSide({}, {})).toBe('top')
     })
 })
 
-describe('same-side 判定(basic 節點出入同側 → 錯開佈局)', () => {
-    test('basic 且同側為 true; 非 basic 恆 false; 併入 defNode 層', () => {
-        expect(nodeSameSide({ type: 'basic', toPosition: 'top', fromPosition: 'top' }, {})).toBe(true)
-        expect(nodeSameSide({ type: 'basic' }, { toPosition: 'top', fromPosition: 'top' })).toBe(true)
-        expect(nodeSameSide({ type: 'basic' }, {})).toBe(false)
-        expect(nodeSameSide({ type: 'input', toPosition: 'top', fromPosition: 'top' }, {})).toBe(false)
-    })
-})
-
-describe('有效型別解析', () => {
-    test('node.type → defNode.type → basic', () => {
-        expect(ap.nodeType({ type: 'output' }, { type: 'input' })).toBe('output')
-        expect(ap.nodeType({}, { type: 'input' })).toBe('input')
-        expect(ap.nodeType({}, {})).toBe('basic')
+describe('模組不提供節點層解析', () => {
+    test('無 nodeType / nodeSourceSide / nodeTargetSide / nodeSameSide 匯出', () => {
+        expect(ap.nodeType).toBeUndefined()
+        expect(ap.nodeSourceSide).toBeUndefined()
+        expect(ap.nodeTargetSide).toBeUndefined()
+        expect(ap.nodeSameSide).toBeUndefined()
     })
 })

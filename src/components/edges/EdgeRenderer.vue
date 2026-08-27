@@ -10,7 +10,6 @@
       :target-node="nodeMap[conn.to]"
       :selected="isSelected(conn.id)"
       :popup-slot-fn="popupSlotFn"
-      :all-nodes="nodes"
       :node-internals="nodeInternals"
       :interactive="interactive"
       :locked="locked"
@@ -23,6 +22,7 @@
       :infor-popup-description-text-color="inforPopupDescriptionTextColor"
       :infor-popup-description-text-font-size="inforPopupDescriptionTextFontSize"
       :settings-enabled="settingsEnabled"
+      :settings-trigger="settingsTrigger"
       :settings-excludes="settingsExcludes"
       @conn-click="$emit('conn-click', $event)"
       @conn-double-click="$emit('conn-double-click', $event)"
@@ -64,6 +64,7 @@ export default {
         inforPopupDescriptionTextColor: { type: String, default: '#888' },
         inforPopupDescriptionTextFontSize: { type: String, default: '10px' },
         settingsEnabled: { type: Boolean, default: true },
+        settingsTrigger: { type: String, default: 'dblclick' },
         settingsExcludes: { type: Array, default: () => [] },
     },
     computed: {
@@ -95,8 +96,7 @@ export default {
             let wrappers = this.$refs.wrappers || []
             let w = wrappers.find(c => c.conn && c.conn.id === connId)
             if (!w) return false
-            w.openInfoPopup()
-            return true
+            return w.openInfoPopup() !== false
         },
     },
 }

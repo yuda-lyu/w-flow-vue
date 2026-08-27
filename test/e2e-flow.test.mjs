@@ -1,5 +1,5 @@
 /**
- * E2E 圖台互動測試(Playwright)—— 單檔雙模式,對應 spec/流程_圖台互動.md 之 E2E-001 ~ E2E-028。
+ * E2E 圖台互動測試(Playwright)—— 單檔雙模式,對應 spec/流程_圖台互動.md 之 E2E-001 ~ E2E-037。
  *
  * 前置: npm run serve(dev server 須在 127.0.0.1:8080)
  *
@@ -121,7 +121,7 @@ const getAffordances = (page) => page.evaluate(() => ({
 
 const getForms = (page) => page.evaluate(() => {
     const fs2 = [...document.querySelectorAll('.vue-flow__settings-form')]
-    return { count: fs2.length, hasNodeForm: fs2.some(f => /刪除節點/.test(f.textContent || '')) }
+    return { count: fs2.length, hasNodeForm: fs2.some(f => /Shape/.test(f.textContent || '')) }
 })
 
 /** EdgeWrapper 之資訊 popup 狀態(語意斷言用) */
@@ -207,6 +207,26 @@ async function hoverEdge(page) {
     return b
 }
 
+/** 預設 nodesSettingsTrigger/connsSettingsTrigger 為 dblclick: 雙擊本體直接開設定 popup(不顯示齒輪) */
+async function openNodeSettings(page, id) {
+    const b = await hoverNode(page, id)
+    await page.mouse.dblclick(b.x + b.width / 2, b.y + b.height / 2)
+    await page.waitForTimeout(400)
+    return b
+}
+async function openEdgeSettings(page, connId) {
+    const label = page.locator(`.vue-flow__edge[data-id="${connId}"] .vue-flow__edge-label`).first()
+    await label.hover()
+    await page.waitForTimeout(300)
+    await label.dblclick()
+    await page.waitForTimeout(400)
+}
+/** 以宿主 opt 切換齒輪顯示方式(setup 階段允許程式化設定 opt; hover 專屬之 case 用) */
+async function setSettingsTrigger(page, mode) {
+    await evalVm(page, `vm.$set(vm.opt, 'nodesSettingsTrigger', arg); vm.$set(vm.opt, 'connsSettingsTrigger', arg)`, mode)
+    await page.waitForTimeout(200)
+}
+
 /** 找一塊沒有節點/連線/選單的空白畫布座標 */
 async function blankPoint(page) {
     const rect = await getContainerRect(page)
@@ -256,7 +276,8 @@ const CASES = [
         await page.waitForTimeout(300)
         await hoverNode(page, '1')
         const af = await getAffordances(page)
-        expectOk('E2E-003 齒輪出現', af.nodeGear === true, `nodeGear=${af.nodeGear}`)
+        //spec: 預設 dblclick 模式, hover 不出齒輪(E2E-037 驗各模式)
+        expectOk('E2E-003 齒輪不因 hover 出現', af.nodeGear === false, `nodeGear=${af.nodeGear}`)
         expectOk('E2E-003 resize把手 > 0', af.resizeHandles > 0, `resizeHandles=${af.resizeHandles}`)
         expectOk('E2E-003 連接點 > 0', af.connHandles > 0, `connHandles=${af.connHandles}`)
         const b = await nodeBox(page, '1')
@@ -326,7 +347,9 @@ const CASES = [
     mkCase('E2E-007', 'edge-hovered', async (page) => {
         const b = await hoverEdge(page)
         const af = await getAffordances(page)
-        expectOk('E2E-007 連線齒輪出現', af.edgeGear === true, `edgeGear=${af.edgeGear}`)
+        expectOk('E2E-007 連線齒輪不因 hover 出現', af.edgeGear === false, `edgeGear=${af.edgeGear}`)
+        const hoveredCls = await page.evaluate(() => !!document.querySelector('.vue-flow__edge--hovered'))
+        expectOk('E2E-007 連線呈 hover 態', hoveredCls === true, `hovered=${hoveredCls}`)
         await shot(page, 'flow-E2E-007-edge-hovered', { clip: clipAround(b, 40), parkMouse: false })
     }),
 
@@ -382,9 +405,8 @@ const CASES = [
         await centerOnNode(page, '1')
         await page.waitForTimeout(300)
         const before = await getNode(page, '1')
-        await hoverNode(page, '1')
-        await page.locator('.vue-flow__node-settings').first().click()
-        await page.waitForTimeout(600)
+        await openNodeSettings(page, '1')
+        await page.waitForTimeout(400)
         const f = await getForms(page)
         expectOk('E2E-011 節點設定表單開啟', f.count === 1 && f.hasNodeForm === true, `forms=${JSON.stringify(f)}`)
         const after = await getNode(page, '1')
@@ -398,14 +420,12 @@ const CASES = [
     }),
 
     mkCase('E2E-012', 'popup-exclusive', async (page) => {
-        await hoverNode(page, '1')
-        await page.locator('.vue-flow__node-settings').first().click()
-        await page.waitForTimeout(600)
+        await openNodeSettings(page, '1')
+        await page.waitForTimeout(400)
         const f0 = await getForms(page)
         expectOk('E2E-012 前置: 節點表單已開', f0.count === 1 && f0.hasNodeForm, `forms=${JSON.stringify(f0)}`)
-        await hoverEdge(page)
-        await page.locator('.vue-flow__edge-settings').first().click()
-        await page.waitForTimeout(700)
+        await openEdgeSettings(page, 'e1-2')
+        await page.waitForTimeout(500)
         const f1 = await getForms(page)
         expectOk('E2E-012 畫面僅存一個設定表單', f1.count === 1, `forms=${JSON.stringify(f1)}`)
         expectOk('E2E-012 節點表單已關閉', f1.hasNodeForm === false, `forms=${JSON.stringify(f1)}`)
@@ -634,9 +654,9 @@ const CASES = [
 
     mkCase('E2E-027', 'conn-created', async (page) => {
         const n0 = await getConnsLen(page)
-        const src = await page.$('.vue-flow__node[data-id="2"] .vue-flow__handle[data-handle-type="source"]')
-        const tgt = await page.$('.vue-flow__node[data-id="9"] .vue-flow__handle[data-handle-type="target"]')
-        expectOk('E2E-027 前置: 找到來源與目標連接點', !!src && !!tgt, `src=${!!src} tgt=${!!tgt}`)
+        const src = await page.$('.vue-flow__node[data-id="2"] .vue-flow__handle[data-handle-position="bottom"]')
+        const tgt = await page.$('.vue-flow__node[data-id="9"] .vue-flow__handle[data-handle-position="top"]')
+        expectOk('E2E-027 前置: 找到出發與落點連接點', !!src && !!tgt, `src=${!!src} tgt=${!!tgt}`)
         const sb = await src.boundingBox()
         const tb = await tgt.boundingBox()
         await page.mouse.move(sb.x + sb.width / 2, sb.y + sb.height / 2)
@@ -646,13 +666,18 @@ const CASES = [
         await page.waitForTimeout(500)
         const n1 = await getConnsLen(page)
         expectOk('E2E-027 新增一筆連線', n1 === n0 + 1, `conns ${n0} → ${n1}`)
-        const added = await evalVm(page, 'const c = vm.conns[vm.conns.length - 1];return { from: c.from, to: c.to }')
+        //spec: 新 conn = { id, from: 出發節點, to: 落點節點, fromPosition: 出發邊, toPosition: 落點邊 }(邊持有自己兩端之方位)
+        const added = await evalVm(page, 'return JSON.parse(JSON.stringify(vm.conns[vm.conns.length - 1]))')
         expectOk('E2E-027 新連線之 from/to 正確', added.from === '2' && added.to === '9', `added=${JSON.stringify(added)}`)
+        expectOk('E2E-027 新連線持有兩端方位(出發 bottom / 落點 top)', added.fromPosition === 'bottom' && added.toPosition === 'top', `added=${JSON.stringify(added)}`)
+        expectOk('E2E-027 新連線 to 端自動實心箭頭', added.markerEnd === 'arrowclosed', `added=${JSON.stringify(added)}`)
+        const mk = await page.evaluate((id) => {
+            const p = document.querySelector(`.vue-flow__edge[data-id="${id}"] path[marker-end]`)
+            return p ? p.getAttribute('marker-end') : null
+        }, added.id)
+        expectOk('E2E-027 路徑帶 marker-end', !!mk && mk.startsWith('url(#'), `marker-end=${mk}`)
         const ev = await emitted(page)
         expectOk('E2E-027 發出 update:conns', ev.includes('update:conns'), `events=${JSON.stringify(ev)}`)
-        //spec: 邊沒有自己的方位, 兩端方向由節點之 To/From Handle 決定
-        const anchors = await evalVm(page, 'const c = vm.conns[vm.conns.length - 1];return { hasFrom: "fromPosition" in c, hasTo: "toPosition" in c }')
-        expectOk('E2E-027 新連線不含方位欄位', !anchors.hasFrom && !anchors.hasTo, `anchors=${JSON.stringify(anchors)}`)
         await page.mouse.move(0, 0)
         await shot(page, 'flow-E2E-027-conn-created', { clip: await getCanvasClip(page) })
     }),
@@ -690,7 +715,9 @@ const CASES = [
         await page.addStyleTag({ content: '.vue-flow__node, .vue-flow__node * { user-select: text !important; -webkit-user-select: text !important; }' })
         await page.evaluate(() => {
             window.__dragstart = 0
-            document.addEventListener('dragstart', () => { window.__dragstart++ }, true)
+            document.addEventListener('dragstart', () => {
+                window.__dragstart++
+            }, true)
         })
         //setup(未走 UI): 以 Range 預先選取節點 1 之 label 文字, 模擬「先前互動殘留之選取」——
         //修正後拖曳不再形成選取(E2E-030), 故此前置無法以真 UI 產生, 只能程式化建立最壞情境
@@ -746,36 +773,33 @@ const CASES = [
         await shot(page, 'flow-E2E-030-textdrag-no-selection-forms', { clip: clipAround(b2, PAD) })
     }),
 
-    mkCase('E2E-031', 'tohandle-right', async (page) => {
-        //前置確認: demo 節點 1 有出邊且邊資料不含方位欄位
-        const pre = await evalVm(page, `
-            const cs = vm.conns.filter(c => c.from === '1')
-            return { n: cs.length, withPos: cs.filter(c => c.fromPosition).length }
-        `)
-        expectOk('E2E-031 前置: 節點1有出邊', pre.n > 0 && pre.withPos === 0, `pre=${JSON.stringify(pre)}`)
+    mkCase('E2E-031', 'from-anchor-right', async (page) => {
+        //前置確認: demo 連線 e1-2 未設方位(取 defConn 之 bottom)
+        const pre = await evalVm(page, `const c = vm.conns.find(c => c.id === 'e1-2'); return { has: !!c, fromPosition: c && c.fromPosition }`)
+        expectOk('E2E-031 前置: e1-2 存在且未設 fromPosition', pre.has && pre.fromPosition === undefined, `pre=${JSON.stringify(pre)}`)
         const dBefore = await getConnPathD(page, 'e1-2')
+        const handleStyleBefore = await page.evaluate(() => document.querySelector('.vue-flow__node[data-id="1"] .vue-flow__handle[data-handle-position="bottom"]').getAttribute('style'))
 
-        //act(真 UI): 開節點1設定表單, 於 To Handle 下拉選 Right
-        await hoverNode(page, '1')
-        await page.locator('.vue-flow__node[data-id="1"] .vue-flow__node-settings').first().click()
-        await page.waitForTimeout(600)
-        const sel = page.locator('.vue-flow__settings-form label:has-text("To Handle") select')
+        //act(真 UI): 雙擊連線 e1-2 之 label 直接開設定 popup → 於 From Anchor 下拉選 Right
+        await openEdgeSettings(page, 'e1-2')
+        await page.waitForTimeout(400)
+        const sel = page.locator('.vue-flow__settings-form label:has-text("From Anchor") select')
         await sel.waitFor({ state: 'visible', timeout: 5000 })
         await sel.selectOption('right')
         await page.waitForTimeout(500)
 
-        //spec: source 把手移至右側
-        const side = await page.evaluate(() => {
-            const h = document.querySelector('.vue-flow__node[data-id="1"] .vue-flow__handle[data-handle-type="source"]')
-            return h ? h.dataset.handlePosition : null
-        })
-        expectOk('E2E-031 source 把手移至 right', side === 'right', `side=${side}`)
-        //spec: 出邊之出發端跟隨改道
+        //spec: conn.fromPosition === 'right'
+        const post = await evalVm(page, `const c = vm.conns.find(c => c.id === 'e1-2'); return c.fromPosition`)
+        expectOk('E2E-031 conn.fromPosition 為 right', post === 'right', `fromPosition=${post}`)
+        //spec: 該邊路徑 d 改變(出發端改自右側射出)
         const dAfter = await getConnPathD(page, 'e1-2')
-        expectOk('E2E-031 出邊路徑跟隨改變', !!dBefore && !!dAfter && dBefore !== dAfter, `d 未改變`)
-        //spec: 邊資料不含方位欄位
-        const post = await evalVm(page, `return vm.conns.filter(c => c.from === '1' && c.fromPosition).length`)
-        expectOk('E2E-031 邊資料不含方位欄位', post === 0, `withPos=${post}`)
+        expectOk('E2E-031 該邊路徑改道', !!dBefore && !!dAfter && dBefore !== dAfter, `d 未改變`)
+        //spec: 節點把手不動——四把手恆在, bottom 把手 inline style 不變
+        const handles = await page.evaluate(() => [...document.querySelectorAll('.vue-flow__node[data-id="1"] .vue-flow__handle')].map(h => h.dataset.handlePosition).sort())
+        expectOk('E2E-031 from 節點仍為四把手', JSON.stringify(handles) === JSON.stringify(['bottom', 'left', 'right', 'top']), `handles=${JSON.stringify(handles)}`)
+        const handleStyleAfter = await page.evaluate(() => document.querySelector('.vue-flow__node[data-id="1"] .vue-flow__handle[data-handle-position="bottom"]').getAttribute('style'))
+        expectOk('E2E-031 bottom 把手不搬移', handleStyleBefore === handleStyleAfter, `before=${handleStyleBefore} after=${handleStyleAfter}`)
+        expectOk('E2E-031 發出 conn-settings-update', (await emitted(page)).includes('conn-settings-update'), 'no conn-settings-update')
 
         //關閉popup後拍節點與其出邊之區域
         await page.mouse.move(5, 5)
@@ -784,13 +808,15 @@ const CASES = [
         await page.waitForTimeout(400)
         await page.mouse.move(0, 0)
         const b = await nodeBox(page, '1')
-        await shot(page, 'flow-E2E-031-tohandle-right', { clip: clipAround(b, PAD * 2) })
+        await shot(page, 'flow-E2E-031-from-anchor-right', { clip: clipAround(b, PAD * 2) })
     }),
 
     mkCase('E2E-032', 'connect-feedback', async (page) => {
         //單一 case 之承接式 journey(拖線中各 hover 階段承接同一次按住不放之真實手勢, 無法乾淨 seed 中間點):
-        //起手 → hover 不可連(他節點 source)→ hover 自己節點(自我連線)→ hover 合法 target → 於不可連處放開
+        //起手(節點2 bottom)→ hover 已有同向邊之節點8(duplicate)→ hover 自己節點(self)→ hover 合法節點9 → 於不可連處放開
         const n0 = await getConnsLen(page)
+        const pre = await evalVm(page, `return vm.conns.some(c => c.from === '2' && c.to === '8')`)
+        expectOk('E2E-032 前置: 已存在 2→8', pre === true, `pre=${pre}`)
         const q = (sel) => page.evaluate((s) => {
             const el = document.querySelector(s)
             if (!el) return null
@@ -806,72 +832,71 @@ const CASES = [
             const p = document.querySelector('.vue-flow__connection-path')
             return p ? p.getAttribute('class') : null
         })
-        const selSrc2 = '.vue-flow__node[data-id="2"] .vue-flow__handle[data-handle-type="source"]'
-        const selTgt2 = '.vue-flow__node[data-id="2"] .vue-flow__handle[data-handle-type="target"]'
-        const selSrc9 = '.vue-flow__node[data-id="9"] .vue-flow__handle[data-handle-type="source"]'
-        const selTgt9 = '.vue-flow__node[data-id="9"] .vue-flow__handle[data-handle-type="target"]'
+        const H = (id, side) => `.vue-flow__node[data-id="${id}"] .vue-flow__handle[data-handle-position="${side}"]`
         const box = async (sel) => (await page.$(sel)).boundingBox()
 
-        //act(真滑鼠): 自節點2之 source 把手按住拉出
-        const sb = await box(selSrc2)
+        //act(真滑鼠): 自節點2之 bottom 把手按住拉出
+        const sb = await box(H('2', 'bottom'))
         await page.mouse.move(sb.x + sb.width / 2, sb.y + sb.height / 2)
         await page.mouse.down()
         await page.mouse.move(sb.x + sb.width / 2 + 30, sb.y + sb.height / 2 + 30, { steps: 4 })
         await page.waitForTimeout(200)
 
-        //spec: 出發把手標記 origin; 其他 source 把手(永不可為落點)一律淡化, 消除可連暗示
-        const o = await q(selSrc2)
+        //spec: 出發把手標記 origin; 出發節點之其他三把手(自我連線)一律淡化 not-allowed, 不需 hover 判定
+        const o = await q(H('2', 'bottom'))
         expectOk('E2E-032 出發把手標記 origin', !!o && o.role === 'origin', `o=${JSON.stringify(o)}`)
-        const dim = await q(selSrc9)
-        expectOk('E2E-032 他節點 source 把手淡化且 not-allowed', !!dim && Number(dim.opacity) < 0.5 && dim.cursor === 'not-allowed', `dim=${JSON.stringify(dim)}`)
-        //spec: 出發節點之其他把手(自我連線)亦淡化, 不需 hover 判定
-        const dimSelf = await q(selTgt2)
-        expectOk('E2E-032 出發節點之 target 把手淡化', !!dimSelf && Number(dimSelf.opacity) < 0.5, `self=${JSON.stringify(dimSelf)}`)
+        for (const side of ['top', 'left', 'right']) {
+            const dim = await q(H('2', side))
+            expectOk(`E2E-032 出發節點 ${side} 把手淡化且 not-allowed`, !!dim && Number(dim.opacity) < 0.5 && dim.cursor === 'not-allowed', `dim=${JSON.stringify(dim)}`)
+        }
+        //spec: 他節點把手未 hover 時不淡化(四把手皆可為落點)
+        const other = await q(H('9', 'top'))
+        expectOk('E2E-032 他節點把手未 hover 不淡化', !!other && Number(other.opacity) === 1, `other=${JSON.stringify(other)}`)
 
-        //spec: hover 他節點之 source 把手 → invalid(紅色 ring + not-allowed), 預覽線轉 danger
-        const s9 = await box(selSrc9)
-        await page.mouse.move(s9.x + s9.width / 2, s9.y + s9.height / 2, { steps: 8 })
+        //spec: hover 已有同向邊之節點8把手 → invalid(duplicate; 紅 ring + not-allowed), 預覽線轉 danger
+        const t8 = await box(H('8', 'top'))
+        await page.mouse.move(t8.x + t8.width / 2, t8.y + t8.height / 2, { steps: 8 })
         await page.waitForTimeout(200)
-        const inv = await q(selSrc9)
-        expectOk('E2E-032 hover 他節點 source → invalid', !!inv && inv.status === 'invalid', `inv=${JSON.stringify(inv)}`)
+        const inv = await q(H('8', 'top'))
+        expectOk('E2E-032 hover 已有同向邊之節點 → invalid(duplicate)', !!inv && inv.status === 'invalid', `inv=${JSON.stringify(inv)}`)
         expectOk('E2E-032 invalid 落點游標 not-allowed', !!inv && inv.cursor === 'not-allowed', `cursor=${inv && inv.cursor}`)
         expectOk('E2E-032 預覽線標 invalid', String(await lineClass()).includes('vue-flow__connection-path--invalid'), `class=${await lineClass()}`)
-        const b9 = await nodeBox(page, '9')
-        await shot(page, 'flow-E2E-032-connect-feedback-invalid', { clip: clipAround(b9, PAD), parkMouse: false })
+        const b8 = await nodeBox(page, '8')
+        await shot(page, 'flow-E2E-032-connect-feedback-invalid', { clip: clipAround(b8, PAD), parkMouse: false })
 
-        //spec: 自己節點之把手亦為不可連(自我連線禁止), hover → invalid
-        const t2 = await box(selTgt2)
+        //spec: 自己節點之把手亦為不可連(self), hover → invalid
+        const t2 = await box(H('2', 'top'))
         await page.mouse.move(t2.x + t2.width / 2, t2.y + t2.height / 2, { steps: 8 })
         await page.waitForTimeout(200)
-        const self = await q(selTgt2)
-        expectOk('E2E-032 hover 自己節點把手 → invalid(自我連線)', !!self && self.status === 'invalid', `self=${JSON.stringify(self)}`)
+        const self = await q(H('2', 'top'))
+        expectOk('E2E-032 hover 自己節點把手 → invalid(self)', !!self && self.status === 'invalid', `self=${JSON.stringify(self)}`)
 
-        //spec: hover 合法 target → valid(主題藍 ring + crosshair), 預覽線轉 valid
-        const t9 = await box(selTgt9)
+        //spec: hover 合法他節點把手 → valid(主題藍 ring + crosshair), 預覽線轉 valid
+        const t9 = await box(H('9', 'top'))
         await page.mouse.move(t9.x + t9.width / 2, t9.y + t9.height / 2, { steps: 8 })
         await page.waitForTimeout(200)
-        const val = await q(selTgt9)
+        const val = await q(H('9', 'top'))
         expectOk('E2E-032 hover 合法落點 → valid', !!val && val.status === 'valid', `val=${JSON.stringify(val)}`)
         expectOk('E2E-032 valid 落點游標 crosshair', !!val && val.cursor === 'crosshair', `cursor=${val && val.cursor}`)
         expectOk('E2E-032 預覽線標 valid', String(await lineClass()).includes('vue-flow__connection-path--valid'), `class=${await lineClass()}`)
+        const b9 = await nodeBox(page, '9')
         await shot(page, 'flow-E2E-032-connect-feedback-valid', { clip: clipAround(b9, PAD), parkMouse: false })
 
-        //spec: 於不可連落點放開 → 不建線; 手勢暫態(標記/根class)全清
-        await page.mouse.move(s9.x + s9.width / 2, s9.y + s9.height / 2, { steps: 6 })
+        //spec: 於不可連落點(自己節點)放開 → 不建線; 手勢暫態(標記/根class)全清
+        await page.mouse.move(t2.x + t2.width / 2, t2.y + t2.height / 2, { steps: 6 })
         await page.mouse.up()
         await page.waitForTimeout(400)
         const n1 = await getConnsLen(page)
         expectOk('E2E-032 於不可連落點放開不建線', n1 === n0, `conns ${n0} → ${n1}`)
-        const marks = await page.evaluate(() => document.querySelectorAll('[data-connect-role], [data-connect-status]').length)
+        const marks = await page.evaluate(() => document.querySelectorAll('[data-connect-role], [data-connect-status], [data-connect-origin-node]').length)
         expectOk('E2E-032 放開後暫態標記全清', marks === 0, `marks=${marks}`)
         const rootCls = await page.evaluate(() => document.querySelector('[data-flow-id]').classList.contains('vue-flow--connecting'))
         expectOk('E2E-032 放開後根 connecting class 移除', rootCls === false, `has=${rootCls}`)
-        const rootFrom = await page.evaluate(() => document.querySelector('[data-flow-id]').hasAttribute('data-connect-from'))
-        expectOk('E2E-032 放開後根 data-connect-from 移除', rootFrom === false, `has=${rootFrom}`)
     }),
 
     mkCase('E2E-033', 'multiselect-mode', async (page) => {
         //宿主回報場景: 點a開popup → 按住Shift點b各部位反應不一致 → 裁定為統一複選模式
+        await setSettingsTrigger(page, 'hover') //本 case 驗 hover 出現之齒輪於複選模式被隱藏
         await clickMenu(page, 'fitView') //節點5/6須同時在視窗內(節點6原始座標在視窗外, elementFromPoint會回null)
         await page.waitForTimeout(400)
         const getNodePopupState = (id) => evalVm(page, `
@@ -937,9 +962,9 @@ const CASES = [
         expectOk('E2E-033 放開後把手恢復', !!vHandle2 && vHandle2.visibility === 'visible', `v=${JSON.stringify(vHandle2)}`)
     }),
 
-    mkCase('E2E-034', 'target-origin', async (page) => {
-        //承接式 journey: 自節點9之 target 把手按住 → hover 自己 source(自我) → hover 他節點 target(同類) → hover 他節點 source(合法) → 放開建線
-        //真實 user path: ①移入連入點看到 crosshair ②按住拖出 ③沿途看游標三態 ④於他節點連出點放開 ⑤看到新連線
+    mkCase('E2E-034', 'any-side-origin', async (page) => {
+        //承接式 journey: 自節點9之 left 把手按住 → hover 自己 top(self) → hover 節點2之 right(合法) → 放開建線 9→2
+        //真實 user path: ①移入左側連接點看到 crosshair ②按住拖出 ③沿途看游標三態 ④於他節點右側連接點放開 ⑤看到新連線
         const n0 = await getConnsLen(page)
         const q = (sel) => page.evaluate((s) => {
             const el = document.querySelector(s)
@@ -947,78 +972,70 @@ const CASES = [
             const cs = getComputedStyle(el)
             return { status: el.getAttribute('data-connect-status'), role: el.getAttribute('data-connect-role'), cursor: cs.cursor, opacity: cs.opacity }
         }, sel)
-        const selTgt9 = '.vue-flow__node[data-id="9"] .vue-flow__handle[data-handle-type="target"]'
-        const selSrc9 = '.vue-flow__node[data-id="9"] .vue-flow__handle[data-handle-type="source"]'
-        const selTgt2 = '.vue-flow__node[data-id="2"] .vue-flow__handle[data-handle-type="target"]'
-        const selSrc2 = '.vue-flow__node[data-id="2"] .vue-flow__handle[data-handle-type="source"]'
+        const H = (id, side) => `.vue-flow__node[data-id="${id}"] .vue-flow__handle[data-handle-position="${side}"]`
         const box = async (sel) => (await page.$(sel)).boundingBox()
 
-        //spec: 靜止時連入點游標 crosshair(承諾真實)
-        const tb = await box(selTgt9)
-        await page.mouse.move(tb.x + tb.width / 2, tb.y + tb.height / 2)
+        //spec: 靜止時任一邊把手游標 crosshair(四把手皆可出發)
+        const lb = await box(H('9', 'left'))
+        await page.mouse.move(lb.x + lb.width / 2, lb.y + lb.height / 2)
         await page.waitForTimeout(150)
-        const idle = await q(selTgt9)
-        expectOk('E2E-034 連入點靜止游標 crosshair', !!idle && idle.cursor === 'crosshair', `cursor=${idle && idle.cursor}`)
+        const idle = await q(H('9', 'left'))
+        expectOk('E2E-034 左側把手靜止游標 crosshair', !!idle && idle.cursor === 'crosshair', `cursor=${idle && idle.cursor}`)
 
-        //act: 自連入點按住拉出
+        //act: 自左側把手按住拉出
         await page.mouse.down()
-        await page.mouse.move(tb.x + tb.width / 2 - 30, tb.y + tb.height / 2 - 30, { steps: 4 })
+        await page.mouse.move(lb.x + lb.width / 2 - 30, lb.y + lb.height / 2 - 30, { steps: 4 })
         await page.waitForTimeout(200)
-        const root = await page.evaluate(() => {
-            const r = document.querySelector('[data-flow-id]')
-            return { from: r.getAttribute('data-connect-from'), originNode: !!document.querySelector('.vue-flow__node[data-connect-origin-node]') }
+        const originNode = await page.evaluate(() => {
+            const n = document.querySelector('.vue-flow__node[data-connect-origin-node]')
+            return n ? n.getAttribute('data-id') : null
         })
-        expectOk('E2E-034 根標記 data-connect-from=target', root.from === 'target', `root=${JSON.stringify(root)}`)
-        expectOk('E2E-034 出發節點標記 origin-node', root.originNode === true, `root=${JSON.stringify(root)}`)
-        const o = await q(selTgt9)
+        expectOk('E2E-034 出發節點標記 origin-node', originNode === '9', `originNode=${originNode}`)
+        const o = await q(H('9', 'left'))
         expectOk('E2E-034 出發把手標記 origin', !!o && o.role === 'origin', `o=${JSON.stringify(o)}`)
-        const dimT2 = await q(selTgt2)
-        expectOk('E2E-034 他節點連入點淡化且 not-allowed', !!dimT2 && Number(dimT2.opacity) < 0.5 && dimT2.cursor === 'not-allowed', `t2=${JSON.stringify(dimT2)}`)
-        const dimS9 = await q(selSrc9)
-        expectOk('E2E-034 自己節點連出點淡化', !!dimS9 && Number(dimS9.opacity) < 0.5, `s9=${JSON.stringify(dimS9)}`)
+        for (const side of ['top', 'right', 'bottom']) {
+            const dim = await q(H('9', side))
+            expectOk(`E2E-034 自己節點 ${side} 把手淡化且 not-allowed`, !!dim && Number(dim.opacity) < 0.5 && dim.cursor === 'not-allowed', `dim=${JSON.stringify(dim)}`)
+        }
 
-        //spec: hover 自己 source → invalid(自我); hover 他節點 target → invalid(同類)
-        const s9 = await box(selSrc9)
-        await page.mouse.move(s9.x + s9.width / 2, s9.y + s9.height / 2, { steps: 8 })
+        //spec: hover 自己節點 top → invalid(self)
+        const t9 = await box(H('9', 'top'))
+        await page.mouse.move(t9.x + t9.width / 2, t9.y + t9.height / 2, { steps: 8 })
         await page.waitForTimeout(200)
-        const self = await q(selSrc9)
-        expectOk('E2E-034 hover 自己連出點 → invalid', !!self && self.status === 'invalid' && self.cursor === 'not-allowed', `self=${JSON.stringify(self)}`)
-        const t2 = await box(selTgt2)
-        await page.mouse.move(t2.x + t2.width / 2, t2.y + t2.height / 2, { steps: 8 })
+        const self = await q(H('9', 'top'))
+        expectOk('E2E-034 hover 自己 top → invalid', !!self && self.status === 'invalid' && self.cursor === 'not-allowed', `self=${JSON.stringify(self)}`)
+        const b9 = await nodeBox(page, '9')
+        await shot(page, 'flow-E2E-034-any-side-origin-invalid', { clip: clipAround(b9, PAD), parkMouse: false })
+
+        //spec: hover 他節點 right → valid + crosshair
+        const r2 = await box(H('2', 'right'))
+        await page.mouse.move(r2.x + r2.width / 2, r2.y + r2.height / 2, { steps: 8 })
         await page.waitForTimeout(200)
-        const same = await q(selTgt2)
-        expectOk('E2E-034 hover 他節點連入點 → invalid(同類)', !!same && same.status === 'invalid', `same=${JSON.stringify(same)}`)
+        const val = await q(H('2', 'right'))
+        expectOk('E2E-034 hover 他節點 right → valid + crosshair', !!val && val.status === 'valid' && val.cursor === 'crosshair', `val=${JSON.stringify(val)}`)
         const b2 = await nodeBox(page, '2')
-        await shot(page, 'flow-E2E-034-target-origin-invalid', { clip: clipAround(b2, PAD), parkMouse: false })
+        await shot(page, 'flow-E2E-034-any-side-origin-valid', { clip: clipAround(b2, PAD), parkMouse: false })
 
-        //spec: hover 他節點 source → valid + crosshair
-        const s2 = await box(selSrc2)
-        await page.mouse.move(s2.x + s2.width / 2, s2.y + s2.height / 2, { steps: 8 })
-        await page.waitForTimeout(200)
-        const val = await q(selSrc2)
-        expectOk('E2E-034 hover 他節點連出點 → valid + crosshair', !!val && val.status === 'valid' && val.cursor === 'crosshair', `val=${JSON.stringify(val)}`)
-        await shot(page, 'flow-E2E-034-target-origin-valid', { clip: clipAround(b2, PAD), parkMouse: false })
-
-        //spec: 放開 → 建立 2→9(正規化), 不含方位欄位, 發 update:conns
+        //spec: 放開 → 建立 9→2, fromPosition=left / toPosition=right, 發 update:conns
         await page.mouse.up()
         await page.waitForTimeout(400)
         const n1 = await getConnsLen(page)
         expectOk('E2E-034 放開建立連線', n1 === n0 + 1, `conns ${n0} → ${n1}`)
         const last = await evalVm(page, 'return JSON.parse(JSON.stringify(vm.conns[vm.conns.length - 1]))')
-        expectOk('E2E-034 新連線 from=他節點 to=出發節點', !!last && last.from === '2' && last.to === '9', `last=${JSON.stringify(last)}`)
-        expectOk('E2E-034 新連線不含方位欄位', !!last && last.fromPosition === undefined && last.toPosition === undefined, `last=${JSON.stringify(last)}`)
+        expectOk('E2E-034 新連線 from=出發節點 to=落點節點', !!last && last.from === '9' && last.to === '2', `last=${JSON.stringify(last)}`)
+        expectOk('E2E-034 新連線方位為兩把手所在邊', !!last && last.fromPosition === 'left' && last.toPosition === 'right', `last=${JSON.stringify(last)}`)
         expectOk('E2E-034 發出 update:conns', (await emitted(page)).includes('update:conns'), 'no update:conns')
         const after = await page.evaluate(() => ({
-            from: document.querySelector('[data-flow-id]').hasAttribute('data-connect-from'),
             originNode: !!document.querySelector('[data-connect-origin-node]'),
             marks: document.querySelectorAll('[data-connect-role], [data-connect-status]').length,
         }))
-        expectOk('E2E-034 放開後暫態標記全清', after.from === false && after.originNode === false && after.marks === 0, `after=${JSON.stringify(after)}`)
+        expectOk('E2E-034 放開後暫態標記全清', after.originNode === false && after.marks === 0, `after=${JSON.stringify(after)}`)
     }),
 
     mkCase('E2E-035', 'gesture-popup', async (page) => {
         //真實 user path: ①點節點1看到資訊 popup ②自節點2連出點按住拉線 → popup 該關 ③放開 ④再點節點1開 popup ⑤按住節點2四角縮放 → popup 該關
         //⑥放開 ⑦拖節點1經過節點2 → 節點2不得亮起齒輪/四角/陰影 ⑧放開後 hover 節點2恢復
+        await setSettingsTrigger(page, 'hover') //本 case 驗手勢中非擁有者之 hover 齒輪抑制
         const popupOpen = (id) => evalVm(page, `
             const ws = vm.$refs.nodeRenderer.$refs.wrappers
             const w = ws.find(c => c.node.id === arg)
@@ -1029,7 +1046,7 @@ const CASES = [
         await page.waitForTimeout(400)
         expectOk('E2E-035 前置: 節點1 資訊 popup 已開', (await popupOpen('1')) === true, `open=${await popupOpen('1')}`)
 
-        const src2 = await (await page.$('.vue-flow__node[data-id="2"] .vue-flow__handle[data-handle-type="source"]')).boundingBox()
+        const src2 = await (await page.$('.vue-flow__node[data-id="2"] .vue-flow__handle[data-handle-position="bottom"]')).boundingBox()
         await page.mouse.move(src2.x + src2.width / 2, src2.y + src2.height / 2)
         await page.mouse.down()
         await page.mouse.move(src2.x + 40, src2.y + 40, { steps: 4 })
@@ -1078,6 +1095,12 @@ const CASES = [
         expectOk('E2E-035 拖曳經過 B: 齒輪不現', during.gearOpacity === 'none' || Number(during.gearOpacity) === 0, `d=${JSON.stringify(during)}`)
         expectOk('E2E-035 拖曳經過 B: 四角不現', during.resizeOpacity === 'none' || Number(during.resizeOpacity) === 0, `d=${JSON.stringify(during)}`)
         expectOk('E2E-035 拖曳經過 B: 無 hover 陰影', during.shadow === 'none', `d=${JSON.stringify(during)}`)
+        //spec(契約 §5): 非建線手勢中把手游標 default(不承諾可出發)
+        const hCursor = await page.evaluate(() => {
+            const h = document.querySelector('.vue-flow__node[data-id="2"] .vue-flow__handle')
+            return h ? getComputedStyle(h).cursor : 'none'
+        })
+        expectOk('E2E-035 拖曳中把手游標 default', hCursor === 'default', `cursor=${hCursor}`)
         await shot(page, 'flow-E2E-035-drag-no-hover-pollution', { clip: clipAround(b2b, PAD * 2), parkMouse: false })
         await page.mouse.up()
         await page.waitForTimeout(400)
@@ -1092,6 +1115,130 @@ const CASES = [
             return gear ? getComputedStyle(gear).opacity : 'none'
         })
         expectOk('E2E-035 放開後 hover B 齒輪恢復', Number(afterHover) === 1, `opacity=${afterHover}`)
+    }),
+
+    mkCase('E2E-036', 'bidirectional-arrows', async (page) => {
+        //真實 user path: ①看到 e3-5 兩端箭頭(線式 start / 實心橘 end) ②開該連線齒輪 ③改 From Marker=Arrow Closed、To Marker Size=20 ④看到箭頭更新
+        await clickMenu(page, 'fitView')
+        await page.waitForTimeout(400)
+        const markerState = () => page.evaluate(() => {
+            const path = document.querySelector('.vue-flow__edge[data-id="e3-5"] path[marker-end]')
+            if (!path) return null
+            const ref = (attr) => {
+                const v = path.getAttribute(attr)
+                const m = v && v.match(/^url\(#(.+)\)$/)
+                const el = m ? document.getElementById(m[1]) : null
+                if (!el) return { url: v, found: false }
+                const p = el.querySelector('path')
+                return { url: v, found: true, width: el.getAttribute('markerWidth'), units: el.getAttribute('markerUnits'), fill: p.getAttribute('fill'), d: p.getAttribute('d') }
+            }
+            return { start: ref('marker-start'), end: ref('marker-end') }
+        })
+        const s0 = await markerState()
+        expectOk('E2E-036 兩端皆引用存在之 marker', !!s0 && s0.start.found && s0.end.found, `s0=${JSON.stringify(s0)}`)
+        expectOk('E2E-036 start 為線式(fill none)', !!s0 && s0.start.fill === 'none' && !/z$/i.test(s0.start.d), `start=${JSON.stringify(s0 && s0.start)}`)
+        expectOk('E2E-036 end 為實心 #ffa500、size 14、userSpaceOnUse', !!s0 && s0.end.fill === '#ffa500' && s0.end.width === '14' && s0.end.units === 'userSpaceOnUse' && /z$/i.test(s0.end.d), `end=${JSON.stringify(s0 && s0.end)}`)
+        const pb = await (await page.$('.vue-flow__edge[data-id="e3-5"] path[marker-end]')).boundingBox()
+        await page.mouse.move(0, 0)
+        await shot(page, 'flow-E2E-036-bidirectional-arrows-initial', { clip: clipAround(pb, PAD) })
+
+        //act(真 UI): 雙擊 label 直接開設定 popup → 改 From Marker / To Marker Size
+        await openEdgeSettings(page, 'e3-5')
+        await page.waitForTimeout(400)
+        const selStart = page.locator('.vue-flow__settings-form label:has-text("From Marker") select')
+        await selStart.first().waitFor({ state: 'visible', timeout: 5000 })
+        await selStart.first().selectOption('arrowclosed')
+        await page.waitForTimeout(300)
+        const sizeInput = page.locator('.vue-flow__settings-form label:has-text("To Marker Size") input')
+        await sizeInput.click()
+        await page.waitForFunction(() => document.activeElement && document.activeElement.tagName === 'INPUT')
+        await page.keyboard.press('End')
+        await page.keyboard.press('Backspace')
+        await page.keyboard.press('Backspace')
+        await page.keyboard.insertText('20')
+        await page.waitForTimeout(400)
+
+        const data = await evalVm(page, `const c = vm.conns.find(c => c.id === 'e3-5'); return { markerStart: c.markerStart, markerEndSize: c.markerEndSize }`)
+        expectOk('E2E-036 conn 資料更新', data.markerStart === 'arrowclosed' && data.markerEndSize === 20, `data=${JSON.stringify(data)}`)
+        const s1 = await markerState()
+        expectOk('E2E-036 start 改為實心', !!s1 && s1.start.found && /z$/i.test(s1.start.d) && s1.start.fill !== 'none', `start=${JSON.stringify(s1 && s1.start)}`)
+        expectOk('E2E-036 end size 改為 20', !!s1 && s1.end.found && s1.end.width === '20', `end=${JSON.stringify(s1 && s1.end)}`)
+        expectOk('E2E-036 發出 conn-settings-update', (await emitted(page)).includes('conn-settings-update'), 'no conn-settings-update')
+
+        //關閉 popup 後拍該邊區域
+        await page.mouse.move(5, 5)
+        await page.mouse.down()
+        await page.mouse.up()
+        await page.waitForTimeout(400)
+        await page.mouse.move(0, 0)
+        const pb2 = await (await page.$('.vue-flow__edge[data-id="e3-5"] path[marker-end]')).boundingBox()
+        await shot(page, 'flow-E2E-036-bidirectional-arrows-edited', { clip: clipAround(pb2, PAD) })
+    }),
+
+    mkCase('E2E-037', 'settings-trigger', async (page) => {
+        //真實 user path: ①移入節點看不到齒輪 ②雙擊節點 → 設定 popup 直接開啟(無齒輪 icon) ③點空白 → 關閉 ④雙擊連線 label → 連線設定 popup
+        //⑤click 模式: 單擊即開 ⑥hover 模式: 移入出齒輪(既有行為)
+        await centerOnNode(page, '2')
+        await page.waitForTimeout(300)
+        const gearVisible = (sel) => page.evaluate((s) => {
+            const el = document.querySelector(s)
+            if (!el) return null
+            const cs = getComputedStyle(el)
+            return { visibility: cs.visibility, pointerEvents: cs.pointerEvents }
+        }, sel)
+        const NG = '.vue-flow__node[data-id="2"] .vue-flow__node-settings'
+        //spec: 預設 dblclick, hover 不出齒輪
+        const b = await hoverNode(page, '2')
+        expectOk('E2E-037 預設 hover 無齒輪', (await gearVisible(NG)) === null, 'gear present on hover')
+        //spec: 雙擊 → 設定 popup 直接開啟, 齒輪 icon 不可見
+        await page.mouse.dblclick(b.x + b.width / 2, b.y + b.height / 2)
+        await page.waitForTimeout(500)
+        const f1 = await getForms(page)
+        expectOk('E2E-037 雙擊後節點設定表單開啟', f1.count === 1 && f1.hasNodeForm === true, `forms=${JSON.stringify(f1)}`)
+        const g1 = await gearVisible(NG)
+        expectOk('E2E-037 齒輪 icon 不可見', !g1 || g1.visibility === 'hidden', `gear=${JSON.stringify(g1)}`)
+        const selN = await getSelectedNodes(page)
+        expectOk('E2E-037 該節點為唯一選取', selN.length === 1 && selN[0] === '2', `sel=${JSON.stringify(selN)}`)
+        await shot(page, 'flow-E2E-037-settings-trigger-node', { parkMouse: false })
+        //點空白 → 關閉
+        const bp = await blankPoint(page)
+        await page.mouse.click(bp.x, bp.y)
+        await page.waitForTimeout(400)
+        expectOk('E2E-037 點空白後表單關閉', (await getForms(page)).count === 0, 'form still open')
+        //連線: 雙擊 label → 連線設定 popup
+        await openEdgeSettings(page, 'e1-2')
+        await page.waitForTimeout(400)
+        const f2 = await getForms(page)
+        expectOk('E2E-037 雙擊連線 label 後連線設定表單開啟', f2.count === 1 && f2.hasNodeForm === false, `forms=${JSON.stringify(f2)}`)
+        const eg = await gearVisible('.vue-flow__edge[data-id="e1-2"] .vue-flow__edge-settings')
+        expectOk('E2E-037 連線齒輪 icon 不可見', !eg || eg.visibility === 'hidden', `gear=${JSON.stringify(eg)}`)
+        await shot(page, 'flow-E2E-037-settings-trigger-edge', { parkMouse: false })
+        await page.mouse.click(bp.x, bp.y)
+        await page.waitForTimeout(300)
+        //click 模式: 單擊即開設定(資訊 popup 讓位)
+        await setSettingsTrigger(page, 'click')
+        await page.mouse.click(b.x + b.width / 2, b.y + b.height / 2)
+        await page.waitForTimeout(500)
+        const f3 = await getForms(page)
+        expectOk('E2E-037 click 模式單擊開設定表單', f3.count === 1 && f3.hasNodeForm === true, `forms=${JSON.stringify(f3)}`)
+        await page.mouse.click(bp.x, bp.y)
+        await page.waitForTimeout(300)
+        //hover 模式: 移入出齒輪、移出收
+        await setSettingsTrigger(page, 'hover')
+        await hoverNode(page, '2')
+        const hg = await gearVisible(NG)
+        expectOk('E2E-037 hover 模式移入出齒輪', !!hg && hg.visibility === 'visible', `gear=${JSON.stringify(hg)}`)
+        await page.mouse.move(0, 0)
+        await page.waitForTimeout(400)
+        expectOk('E2E-037 hover 模式移出收齒輪', (await gearVisible(NG)) === null, 'gear persisted in hover mode')
+        //spec: 連線 label 兩側空白不可點(無透明 hover 區): 點 label 右側 25px 不選取該連線
+        await page.mouse.click(bp.x, bp.y)
+        await page.waitForTimeout(300)
+        const lb = await (await page.$('.vue-flow__edge[data-id="e1-2"] .vue-flow__edge-label')).boundingBox()
+        await page.mouse.click(lb.x + lb.width + 25, lb.y + lb.height / 2)
+        await page.waitForTimeout(300)
+        const selC = await evalVm(page, 'return vm.selectedConns.slice()')
+        expectOk('E2E-037 label 兩側空白不可點', selC.length === 0, `selectedConns=${JSON.stringify(selC)}`)
     }),
 
 ]

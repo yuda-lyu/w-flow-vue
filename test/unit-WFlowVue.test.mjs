@@ -2,9 +2,9 @@ import { mount } from '@vue/test-utils'
 import WFlowVue from '../src/components/WFlowVue.vue'
 
 const sampleNodes = [
-    { id: '1', type: 'input', name: 'Node 1', position: { x: 250, y: 5 } },
-    { id: '2', type: 'output', name: 'Node 2', position: { x: 100, y: 250 } },
-    { id: '3', type: 'basic', name: 'Node 3', position: { x: 400, y: 300 } },
+    { id: '1', name: 'Node 1', position: { x: 250, y: 5 } },
+    { id: '2', name: 'Node 2', position: { x: 100, y: 250 } },
+    { id: '3', name: 'Node 3', position: { x: 400, y: 300 } },
 ]
 
 const sampleConns = [
@@ -78,18 +78,22 @@ describe('WFlowVue', () => {
             wrapper.destroy()
         })
 
-        test('renders correct node types', () => {
+        //舊「renders correct node types」(.vue-flow__node-input/-output/-basic class)已無對應:
+        //節點無 type, DefaultNode/InputNode/OutputNode 三元件與其 class 已刪(spec 項9); 改驗四把手恆渲染(NodePorts)
+        test('renders four symmetric handles per node (no type-based node class)', () => {
             const wrapper = createWrapper()
-            expect(wrapper.find('.vue-flow__node-input').exists()).toBe(true)
-            expect(wrapper.find('.vue-flow__node-output').exists()).toBe(true)
-            expect(wrapper.find('.vue-flow__node-basic').exists()).toBe(true)
+            expect(wrapper.find('.vue-flow__node-input').exists()).toBe(false)
+            expect(wrapper.find('.vue-flow__node-output').exists()).toBe(false)
+            expect(wrapper.find('.vue-flow__node-basic').exists()).toBe(false)
+            const firstNode = wrapper.findAll('.vue-flow__node').at(0)
+            expect(firstNode.findAll('.vue-flow__handle')).toHaveLength(4)
             wrapper.destroy()
         })
 
         test('does not render hidden nodes', () => {
             const nodes = [
                 ...sampleNodes,
-                { id: '4', type: 'basic', name: 'Hidden', position: { x: 0, y: 0 }, hidden: true },
+                { id: '4', name: 'Hidden', position: { x: 0, y: 0 }, hidden: true },
             ]
             const wrapper = createWrapper({ nodes })
             const nodeEls = wrapper.findAll('.vue-flow__node')
@@ -229,7 +233,7 @@ describe('WFlowVue', () => {
         test('deleteSelectedElements respects deletable=false', async () => {
             const nodes = [
                 ...sampleNodes,
-                { id: '4', type: 'basic', name: 'Undeletable', position: { x: 0, y: 0 }, deletable: false },
+                { id: '4', name: 'Undeletable', position: { x: 0, y: 0 }, deletable: false },
             ]
             const wrapper = createWrapper({ nodes })
             wrapper.vm.setSelectedNodes(['4'])
@@ -285,16 +289,16 @@ describe('WFlowVue', () => {
     })
 
     describe('connection', () => {
+        //payload 契約(spec 項3): { nodeId, handlePosition } —— 節點無 source/target 之分, 無 handleId/handleType
         test('onConnectStart sets connecting state', () => {
             const wrapper = createWrapper()
             wrapper.vm.onConnectStart({
                 nodeId: '1',
-                handleId: 'source',
-                handleType: 'source',
                 handlePosition: 'bottom',
             })
             expect(wrapper.vm.isConnecting).toBe(true)
             expect(wrapper.emitted('connect-start')).toBeTruthy()
+            expect(wrapper.emitted('connect-start')[0][0]).toEqual({ nodeId: '1', handlePosition: 'bottom' })
             wrapper.destroy()
         })
     })
@@ -303,7 +307,7 @@ describe('WFlowVue', () => {
         test('nodes change via opt prop', async () => {
             const wrapper = createWrapper()
             const newNodes = [
-                { id: 'a', type: 'basic', name: 'A', position: { x: 0, y: 0 } },
+                { id: 'a', name: 'A', position: { x: 0, y: 0 } },
             ]
             await wrapper.setProps({ opt: { nodes: newNodes, conns: [] } })
             expect(wrapper.vm.nodes).toHaveLength(1)

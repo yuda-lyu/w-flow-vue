@@ -14,15 +14,7 @@
     @dblclick.stop="onGroupDoubleClick"
     @contextmenu.stop="onGroupContextMenu"
   >
-    <!-- Hover zone around label + settings icon area (below interaction path in z-order) -->
-    <rect
-      :x="pathData.labelX - 60"
-      :y="pathData.labelY - 18"
-      width="120"
-      height="36"
-      fill="transparent"
-      pointer-events="all"
-    />
+    <!-- 不設 label 周邊透明 hover/click 區: 可點區域只有線本體(interaction path)與 label 文字本身, 文字兩側空白不可點 -->
     <!-- Interaction path (wider, invisible) -->
     <path
       :d="pathData.path"
@@ -93,7 +85,7 @@
           <!-- activate掛@click而非@mousedown: mousedown當下改選取會於down與up之間觸發重渲染,
                foreignObject內元素被patch替換後up落在新元素上, click(popup開啟訊號)根本不發生(已於e2e重現: E2E-012表單數變0);
                click時WPopup trigger之內層handler先跑(popup先開), 冒泡至此才轉移active -->
-          <span v-if="(hovered || settingsPopupShow) && interactive && !locked && settingsEnabled" class="vue-flow__edge-settings-anchor" @click="onSettingsAnchorClick">
+          <span v-if="(gearVisible || settingsPopupShow) && interactive && !locked && settingsEnabled" class="vue-flow__edge-settings-anchor" :class="{ 'vue-flow__edge-settings-anchor--silent': settingsTrigger !== 'hover' }" @click="onSettingsAnchorClick">
               <!-- 受控而非v-model: 開啟請求經onSettingsPopupInput裁決(複選模式中拒開), @show跟隨實際開啟 -->
               <WPopup
                 :value="settingsPopupShow"
@@ -147,11 +139,15 @@
 <script>
 import { getBezierPath, getStraightPath, getStepPath, getSmoothStepPath } from '../../js/edgePath'
 import { getHandlePosition } from '../../js/geometry'
-import { nodeSourceSide, nodeTargetSide } from '../../js/anchorPolicy.mjs'
+import { connSourceSide, connTargetSide } from '../../js/anchorPolicy.mjs'
+import { resolveMarker, markerUrl } from '../../js/edgeMarker.mjs'
 import ConnSettingsForm from '../ui/ConnSettingsForm.vue'
 import SlotOutlet from '../ui/SlotOutlet.vue'
 import WPopup from 'w-component-vue/src/components/WPopup.vue'
 import fixSvgNs from '../../js/fixSvgNs.mjs'
+
+//雙擊判定窗(ms): dblclick 模式下單擊之資訊 popup 延後此時間再開, 期間雙擊即取消
+const DBL_MS = 250
 
 const pathFunctions = {
     bezier: getBezierPath,
@@ -167,7 +163,7 @@ export default {
     components: { ConnSettingsForm, SlotOutlet, WPopup },
     inject: {
         getDefConn: { default: () => () => ({}) },
-        //defNode 供錨點解析之 defNode 層(anchorPolicy), 與把手渲染同一基準
+        //defNode 供邊端點之形狀解析(nodeStyle.nodeShape; 與把手佈局同一基準)
         getDefNode: { default: () => () => ({}) },
         getDragGhost: { default: () => () => null },
         //複選鍵是否生效: getter注入而非prop——只被事件handler讀取, 不進渲染面, 判準與NodeWrapper一致
@@ -193,9 +189,10 @@ export default {
         inforPopupTitleTextFontSize: { type: String, default: '12px' },
         inforPopupDescriptionTextColor: { type: String, default: '#888' },
         inforPopupDescriptionTextFontSize: { type: String, default: '10px' },
-        allNodes: { type: Array, default: () => [] },
         nodeInternals: { type: Object, default: () => ({}) },
         settingsEnabled: { type: Boolean, default: true },
+        //設定入口方式: 'hover'(移入顯示齒輪, 點齒輪開設定) | 'click' | 'dblclick'(該動作直接開設定 popup, 不顯示齒輪)
+        settingsTrigger: { type: String, default: 'dblclick' },
         settingsExcludes: { type: Array, default: () => [] },
     },
     data() {
@@ -224,6 +221,7 @@ export default {
         },
     },
     beforeDestroy() {
+        this.cancelPendingInfo()
         //轉折點拖曳進行中被銷毀: document 監聽與全域游標樣式不會自行移除, 於此收尾並通知 WFlowVue 清手勢(不提交)
         if (this.endWaypointGesture()) {
             this.dragPts = null
@@ -234,6 +232,10 @@ export default {
         //複選模式(反應式讀取注入getter): 供watcher清popup與各開啟入口gating
         multiSelectActive() {
             return this.getMultiSelectActive()
+        },
+        //齒輪可見: 只有 hover 模式於移入時顯示; click/dblclick 模式不顯示齒輪(直接開 popup)
+        gearVisible() {
+            return this.settingsTrigger === 'hover' && this.hovered
         },
         dc() {
             return this.getDefConn()
@@ -246,14 +248,12 @@ export default {
         },
         //(效能重構)錨點方位/座標自算(原由EdgeRenderer解析後以props傳入):
         //  含拖曳/縮放ghost(細粒度反應式), 僅本邊兩端節點變動時本元件才重渲染
-        //方位由兩端節點決定(anchorPolicy 單一來源: 節點層 > defNode層 > 內建); 邊沒有自己的方位
-        //why 補 defNode 層: 原本此處手寫 fallback 漏看 defNode, 與把手渲染(有看)分家——
-        //宿主設 defNodeToPosition 時把手畫在該側, 邊卻仍自內建側出發
+        //方位由邊自己持有(anchorPolicy 單一來源: conn → defConn → 內建): 射出方向為節點外接矩形該邊之法向量
         sourcePosition() {
-            return nodeSourceSide(this.sourceNode, this.getDefNode())
+            return connSourceSide(this.conn, this.dc)
         },
         targetPosition() {
-            return nodeTargetSide(this.targetNode, this.getDefNode())
+            return connTargetSide(this.conn, this.dc)
         },
         effSourceNode() {
             return this.effNode(this.sourceNode)
@@ -264,12 +264,12 @@ export default {
         sourcePoint() {
             const n = this.effSourceNode
             if (!n) return { x: 0, y: 0 }
-            return getHandlePosition(n, this.sourcePosition, this.nodeInternals[n.id] || {}, 'source', this.getDefNode())
+            return getHandlePosition(n, this.sourcePosition, this.nodeInternals[n.id] || {}, this.getDefNode())
         },
         targetPoint() {
             const n = this.effTargetNode
             if (!n) return { x: 0, y: 0 }
-            return getHandlePosition(n, this.targetPosition, this.nodeInternals[n.id] || {}, 'target', this.getDefNode())
+            return getHandlePosition(n, this.targetPosition, this.nodeInternals[n.id] || {}, this.getDefNode())
         },
         sourceX() {
             return this.sourcePoint.x
@@ -357,26 +357,27 @@ export default {
                 allNodes: this.routingNodes, //僅起訖兩節點且含ghost, 修拖曳中路徑與放開後不一致(見routingNodes說明)
 
                 nodeInternals: this.nodeInternals,
-                connFromId: this.conn.from,
-                connToId: this.conn.to,
                 offset: this.dc.defOffset,
             })
         },
         connStyle() {
             const d = this.dc
             const base = this.conn.style ? { ...this.conn.style } : {}
-            base.stroke = this.conn.edgeColor || d.edgeColor || '#b1b1b7'
+            base.stroke = this.conn.edgeColor || d.edgeColor || '#b1b1b1'
             if (this.conn.edgeWidth !== undefined) base.strokeWidth = this.conn.edgeWidth
             else if (d.edgeWidth !== undefined) base.strokeWidth = d.edgeWidth
+            //選取態: 線寬加 1px(與節點選取態外框加粗同一語義; 預設 1px → 2px)
+            if (this.selected) base.strokeWidth = (Number(base.strokeWidth) || 1) + 1
             let dash = this.conn.edgeDasharray !== undefined ? this.conn.edgeDasharray : d.edgeDasharray
             if (dash) base.strokeDasharray = dash
             return base
         },
+        //兩端箭頭(edgeMarker 單一來源, 與 EdgeMarkerDefs 同一 id)
         markerStartUrl() {
-            return this.getMarkerUrl(this.conn.markerStart)
+            return markerUrl(resolveMarker(this.conn, this.dc, 'start'))
         },
         markerEndUrl() {
-            return this.getMarkerUrl(this.conn.markerEnd || this.dc.markerEnd)
+            return markerUrl(resolveMarker(this.conn, this.dc, 'end'))
         },
         labelStyle() {
             const d = this.dc
@@ -400,13 +401,6 @@ export default {
                 width: g.width !== undefined ? g.width : node.width,
                 height: g.height !== undefined ? g.height : node.height,
             }
-        },
-        getMarkerUrl(marker) {
-            if (!marker) return null
-            const config = typeof marker === 'string' ? { type: marker } : marker
-            // Fallback chain must match EdgeMarkerDefs so the generated ids agree.
-            const color = config.color || this.conn.edgeColor || this.dc.edgeColor || '#b1b1b7'
-            return `url(#vue-flow__${config.type}_${color.replace('#', '')})`
         },
         onGroupMouseEnter(event) {
             this.hovered = true
@@ -449,14 +443,52 @@ export default {
             if (val && !this.canOpenPopup()) {
                 return
             }
+            //click 模式: 點擊即開設定 popup, 資訊 popup 讓位
+            if (val && this.settingsTrigger === 'click' && this.canOpenSettings()) return
+            if (val) {
+                this.requestInfoPopup()
+                return
+            }
             this.infoPopupShow = val
         },
         onClick(event) {
-            //連線之popup另有本地直接開啟路徑(非僅WPopup trigger), 故此處亦須擋
-            if (this.hasInfoPopup && this.canOpenPopup()) {
-                this.infoPopupShow = true
+            if (this.settingsTrigger === 'click' && this.canOpenSettings()) {
+                //click 模式: 點線直接開設定 popup, 資訊 popup 讓位
+                this.openSettingsPopup(event)
+            }
+            else if (this.hasInfoPopup && this.canOpenPopup()) {
+                //連線之popup另有本地直接開啟路徑(非僅WPopup trigger), 故此處亦須擋
+                this.requestInfoPopup()
             }
             this.$emit('conn-click', { conn: this.conn, event })
+        },
+        //資訊 popup 開啟請求: dblclick 模式下延後一個雙擊判定窗(瀏覽器雙擊前必先派發 click, 立即開會先閃現再被設定 popup 取代),
+        //期間雙擊即取消; 其他模式立即開
+        requestInfoPopup() {
+            if (this.settingsTrigger === 'dblclick' && this.canOpenSettings()) {
+                this.cancelPendingInfo()
+                this._infoTimer = setTimeout(() => {
+                    this._infoTimer = null
+                    if (this.canOpenPopup()) this.infoPopupShow = true
+                }, DBL_MS)
+                return
+            }
+            this.infoPopupShow = true
+        },
+        cancelPendingInfo() {
+            if (this._infoTimer) {
+                clearTimeout(this._infoTimer)
+                this._infoTimer = null
+            }
+        },
+        canOpenSettings() {
+            return this.interactive && !this.locked && this.settingsEnabled && this.canOpenPopup()
+        },
+        //click/dblclick 模式之直接開啟: 同閘門, 並如點齒輪般使本連線成為唯一 active
+        openSettingsPopup(event) {
+            if (!this.canOpenSettings()) return
+            this.settingsPopupShow = true
+            this.$emit('conn-activate', { conn: this.conn, event })
         },
         //宿主API入口gating: 程式化開啟於複選/手勢中亦拒絕(回傳false供呼叫端判斷)
         openInfoPopup() {
@@ -477,12 +509,18 @@ export default {
             this.settingsPopupShow = false
         },
         onDoubleClick(event) {
+            if (this.settingsTrigger === 'dblclick') {
+                this.cancelPendingInfo()
+                this.openSettingsPopup(event)
+            }
             this.$emit('conn-double-click', { conn: this.conn, event })
         },
         onContextMenu(event) {
             this.$emit('conn-context-menu', { conn: this.conn, event })
         },
         onLabelMouseDown(event) {
+            //label 文字不可選取亦不可原生拖曳(圖台內文字拖曳無語義; 原生 drag 會接管事件流)
+            event.preventDefault()
             this.infoPopupShow = false
             const startX = event.clientX
             const startY = event.clientY
@@ -580,11 +618,12 @@ export default {
 <style scoped>
 /* Only target direct-child paths (edge paths), not SVG paths inside settings icon */
 .vue-flow__edge > path {
-  stroke: #b1b1b7;
+  stroke: #b1b1b1;
   stroke-width: 1;
   fill: none;
   pointer-events: none;
-  transition: stroke 0.3s ease, filter 0.18s ease;
+  /* 選取/取消選取之線寬與光暈以漸變過場(線寬為 inline style, transition 仍生效) */
+  transition: stroke 0.2s ease, stroke-width 0.2s ease, filter 0.3s ease;
 }
 .vue-flow__edge-interaction {
   stroke: transparent !important;
@@ -613,7 +652,7 @@ export default {
 }
 .vue-flow__edge--selected > path,
 .vue-flow__edge--selected.vue-flow__edge--hovered > path {
-  filter: drop-shadow(0 0 2px rgba(220, 38, 38, 0.8)) drop-shadow(0 0 4px rgba(220, 38, 38, 0.5)) drop-shadow(0 0 6px rgba(220, 38, 38, 0.25));
+  filter: drop-shadow(0 0 2px rgba(0, 0, 0, 0.1)) drop-shadow(0 0 4px rgba(0, 0, 0, 0.1)) drop-shadow(0 0 6px rgba(0, 0, 0, 0.1));
 }
 .vue-flow__edge--animated > path:not(.vue-flow__edge-interaction) {
   stroke-dasharray: 5;
@@ -646,6 +685,7 @@ export default {
   border-radius: 2px;
   white-space: nowrap;
   user-select: none;
+  -webkit-user-drag: none;
   text-align: center;
   display: inline-block;
 }
@@ -653,6 +693,11 @@ export default {
   display: inline-block;
   width: 0;
   height: 0;
+}
+/* click/dblclick 模式: 錨區只供 popup 定位, 齒輪 icon 不可見亦不可點 */
+.vue-flow__edge-settings-anchor--silent .vue-flow__edge-settings {
+  visibility: hidden;
+  pointer-events: none;
 }
 .vue-flow__edge-settings-anchor {
   position: absolute;

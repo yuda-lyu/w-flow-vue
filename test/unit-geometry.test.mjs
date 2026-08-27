@@ -84,7 +84,7 @@ describe('geometry', () => {
     })
 
     describe('getHandlePosition — triangle', () => {
-        const tri = { id: 't', position: { x: 0, y: 0 }, width: 100, height: 100, shape: 'triangle', type: 'input' }
+        const tri = { id: 't', position: { x: 0, y: 0 }, width: 100, height: 100, shape: 'triangle' }
 
         test('top handle (apex) is at top center', () => {
             const pos = getHandlePosition(tri, 'top', {})
@@ -99,34 +99,20 @@ describe('geometry', () => {
         })
     })
 
-    //以下四組原本直接呼叫已內部化之 getDiamondEdgePoint / getEllipseEdgePoint /
-    //getTriangleEdgePoint / rectsOverlap, 改為經公開入口驗證同一批行為。
-    //註: 舊測試之 ratio 0 與 ratio 1 為公開 API 無法產生之值
-    //(getHandlePosition 僅產生 0.5, 或 sameSide 時之 0.33/0.67), 該兩組斷言不可達, 故不保留。
+    //各形狀之連接點: 四邊各一, 位置由 geometry.sideAnchorFraction 決定(規劃 §5.1; 28 格跨層驗證於 unit-port-geometry)
 
-    describe('getHandlePosition — diamond same-side (內部 getDiamondEdgePoint)', () => {
-        //diamond 需 sameSide(type='basic' 且 toPosition===fromPosition)才會走菱形邊緣運算
-        const diamond = {
-            id: 'd', shape: 'diamond', type: 'basic',
-            position: { x: 0, y: 0 }, width: 100, height: 100,
-            toPosition: 'top', fromPosition: 'top',
-        }
+    describe('getHandlePosition — diamond 四頂點', () => {
+        const diamond = { id: 'd', shape: 'diamond', position: { x: 0, y: 0 }, width: 100, height: 100 }
 
-        test('target 與 source 落在同側之不同點', () => {
-            const pt = getHandlePosition(diamond, 'top', {}, 'target')
-            const ps = getHandlePosition(diamond, 'top', {}, 'source')
-            expect(pt).not.toEqual(ps)
-        })
-
-        test('兩點皆落在菱形邊上(到中心之曼哈頓距離為定值)', () => {
-            //菱形邊之方程式: |x-cx|/(w/2) + |y-cy|/(h/2) = 1
-            const onEdge = (p) => Math.abs(p.x - 50) / 50 + Math.abs(p.y - 50) / 50
-            expect(onEdge(getHandlePosition(diamond, 'top', {}, 'target'))).toBeCloseTo(1, 5)
-            expect(onEdge(getHandlePosition(diamond, 'top', {}, 'source'))).toBeCloseTo(1, 5)
+        test('四邊連接點即四頂點(外接矩形四邊中點)', () => {
+            expect(getHandlePosition(diamond, 'top', {})).toEqual({ x: 50, y: 0 })
+            expect(getHandlePosition(diamond, 'right', {})).toEqual({ x: 100, y: 50 })
+            expect(getHandlePosition(diamond, 'bottom', {})).toEqual({ x: 50, y: 100 })
+            expect(getHandlePosition(diamond, 'left', {})).toEqual({ x: 0, y: 50 })
         })
     })
 
-    describe('getHandlePosition — ellipse (內部 getEllipseEdgePoint)', () => {
+    describe('getHandlePosition — ellipse ', () => {
         const ellipse = { id: 'e', shape: 'ellipse', position: { x: 0, y: 0 }, width: 200, height: 100 }
 
         test('top 為橢圓頂點', () => {
@@ -153,7 +139,7 @@ describe('geometry', () => {
         })
     })
 
-    describe('getHandlePosition — triangle 各朝向 (內部 getTriangleEdgePoint)', () => {
+    describe('getHandlePosition — triangle 各朝向 ', () => {
         const tri = (shape) => ({ id: 't', shape, position: { x: 0, y: 0 }, width: 100, height: 100 })
 
         test('triangle(朝上): top 側為頂點', () => {
@@ -184,6 +170,15 @@ describe('geometry', () => {
             const p = getHandlePosition(tri('triangle-left'), 'left', {})
             expect(p.x).toBeCloseTo(0, 0)
             expect(p.y).toBeCloseTo(50, 0)
+        })
+
+        test('斜邊上之連接點為斜邊中點(外接矩形 1/4、3/4), 不在外接矩形邊上', () => {
+            expect(getHandlePosition(tri('triangle'), 'left', {})).toEqual({ x: 25, y: 50 })
+            expect(getHandlePosition(tri('triangle'), 'right', {})).toEqual({ x: 75, y: 50 })
+            expect(getHandlePosition(tri('triangle-down'), 'left', {})).toEqual({ x: 25, y: 50 })
+            expect(getHandlePosition(tri('triangle-right'), 'top', {})).toEqual({ x: 50, y: 25 })
+            expect(getHandlePosition(tri('triangle-right'), 'bottom', {})).toEqual({ x: 50, y: 75 })
+            expect(getHandlePosition(tri('triangle-left'), 'top', {})).toEqual({ x: 50, y: 25 })
         })
     })
 
