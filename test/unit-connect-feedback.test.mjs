@@ -3,7 +3,7 @@
  *
  * 規格:
  * F1 出發把手於建線期間帶 data-connect-role="origin"; 根元素帶 .vue-flow--connecting。
- * F2 hover 他節點之 source 把手 → data-connect-status="invalid"(source 永不可為落點)。
+ * F2 hover 他節點之同類把手 → data-connect-status="invalid"(same-kind; 自 target 出發時他節點 source 為 valid, 對稱)。
  * F3 hover 自己節點之 target 把手 → invalid(自我連線禁止)。
  * F4 hover 合法 target 把手 → valid, 且 connectionVisual.toPosition 跟隨該把手方位(預覽線進入方向)。
  * F5 hover 已有同向邊之節點 target 把手 → invalid(duplicate)。
@@ -66,8 +66,8 @@ describe('F1 出發把手與根元素之建線標記', () => {
     })
 })
 
-describe('F2 他節點之 source 把手為不合法落點', () => {
-    test('hover 標 invalid, dropStatus=invalid', async () => {
+describe('F2 他節點之同類把手為不合法落點(same-kind, 雙向對稱)', () => {
+    test('自 source 出發 hover 他節點 source → invalid', async () => {
         const w = mountFlow(mkOpt())
         await w.vm.$nextTick()
         startConnect(w, '1')
@@ -76,6 +76,25 @@ describe('F2 他節點之 source 把手為不合法落點', () => {
         expect(otherSrc.getAttribute('data-connect-status')).toBe('invalid')
         expect(w.vm.connectionVisual.dropStatus).toBe('invalid')
         dropAt(null)
+        w.destroy()
+    })
+    test('自 target 出發 hover 他節點 target → invalid; hover 他節點 source → valid 且 toPosition 跟隨', async () => {
+        const w = mountFlow(mkOpt())
+        await w.vm.$nextTick()
+        //自 output 節點 2 之 target 出發
+        handleEl(w, '2', 'target').dispatchEvent(new MouseEvent('mousedown', { bubbles: true, button: 0 }))
+        expect(w.vm.isConnecting).toBe(true)
+        const otherTgt = handleEl(w, '3', 'target')
+        moveOver(otherTgt)
+        expect(otherTgt.getAttribute('data-connect-status')).toBe('invalid')
+        const src = handleEl(w, '3', 'source')
+        moveOver(src)
+        expect(src.getAttribute('data-connect-status')).toBe('valid')
+        expect(w.vm.connectionVisual.toPosition).toBe(src.dataset.handlePosition)
+        //preview==commit: 放開即建 3→2
+        dropAt(src)
+        expect(w.vm.conns.length).toBe(1)
+        expect(w.vm.conns[0]).toMatchObject({ from: '3', to: '2' })
         w.destroy()
     })
 })

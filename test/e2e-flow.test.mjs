@@ -823,7 +823,10 @@ const CASES = [
         const o = await q(selSrc2)
         expectOk('E2E-032 出發把手標記 origin', !!o && o.role === 'origin', `o=${JSON.stringify(o)}`)
         const dim = await q(selSrc9)
-        expectOk('E2E-032 他節點 source 把手淡化', !!dim && Number(dim.opacity) < 0.5, `opacity=${dim && dim.opacity}`)
+        expectOk('E2E-032 他節點 source 把手淡化且 not-allowed', !!dim && Number(dim.opacity) < 0.5 && dim.cursor === 'not-allowed', `dim=${JSON.stringify(dim)}`)
+        //spec: 出發節點之其他把手(自我連線)亦淡化, 不需 hover 判定
+        const dimSelf = await q(selTgt2)
+        expectOk('E2E-032 出發節點之 target 把手淡化', !!dimSelf && Number(dimSelf.opacity) < 0.5, `self=${JSON.stringify(dimSelf)}`)
 
         //spec: hover 他節點之 source 把手 → invalid(紅色 ring + not-allowed), 預覽線轉 danger
         const s9 = await box(selSrc9)
@@ -863,6 +866,8 @@ const CASES = [
         expectOk('E2E-032 放開後暫態標記全清', marks === 0, `marks=${marks}`)
         const rootCls = await page.evaluate(() => document.querySelector('[data-flow-id]').classList.contains('vue-flow--connecting'))
         expectOk('E2E-032 放開後根 connecting class 移除', rootCls === false, `has=${rootCls}`)
+        const rootFrom = await page.evaluate(() => document.querySelector('[data-flow-id]').hasAttribute('data-connect-from'))
+        expectOk('E2E-032 放開後根 data-connect-from 移除', rootFrom === false, `has=${rootFrom}`)
     }),
 
     mkCase('E2E-033', 'multiselect-mode', async (page) => {
@@ -930,6 +935,163 @@ const CASES = [
         expectOk('E2E-033 放開後齒輪恢復', !!vGear2 && vGear2.visibility === 'visible', `v=${JSON.stringify(vGear2)}`)
         const vHandle2 = await vis('.vue-flow__node[data-id="5"] .vue-flow__handle')
         expectOk('E2E-033 放開後把手恢復', !!vHandle2 && vHandle2.visibility === 'visible', `v=${JSON.stringify(vHandle2)}`)
+    }),
+
+    mkCase('E2E-034', 'target-origin', async (page) => {
+        //承接式 journey: 自節點9之 target 把手按住 → hover 自己 source(自我) → hover 他節點 target(同類) → hover 他節點 source(合法) → 放開建線
+        //真實 user path: ①移入連入點看到 crosshair ②按住拖出 ③沿途看游標三態 ④於他節點連出點放開 ⑤看到新連線
+        const n0 = await getConnsLen(page)
+        const q = (sel) => page.evaluate((s) => {
+            const el = document.querySelector(s)
+            if (!el) return null
+            const cs = getComputedStyle(el)
+            return { status: el.getAttribute('data-connect-status'), role: el.getAttribute('data-connect-role'), cursor: cs.cursor, opacity: cs.opacity }
+        }, sel)
+        const selTgt9 = '.vue-flow__node[data-id="9"] .vue-flow__handle[data-handle-type="target"]'
+        const selSrc9 = '.vue-flow__node[data-id="9"] .vue-flow__handle[data-handle-type="source"]'
+        const selTgt2 = '.vue-flow__node[data-id="2"] .vue-flow__handle[data-handle-type="target"]'
+        const selSrc2 = '.vue-flow__node[data-id="2"] .vue-flow__handle[data-handle-type="source"]'
+        const box = async (sel) => (await page.$(sel)).boundingBox()
+
+        //spec: 靜止時連入點游標 crosshair(承諾真實)
+        const tb = await box(selTgt9)
+        await page.mouse.move(tb.x + tb.width / 2, tb.y + tb.height / 2)
+        await page.waitForTimeout(150)
+        const idle = await q(selTgt9)
+        expectOk('E2E-034 連入點靜止游標 crosshair', !!idle && idle.cursor === 'crosshair', `cursor=${idle && idle.cursor}`)
+
+        //act: 自連入點按住拉出
+        await page.mouse.down()
+        await page.mouse.move(tb.x + tb.width / 2 - 30, tb.y + tb.height / 2 - 30, { steps: 4 })
+        await page.waitForTimeout(200)
+        const root = await page.evaluate(() => {
+            const r = document.querySelector('[data-flow-id]')
+            return { from: r.getAttribute('data-connect-from'), originNode: !!document.querySelector('.vue-flow__node[data-connect-origin-node]') }
+        })
+        expectOk('E2E-034 根標記 data-connect-from=target', root.from === 'target', `root=${JSON.stringify(root)}`)
+        expectOk('E2E-034 出發節點標記 origin-node', root.originNode === true, `root=${JSON.stringify(root)}`)
+        const o = await q(selTgt9)
+        expectOk('E2E-034 出發把手標記 origin', !!o && o.role === 'origin', `o=${JSON.stringify(o)}`)
+        const dimT2 = await q(selTgt2)
+        expectOk('E2E-034 他節點連入點淡化且 not-allowed', !!dimT2 && Number(dimT2.opacity) < 0.5 && dimT2.cursor === 'not-allowed', `t2=${JSON.stringify(dimT2)}`)
+        const dimS9 = await q(selSrc9)
+        expectOk('E2E-034 自己節點連出點淡化', !!dimS9 && Number(dimS9.opacity) < 0.5, `s9=${JSON.stringify(dimS9)}`)
+
+        //spec: hover 自己 source → invalid(自我); hover 他節點 target → invalid(同類)
+        const s9 = await box(selSrc9)
+        await page.mouse.move(s9.x + s9.width / 2, s9.y + s9.height / 2, { steps: 8 })
+        await page.waitForTimeout(200)
+        const self = await q(selSrc9)
+        expectOk('E2E-034 hover 自己連出點 → invalid', !!self && self.status === 'invalid' && self.cursor === 'not-allowed', `self=${JSON.stringify(self)}`)
+        const t2 = await box(selTgt2)
+        await page.mouse.move(t2.x + t2.width / 2, t2.y + t2.height / 2, { steps: 8 })
+        await page.waitForTimeout(200)
+        const same = await q(selTgt2)
+        expectOk('E2E-034 hover 他節點連入點 → invalid(同類)', !!same && same.status === 'invalid', `same=${JSON.stringify(same)}`)
+        const b2 = await nodeBox(page, '2')
+        await shot(page, 'flow-E2E-034-target-origin-invalid', { clip: clipAround(b2, PAD), parkMouse: false })
+
+        //spec: hover 他節點 source → valid + crosshair
+        const s2 = await box(selSrc2)
+        await page.mouse.move(s2.x + s2.width / 2, s2.y + s2.height / 2, { steps: 8 })
+        await page.waitForTimeout(200)
+        const val = await q(selSrc2)
+        expectOk('E2E-034 hover 他節點連出點 → valid + crosshair', !!val && val.status === 'valid' && val.cursor === 'crosshair', `val=${JSON.stringify(val)}`)
+        await shot(page, 'flow-E2E-034-target-origin-valid', { clip: clipAround(b2, PAD), parkMouse: false })
+
+        //spec: 放開 → 建立 2→9(正規化), Auto 不烙印, 發 update:conns
+        await page.mouse.up()
+        await page.waitForTimeout(400)
+        const n1 = await getConnsLen(page)
+        expectOk('E2E-034 放開建立連線', n1 === n0 + 1, `conns ${n0} → ${n1}`)
+        const last = await evalVm(page, 'return JSON.parse(JSON.stringify(vm.conns[vm.conns.length - 1]))')
+        expectOk('E2E-034 新連線 from=他節點 to=出發節點', !!last && last.from === '2' && last.to === '9', `last=${JSON.stringify(last)}`)
+        expectOk('E2E-034 新連線為 Auto(不烙印方位)', !!last && last.fromPosition === undefined && last.toPosition === undefined, `last=${JSON.stringify(last)}`)
+        expectOk('E2E-034 發出 update:conns', (await emitted(page)).includes('update:conns'), 'no update:conns')
+        const after = await page.evaluate(() => ({
+            from: document.querySelector('[data-flow-id]').hasAttribute('data-connect-from'),
+            originNode: !!document.querySelector('[data-connect-origin-node]'),
+            marks: document.querySelectorAll('[data-connect-role], [data-connect-status]').length,
+        }))
+        expectOk('E2E-034 放開後暫態標記全清', after.from === false && after.originNode === false && after.marks === 0, `after=${JSON.stringify(after)}`)
+    }),
+
+    mkCase('E2E-035', 'gesture-popup', async (page) => {
+        //真實 user path: ①點節點1看到資訊 popup ②自節點2連出點按住拉線 → popup 該關 ③放開 ④再點節點1開 popup ⑤按住節點2四角縮放 → popup 該關
+        //⑥放開 ⑦拖節點1經過節點2 → 節點2不得亮起齒輪/四角/陰影 ⑧放開後 hover 節點2恢復
+        const popupOpen = (id) => evalVm(page, `
+            const ws = vm.$refs.nodeRenderer.$refs.wrappers
+            const w = ws.find(c => c.node.id === arg)
+            return w ? w.infoPopupShow : null
+        `, id)
+        const b1 = await nodeBox(page, '1')
+        await page.mouse.click(b1.x + b1.width / 2, b1.y + b1.height / 2)
+        await page.waitForTimeout(400)
+        expectOk('E2E-035 前置: 節點1 資訊 popup 已開', (await popupOpen('1')) === true, `open=${await popupOpen('1')}`)
+
+        const src2 = await (await page.$('.vue-flow__node[data-id="2"] .vue-flow__handle[data-handle-type="source"]')).boundingBox()
+        await page.mouse.move(src2.x + src2.width / 2, src2.y + src2.height / 2)
+        await page.mouse.down()
+        await page.mouse.move(src2.x + 40, src2.y + 40, { steps: 4 })
+        await page.waitForTimeout(200)
+        expectOk('E2E-035 自 B 把手拉線 → A popup 關閉', (await popupOpen('1')) === false, `open=${await popupOpen('1')}`)
+        await page.mouse.up()
+        await page.waitForTimeout(300)
+
+        await page.mouse.click(b1.x + b1.width / 2, b1.y + b1.height / 2)
+        await page.waitForTimeout(400)
+        expectOk('E2E-035 前置: 節點1 popup 再開', (await popupOpen('1')) === true, `open=${await popupOpen('1')}`)
+        const b2 = await nodeBox(page, '2')
+        await page.mouse.move(b2.x + b2.width / 2, b2.y + b2.height / 2)
+        await page.waitForTimeout(300)
+        const rb = await (await page.$('.vue-flow__node[data-id="2"] .vue-flow__resize--bottom-right')).boundingBox()
+        await page.mouse.move(rb.x + rb.width / 2, rb.y + rb.height / 2)
+        await page.mouse.down()
+        await page.mouse.move(rb.x + 20, rb.y + 20, { steps: 4 })
+        await page.waitForTimeout(200)
+        expectOk('E2E-035 按 B 四角縮放 → A popup 關閉', (await popupOpen('1')) === false, `open=${await popupOpen('1')}`)
+        await page.mouse.up()
+        await page.waitForTimeout(300)
+
+        //拖曳 A 經過 B: B 之 hover affordance 抑制
+        await page.mouse.move(0, 0)
+        await page.waitForTimeout(300)
+        const b1b = await nodeBox(page, '1')
+        const b2b = await nodeBox(page, '2')
+        await page.mouse.move(b1b.x + b1b.width / 2, b1b.y + b1b.height / 2)
+        await page.mouse.down()
+        //落點取 B 中心偏右下(仍在 B 內): 兩節點同尺寸且 B 於 DOM 較後(繪於上層), 正中疊放會把被拖之 A 完全遮住, 截圖看不出拖曳
+        await page.mouse.move(b2b.x + b2b.width / 2 + 30, b2b.y + b2b.height / 2 + 12, { steps: 12 })
+        await page.waitForTimeout(300)
+        const during = await page.evaluate(() => {
+            const n = document.querySelector('.vue-flow__node[data-id="2"]')
+            const gear = n.querySelector('.vue-flow__node-settings-anchor')
+            const rs = n.querySelector('.vue-flow__resize-group')
+            return {
+                gearOpacity: gear ? getComputedStyle(gear).opacity : 'none',
+                resizeOpacity: rs ? getComputedStyle(rs).opacity : 'none',
+                shadow: getComputedStyle(n).boxShadow,
+                gesturing: document.querySelector('[data-flow-id]').classList.contains('vue-flow--gesturing'),
+            }
+        })
+        expectOk('E2E-035 拖曳中根 class gesturing', during.gesturing === true, `d=${JSON.stringify(during)}`)
+        expectOk('E2E-035 拖曳經過 B: 齒輪不現', during.gearOpacity === 'none' || Number(during.gearOpacity) === 0, `d=${JSON.stringify(during)}`)
+        expectOk('E2E-035 拖曳經過 B: 四角不現', during.resizeOpacity === 'none' || Number(during.resizeOpacity) === 0, `d=${JSON.stringify(during)}`)
+        expectOk('E2E-035 拖曳經過 B: 無 hover 陰影', during.shadow === 'none', `d=${JSON.stringify(during)}`)
+        await shot(page, 'flow-E2E-035-drag-no-hover-pollution', { clip: clipAround(b2b, PAD * 2), parkMouse: false })
+        await page.mouse.up()
+        await page.waitForTimeout(400)
+        //放開後 hover B 恢復
+        await page.mouse.move(0, 0)
+        await page.waitForTimeout(300)
+        const b2c = await nodeBox(page, '2')
+        await page.mouse.move(b2c.x + b2c.width / 2, b2c.y + 6)
+        await page.waitForTimeout(500)
+        const afterHover = await page.evaluate(() => {
+            const gear = document.querySelector('.vue-flow__node[data-id="2"] .vue-flow__node-settings-anchor')
+            return gear ? getComputedStyle(gear).opacity : 'none'
+        })
+        expectOk('E2E-035 放開後 hover B 齒輪恢復', Number(afterHover) === 1, `opacity=${afterHover}`)
     }),
 
 ]

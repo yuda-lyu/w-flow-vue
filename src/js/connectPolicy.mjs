@@ -1,26 +1,28 @@
 /**
- * 建線可行性政策(framework-free domain)。
+ * 建線可行性政策(framework-free domain)。契約見 spec/流程_互動契約.md §4。
  *
- * 契約:
- * - preview(拖曳中 hover 判定)與 commit(放開建立)必須共用同一候選建構與同一判定器,
- *   對相同 endpoint 對必得出相同結論(不變量, 由測試鎖定)。
- * - endpoint descriptor 形狀(由 DOM adapter 正規化, 見 handleDom.mjs):
+ * - 雙向出發、嚴格配對(對齊 React Flow ConnectionMode.Strict + Handle isConnectableStart 預設 true):
+ *   出發可為 source 或 target 把手; 落點必須是「他節點之異類把手」。
+ * - 候選 connection 一律正規化為 { from: source 端節點, to: target 端節點 }, 與出發方向無關,
+ *   宿主 validator / connect 事件收到之形狀與單向時代完全相同。
+ * - preview(拖曳中 hover 判定)與 commit(放開建立)共用同一候選建構與判定器, 相同 endpoint 對必得相同結論。
+ * - endpoint descriptor(由 handleDom.mjs 自 DOM 正規化):
  *   { nodeId, handleId, type: 'source'|'target', position, binding: 'auto'|'fixed', connectable, element }
- * - 候選 connection 之錨點烙印遵循 anchorPolicy 之 Auto/Fixed 語義:
- *   僅 binding='fixed' 之把手烙印方位, Auto 把手拉出/接入之邊動態跟隨節點設定。
- * - custom validator(funValidConnCreating)收到「與 commit 完全相同形狀」之候選
- *   (含已烙印之 fromPosition/toPosition), 須為同步純函式; 於 hover 目標變更與放開時各呼叫一次。
+ * - Fixed 錨點依端點各自烙印: fromPosition 來自 source 端把手, toPosition 來自 target 端把手。
+ * - reason 優先序: no-endpoint → unknown-handle → self → same-kind → not-connectable →
+ *   圖層級(missing-node → from-output → to-input → duplicate → custom)。
  */
 
 /**
- * 由出發/目標 endpoint 建構候選 connection(preview 與 commit 共用, 不可各自手組)。
+ * 由 source 端/target 端 endpoint 建構候選 connection(preview 與 commit 共用, 不可各自手組)。
+ * 參數已是正規化後之角色(非出發/落點), 由 assessConnection 負責配對。
  */
-export function buildConnectionCandidate(origin, target) {
+export function buildConnectionCandidate(sourceEp, targetEp) {
     return {
-        from: origin.nodeId,
-        to: target.nodeId,
-        ...(origin.binding === 'fixed' && origin.position ? { fromPosition: origin.position } : {}),
-        ...(target.binding === 'fixed' && target.position ? { toPosition: target.position } : {}),
+        from: sourceEp.nodeId,
+        to: targetEp.nodeId,
+        ...(sourceEp.binding === 'fixed' && sourceEp.position ? { fromPosition: sourceEp.position } : {}),
+        ...(targetEp.binding === 'fixed' && targetEp.position ? { toPosition: targetEp.position } : {}),
     }
 }
 
@@ -46,19 +48,34 @@ export function assessGraphConnection(connection, nodes, conns, validator) {
     return { valid: true, reason: null }
 }
 
+const isHandleType = (t) => t === 'source' || t === 'target'
+
 /**
- * 完整判定: handle 能力 → 候選建構 → 圖層級判定。
+ * 出發/落點配對 → 正規化為 { sourceEp, targetEp }; 不可配對時回 { reason }。
+ * 能力層順序: unknown-handle → self → same-kind → not-connectable。
+ */
+export function pairEndpoints(origin, target) {
+    if (!origin || !target) return { reason: 'no-endpoint' }
+    if (!isHandleType(origin.type) || !isHandleType(target.type)) return { reason: 'unknown-handle' }
+    //同節點之任何把手(含出發把手自身)皆為自我連線: 先於同類判定(拖回自己同類把手回 self, 非 same-kind)
+    if (origin.nodeId === target.nodeId) return { reason: 'self' }
+    if (origin.type === target.type) return { reason: 'same-kind' }
+    if (origin.connectable === false || target.connectable === false) return { reason: 'not-connectable' }
+    return origin.type === 'source'
+        ? { sourceEp: origin, targetEp: target }
+        : { sourceEp: target, targetEp: origin }
+}
+
+/**
+ * 完整判定: 配對/能力層 → 候選建構 → 圖層級判定。
  * 回傳 { valid, reason, connection }; connection 於能力層即拒絕時為 null。
+ * origin/target 之 type 任一組合皆可(source→target 或 target→source), 結果 connection 已正規化。
  */
 export function assessConnection(origin, target, { nodes, conns, validator } = {}) {
     if (!origin || !target) return { valid: false, reason: 'no-endpoint', connection: null }
-    //方向語義(strict): 只能自 source 出發、落於 target
-    if (origin.type !== 'source') return { valid: false, reason: 'origin-not-source', connection: null }
-    if (target.type !== 'target') return { valid: false, reason: 'target-not-target', connection: null }
-    if (origin.connectable === false || target.connectable === false) {
-        return { valid: false, reason: 'not-connectable', connection: null }
-    }
-    const connection = buildConnectionCandidate(origin, target)
+    const p = pairEndpoints(origin, target)
+    if (p.reason) return { valid: false, reason: p.reason, connection: null }
+    const connection = buildConnectionCandidate(p.sourceEp, p.targetEp)
     const r = assessGraphConnection(connection, nodes, conns, validator)
     return { valid: r.valid, reason: r.reason, connection }
 }

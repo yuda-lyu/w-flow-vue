@@ -172,6 +172,9 @@ export default {
         getDragGhost: { default: () => () => null },
         //複選鍵是否生效: getter注入而非prop——只被事件handler讀取, 不進渲染面, 判準與NodeWrapper一致
         getMultiSelectActive: { default: () => () => false },
+        //進行中手勢(一次一手勢)與 popup 開啟閘門: 判準與 NodeWrapper 一致(spec/流程_互動契約.md §5-§6)
+        getActiveGesture: { default: () => () => null },
+        getCanOpenPopup: { default: () => () => true },
     },
     props: {
         conn: { type: Object, required: true },
@@ -219,6 +222,13 @@ export default {
                 this.settingsPopupShow = false
             }
         },
+    },
+    beforeDestroy() {
+        //轉折點拖曳進行中被銷毀: document 監聽與全域游標樣式不會自行移除, 於此收尾並通知 WFlowVue 清手勢(不提交)
+        if (this.endWaypointGesture()) {
+            this.dragPts = null
+            this.$emit('conn-waypoint-end', { conn: this.conn, cancelled: true })
+        }
     },
     computed: {
         //複選模式(反應式讀取注入getter): 供watcher清popup與各開啟入口gating
@@ -430,32 +440,41 @@ export default {
             if (this.isGestureTarget(event)) return
             this.onContextMenu(event)
         },
-        //資訊popup之開關請求由本元件裁決, 判準與NodeWrapper一致(見其onInfoPopupInput之why)
+        //popup 開啟閘門: 複選模式 或 任何手勢進行中 一律拒開(判準與NodeWrapper一致)
+        canOpenPopup() {
+            return !this.getMultiSelectActive() && this.getCanOpenPopup()
+        },
+        //資訊popup之開關請求由本元件裁決(見NodeWrapper.onInfoPopupInput之why); 關閉請求一律放行
         onInfoPopupInput(val) {
-            if (val && this.getMultiSelectActive()) {
+            if (val && !this.canOpenPopup()) {
                 return
             }
             this.infoPopupShow = val
         },
         onClick(event) {
             //連線之popup另有本地直接開啟路徑(非僅WPopup trigger), 故此處亦須擋
-            if (this.hasInfoPopup && !this.getMultiSelectActive()) {
+            if (this.hasInfoPopup && this.canOpenPopup()) {
                 this.infoPopupShow = true
             }
             this.$emit('conn-click', { conn: this.conn, event })
         },
-        //宿主API入口gating: 複選模式中程式化開啟亦拒絕(回傳false供呼叫端判斷)
+        //宿主API入口gating: 程式化開啟於複選/手勢中亦拒絕(回傳false供呼叫端判斷)
         openInfoPopup() {
-            if (this.getMultiSelectActive()) return false
+            if (!this.canOpenPopup()) return false
             this.infoPopupShow = true
             return true
         },
-        //設定popup之開關由本元件裁決(複選模式中拒開; 關閉請求一律放行)
+        //設定popup之開關由本元件裁決(拒開條件同上; 關閉請求一律放行)
         onSettingsPopupInput(val) {
-            if (val && this.getMultiSelectActive()) {
+            if (val && !this.canOpenPopup()) {
                 return
             }
             this.settingsPopupShow = val
+        },
+        //關閉本連線全部 popup(手勢啟動時由 WFlowVue.closeAllPopups 統一呼叫, 理由見 NodeWrapper.closePopups)
+        closePopups() {
+            this.infoPopupShow = false
+            this.settingsPopupShow = false
         },
         onDoubleClick(event) {
             this.$emit('conn-double-click', { conn: this.conn, event })
@@ -492,11 +511,29 @@ export default {
         onSettingsAnchorClick(event) {
             this.$emit('conn-activate', { conn: this.conn, event })
         },
+        //收掉轉折點拖曳手勢之監聽與全域游標樣式(正常放開/視窗失焦/銷毀共用); 回傳是否確實收到進行中之手勢
+        //why: 原版只掛 document mouseup, 視窗失焦或元件銷毀時監聽器與 `* { cursor: move }` 全域樣式殘留整頁
+        endWaypointGesture() {
+            const g = this._waypointGesture
+            if (!g) return false
+            this._waypointGesture = null
+            document.removeEventListener('mousemove', g.onMouseMove)
+            document.removeEventListener('mouseup', g.onMouseUp)
+            window.removeEventListener('blur', g.onMouseUp)
+            if (g.cursorStyle && g.cursorStyle.parentNode) g.cursorStyle.parentNode.removeChild(g.cursorStyle)
+            return true
+        },
         onWaypointMouseDown(i, event) {
             if (!this.interactive || this.locked || !this.settingsEnabled) return
             //複選模式中不啟動轉折點拖曳(標記已隱藏, 縱深第二層; 守衛先於preventDefault/樣式建立)
             if (this.getMultiSelectActive()) return
+            //僅主鍵; 一次一手勢(判準與把手/四角/節點/畫布一致)
+            if (event.button !== 0) return
+            if (this.getActiveGesture()) return
+            this.endWaypointGesture()
             event.preventDefault()
+            //手勢生命週期上報(WFlowVue 據此設 activeGesture / 關閉全部 popup / 標記擁有者)
+            this.$emit('conn-waypoint-start', { conn: this.conn, event, el: this.$el })
 
             // 鎖定拖曳游標
             const cursorStyle = document.createElement('style')
@@ -519,16 +556,18 @@ export default {
                 this.dragPts = np
             }
             const onMouseUp = () => {
-                document.removeEventListener('mousemove', onMouseMove)
-                document.removeEventListener('mouseup', onMouseUp)
-                document.head.removeChild(cursorStyle)
+                if (!this.endWaypointGesture()) return
                 //放開才發更新事件(與齒輪表單同一事件流, 由宿主持久化); 事件流為同步, 回來時conn.points已更新故可安全清ghost
                 const value = this.waypointPts.map(p => [p.x, p.y])
                 this.$emit('conn-settings-update', { conn: this.conn, key: 'points', value })
                 this.dragPts = null
+                this.$emit('conn-waypoint-end', { conn: this.conn })
             }
+            this._waypointGesture = { onMouseMove, onMouseUp, cursorStyle }
             document.addEventListener('mousemove', onMouseMove)
             document.addEventListener('mouseup', onMouseUp)
+            //視窗失焦後收不到mouseup, 監聽器與全域游標樣式同樣需收尾(以最後 ghost 提交, 與節點縮放之失焦處理一致)
+            window.addEventListener('blur', onMouseUp)
         },
         onSettingsDelete() {
             this.$emit('conn-settings-delete', { conn: this.conn })

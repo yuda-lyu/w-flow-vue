@@ -11,10 +11,10 @@
     <!-- Corner resize handles (4 corners only) -->
     <transition name="vue-flow__fade">
       <div v-if="resizable && !locked && (selected || hovered)" class="vue-flow__resize-group">
-        <div class="vue-flow__resize vue-flow__resize--top-left" @mousedown.stop="$emit('resize-start', { event: $event, edge: 'top-left' })"></div>
-        <div class="vue-flow__resize vue-flow__resize--top-right" @mousedown.stop="$emit('resize-start', { event: $event, edge: 'top-right' })"></div>
-        <div class="vue-flow__resize vue-flow__resize--bottom-left" @mousedown.stop="$emit('resize-start', { event: $event, edge: 'bottom-left' })"></div>
-        <div class="vue-flow__resize vue-flow__resize--bottom-right" @mousedown.stop="$emit('resize-start', { event: $event, edge: 'bottom-right' })"></div>
+        <div class="vue-flow__resize vue-flow__resize--top-left" @mousedown.stop="onResizeMouseDown($event, 'top-left')"></div>
+        <div class="vue-flow__resize vue-flow__resize--top-right" @mousedown.stop="onResizeMouseDown($event, 'top-right')"></div>
+        <div class="vue-flow__resize vue-flow__resize--bottom-left" @mousedown.stop="onResizeMouseDown($event, 'bottom-left')"></div>
+        <div class="vue-flow__resize vue-flow__resize--bottom-right" @mousedown.stop="onResizeMouseDown($event, 'bottom-right')"></div>
       </div>
     </transition>
   </div>
@@ -44,6 +44,13 @@ export default {
         hovered: { type: Boolean, default: false },
         lastW: { type: Number, default: 0 },
         lastH: { type: Number, default: 0 },
+    },
+    methods: {
+        //僅主鍵啟動縮放(判準與把手/節點拖曳/畫布平移一致, spec/流程_互動契約.md §3): 右鍵/中鍵按在四角不得啟動縮放手勢
+        onResizeMouseDown(event, edge) {
+            if (event.button !== 0) return
+            this.$emit('resize-start', { event, edge })
+        },
     },
     computed: {
         nodeComponent() {

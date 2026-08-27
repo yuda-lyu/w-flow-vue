@@ -54,3 +54,14 @@ export function setHandleConnectRole(handleEl, role) {
     if (role) handleEl.setAttribute('data-connect-role', role)
     else handleEl.removeAttribute('data-connect-role')
 }
+
+/**
+ * 通用 dataset 旗標(建線根標記 data-connect-from、出發節點 data-connect-origin-node、手勢擁有者 data-gesture-owner):
+ * 與把手標記同理——未列於模板之 data-* 屬性不受 Vue patch 影響, 純 CSS 即可據以切換視覺, 不觸發任何重渲染。
+ * value 為空即移除。
+ */
+export function setDomFlag(el, name, value) {
+    if (!el || typeof el.setAttribute !== 'function') return
+    if (value === null || value === undefined || value === false || value === '') el.removeAttribute(name)
+    else el.setAttribute(name, value === true ? '' : String(value))
+}

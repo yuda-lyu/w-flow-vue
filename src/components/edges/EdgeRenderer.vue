@@ -33,6 +33,8 @@
       @conn-settings-update="$emit('conn-settings-update', $event)"
       @conn-settings-delete="$emit('conn-settings-delete', $event)"
       @conn-activate="$emit('conn-activate', $event)"
+      @conn-waypoint-start="$emit('conn-waypoint-start', $event)"
+      @conn-waypoint-end="$emit('conn-waypoint-end', $event)"
     />
   </svg>
 </template>

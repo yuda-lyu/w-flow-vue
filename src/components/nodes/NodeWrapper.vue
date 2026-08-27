@@ -105,6 +105,7 @@ import NodeBody from './NodeBody.vue'
 import NodeSettingsForm from '../ui/NodeSettingsForm.vue'
 import SlotOutlet from '../ui/SlotOutlet.vue'
 import WPopup from 'w-component-vue/src/components/WPopup.vue'
+import { classifyHit, isAffordanceHit } from '../../js/hitTest.mjs'
 
 export default {
     name: 'NodeWrapper',
@@ -116,6 +117,10 @@ export default {
         getDragGhost: { default: () => () => null },
         //複選鍵是否生效: getter注入而非prop——只被事件handler讀取, 不進渲染面, 按/放複選鍵時不觸發重渲染
         getMultiSelectActive: { default: () => () => false },
+        //進行中手勢(一次一手勢, spec/流程_互動契約.md §5): 有手勢時不啟動縮放/拖曳
+        getActiveGesture: { default: () => () => null },
+        //popup 可否開啟(overlay 規則 §6): 複選模式或任何手勢進行中一律拒開(含公開 API 之程式化開啟)
+        getCanOpenPopup: { default: () => () => true },
     },
     props: {
         node: { type: Object, required: true },
@@ -305,6 +310,10 @@ export default {
                     this.infoPopupEditable = true
                 }, 0)
             }
+            else {
+                //非正常路徑(銷毀/被新手勢取代)收尾: 通知 WFlowVue 清 activeGesture 與 ghost, 不提交尺寸
+                this.$emit('node-resize-cancel', { nodeId: this.node.id })
+            }
             return true
         },
         onMouseDown(event) {
@@ -319,6 +328,11 @@ export default {
             //非主鍵(右鍵/中鍵)不啟動拖曳與點擊: 判準對齊畫布平移之onCanvasMouseDown(event.button === 0),
             //使同套件內「按下開始拖動」採同一套判準; contextmenu走@contextmenu.stop另一條路徑不受影響
             if (event.button !== 0) {
+                this._mouseDownPos = null
+                return
+            }
+            //一次一手勢: 他手勢進行中(如另一節點之縮放尚未收尾)不再啟動選取/拖曳
+            if (this.getActiveGesture()) {
                 this._mouseDownPos = null
                 return
             }
@@ -388,31 +402,46 @@ export default {
                 this.$emit('node-click', { node: this.node, event })
             }
         },
+        //affordance(齒輪/四角/把手)上的雙擊/右鍵不代表節點(spec §3): 與 EdgeWrapper 之 isGestureTarget 對稱
+        //(修正前: root 之 @dblclick/@contextmenu 無條件接收後代事件, 雙擊齒輪發 node-double-click、右鍵把手發 node-context-menu, 實測已重現)
+        isAffordanceEvent(event) {
+            return isAffordanceHit(classifyHit(event && event.target, this.$el))
+        },
         onDoubleClick(event) {
+            if (this.isAffordanceEvent(event)) return
             this.$emit('node-double-click', { node: this.node, event })
         },
+        //popup 開啟閘門(overlay 規則 spec §6): 複選模式 或 任何手勢進行中 一律拒開;
+        //判準用multiSelectActive而非「鍵被按下」——選取不可用時(鎖定/檢視模式)該鍵無複選語義, 點擊仍應照常開popup
+        canOpenPopup() {
+            return !this.getMultiSelectActive() && this.getCanOpenPopup()
+        },
         //資訊popup之開關請求由本元件裁決(WPopup之isolated為預設false, 故trigger點擊只是$emit請求, 實際狀態由v-model擁有者決定)
-        //why: 多選鍵生效時點擊之語義為複選, 不應同時彈出資訊卡遮擋畫面並干擾連續點選;
-        //     判準用multiSelectActive而非「鍵被按下」——選取不可用時(鎖定/檢視模式)該鍵無複選語義, 點擊仍應照常開popup;
-        //     關閉請求一律放行, 且不可改用editable抑制——editable會連evHide與外部點擊關閉一併擋掉, 使已開之popup關不掉
+        //why: 關閉請求一律放行, 且不可改用editable抑制——editable會連evHide與外部點擊關閉一併擋掉, 使已開之popup關不掉
         onInfoPopupInput(val) {
-            if (val && this.getMultiSelectActive()) {
+            if (val && !this.canOpenPopup()) {
                 return
             }
             this.infoPopupShow = val
         },
-        //設定popup之開關同樣由本元件裁決(複選模式中拒開; 關閉請求一律放行)
+        //設定popup之開關同樣由本元件裁決(拒開條件同上; 關閉請求一律放行)
         onSettingsPopupInput(val) {
-            if (val && this.getMultiSelectActive()) {
+            if (val && !this.canOpenPopup()) {
                 return
             }
             this.settingsPopupShow = val
         },
-        //宿主API入口同樣gating: 複選模式中程式化開啟亦拒絕(回傳false供呼叫端判斷)
+        //宿主API入口同樣gating: 程式化開啟於複選/手勢中亦拒絕(回傳false供呼叫端判斷)
         openInfoPopup() {
-            if (this.getMultiSelectActive()) return false
+            if (!this.canOpenPopup()) return false
             this.infoPopupShow = true
             return true
+        },
+        //關閉本節點全部 popup(手勢啟動時由 WFlowVue.closeAllPopups 統一呼叫: 把手/四角之 mousedown 帶 .stop,
+        //WPopup 掛在 window 之互斥關閉收不到, 實測 A 之資訊 popup 於自 B 把手拉線/縮放 B 期間整段不關)
+        closePopups() {
+            this.infoPopupShow = false
+            this.settingsPopupShow = false
         },
         //手勢武裝中阻止原生HTML5 drag(拖曳選取文字/圖片/連結): 原生drag一旦接管, mousemove事件流被drag事件流取代;
         //未武裝時(齒輪/nodrag區/非主鍵/未按下)不干涉, 宿主自訂拖放不受影響
@@ -422,6 +451,7 @@ export default {
             }
         },
         onContextMenu(event) {
+            if (this.isAffordanceEvent(event)) return
             this.$emit('node-context-menu', { node: this.node, event })
         },
         onConnectStart(payload) {
@@ -448,8 +478,14 @@ export default {
         onResizeStart(event, edge) {
             //複選模式中不啟動縮放(把手已隱藏, 縱深第二層; 守衛先於任何emit/preventDefault/樣式建立)
             if (this.getMultiSelectActive()) return
+            //主鍵判準在 NodeBody 之 DOM 入口(onResizeMouseDown); 此處守一次一手勢
+            if (this.getActiveGesture()) return
+            //新手勢開始前先收掉上一次殘留者(視窗外放開未送達 mouseup 時), 避免監聽器與全域游標樣式疊加
+            this.endResizeGesture(false)
             //縮放=元素專屬操作: 該節點成為唯一active(elementsSelectable守衛在WFlowVue.onNodeActivate)
             this.$emit('node-activate', { node: this.node, event })
+            //手勢生命週期上報(WFlowVue 據此設 activeGesture / 關閉全部 popup / 標記擁有者)
+            this.$emit('resize-start', { node: this.node, event, el: this.$el })
             this.infoPopupShow = false
             this.$nextTick(() => {
                 this.infoPopupEditable = false

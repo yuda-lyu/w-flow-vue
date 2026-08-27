@@ -20,6 +20,8 @@ import { handleStyleVars } from '../../js/nodeStyle.mjs'
  * 定位以 CSS 變數計算: 邊距 = -(尺寸/2 + 節點外框寬)——舊寫法固定 -4px 是以 padding box 為基準,
  * 圓心會落在外框內側(偏入 1px + 邊框寬, 實測 border 2px 時偏入 3px)。
  * 樣式(面色/框線色/框線寬/尺寸)由 opt.defHandleSource* 與 defHandleTarget* 經 defNode 解析注入。
+ * 互動契約(spec/流程_互動契約.md §3-§4): source 與 target 把手皆可作為建線出發點(雙向出發、嚴格配對),
+ * 故兩者 hover 放大與 crosshair 皆為真實承諾; 建線期間之三態視覺由根/節點/把手之 data-connect-* 標記驅動。
  * @click.stop: 把手為建線手勢之出發/落點, 點擊(按下放開不拖)不得冒泡至 NodeWrapper 之 WPopup trigger
  * 誤開節點資訊 popup(實測已重現); mousedown 早已 .stop 故節點亦不發 node-click, 與之對稱
  */
@@ -29,6 +31,8 @@ export default {
         //複選模式(縱深最早邊界): 模式中把手已隱藏(CSS pointer-events:none, 真實點擊到不了這裡),
         //此守衛擋synthetic/程式化mousedown不啟動建線(模板@mousedown.stop仍生效, 僅阻手勢不改傳播語義)
         getMultiSelectActive: { default: () => () => false },
+        //進行中手勢(一次一手勢): 已有手勢時不啟動建線
+        getActiveGesture: { default: () => () => null },
         getDefNode: { default: () => () => ({}) },
     },
     props: {
@@ -70,6 +74,8 @@ export default {
             if (!this.connectable) return
             //複選模式中不啟動建線(守衛先於preventDefault, 不吞事件語義)
             if (this.getMultiSelectActive()) return
+            //一次一手勢: 進行中(拖曳/縮放/轉折點/框選/平移/建線)不再啟動
+            if (this.getActiveGesture()) return
             //僅主鍵可啟動建線: 右鍵/中鍵不 emit(WFlowVue 之重入守衛為第二層縱深)
             if (event.button !== 0) return
             //阻止文字選取隨拖線啟動(把手上按下拖曳屬建線手勢, 非選字)
@@ -101,10 +107,6 @@ export default {
   cursor: crosshair;
   z-index: 3;
 }
-/* 連入點(target)不可作為拖曳建線之出發點, 不顯示十字準星 */
-.vue-flow__handle--target {
-  cursor: default;
-}
 /* 圓心 = 節點外框盒邊: 位移 -(尺寸/2 + 外框寬) */
 .vue-flow__handle--top {
   top: calc(var(--vf-hs, 10px) / -2 - var(--vf-hb, 1px));
@@ -126,11 +128,12 @@ export default {
   right: calc(var(--vf-hs, 10px) / -2 - var(--vf-hb, 1px));
   transform: translateY(-50%);
 }
+/* 不可連把手: 無 affordance 亦不可 hit(設計限制, spec §8) */
 .vue-flow__handle--not-connectable {
   cursor: default;
   pointer-events: none;
 }
-/* hover 放大 2px, 圓心不動 */
+/* hover 放大 2px, 圓心不動(source/target 皆可出發建線, 承諾真實) */
 .vue-flow__handle:hover {
   background: #0041d0;
   width: calc(var(--vf-hs, 10px) + 2px);
@@ -141,24 +144,26 @@ export default {
 .vue-flow__handle--left:hover { left: calc((var(--vf-hs, 10px) + 2px) / -2 - var(--vf-hb, 1px)); }
 .vue-flow__handle--right:hover { right: calc((var(--vf-hs, 10px) + 2px) / -2 - var(--vf-hb, 1px)); }
 
-/* ─── 建線期間(祖先 .vue-flow--connecting)之三態視覺 ───
-   通用 hover 效果一律抑制(回復基準幾何與色彩): 可連性只由精確判定之 data-connect-* 標記指示,
-   否則「不能連的落點 hover 起來與能連的一樣」會誤導使用者(對齊 React Flow/Vue Flow:
-   僅游標下把手依 isValidConnection 即時標 valid/invalid) */
-.vue-flow--connecting .vue-flow__handle:hover {
+/* ─── 手勢進行中(祖先 .vue-flow--connecting 或 .vue-flow--gesturing)通用 hover 抑制 ───
+   建線: 可連性只由精確判定之 data-connect-* 標記指示; 其他手勢(拖曳/縮放/轉折點/框選/平移): 途經之把手不反應 */
+.vue-flow--connecting .vue-flow__handle:hover,
+.vue-flow--gesturing .vue-flow__handle:hover {
   background: var(--vf-hface, #555);
   width: var(--vf-hs, 10px);
   height: var(--vf-hs, 10px);
 }
-.vue-flow--connecting .vue-flow__handle--top:hover { top: calc(var(--vf-hs, 10px) / -2 - var(--vf-hb, 1px)); }
-.vue-flow--connecting .vue-flow__handle--bottom:hover { bottom: calc(var(--vf-hs, 10px) / -2 - var(--vf-hb, 1px)); }
-.vue-flow--connecting .vue-flow__handle--left:hover { left: calc(var(--vf-hs, 10px) / -2 - var(--vf-hb, 1px)); }
-.vue-flow--connecting .vue-flow__handle--right:hover { right: calc(var(--vf-hs, 10px) / -2 - var(--vf-hb, 1px)); }
-/* 方向語義(strict): source 把手永不可作為落點, 建線期間一律淡化(出發把手除外) */
-.vue-flow--connecting .vue-flow__handle--source:not([data-connect-role="origin"]) {
+.vue-flow--connecting .vue-flow__handle--top:hover, .vue-flow--gesturing .vue-flow__handle--top:hover { top: calc(var(--vf-hs, 10px) / -2 - var(--vf-hb, 1px)); }
+.vue-flow--connecting .vue-flow__handle--bottom:hover, .vue-flow--gesturing .vue-flow__handle--bottom:hover { bottom: calc(var(--vf-hs, 10px) / -2 - var(--vf-hb, 1px)); }
+.vue-flow--connecting .vue-flow__handle--left:hover, .vue-flow--gesturing .vue-flow__handle--left:hover { left: calc(var(--vf-hs, 10px) / -2 - var(--vf-hb, 1px)); }
+.vue-flow--connecting .vue-flow__handle--right:hover, .vue-flow--gesturing .vue-flow__handle--right:hover { right: calc(var(--vf-hs, 10px) / -2 - var(--vf-hb, 1px)); }
+/* 建線期間永不可為落點者一律淡化(不需 hover 判定即刻正確, spec §4):
+   出發節點之其他把手(自我連線)、他節點之同類把手(根元素 data-connect-from 標示出發類型) */
+.vue-flow--connecting .vue-flow__node[data-connect-origin-node] .vue-flow__handle:not([data-connect-role="origin"]),
+.vue-flow--connecting[data-connect-from="source"] .vue-flow__handle--source:not([data-connect-role="origin"]),
+.vue-flow--connecting[data-connect-from="target"] .vue-flow__handle--target:not([data-connect-role="origin"]) {
   opacity: 0.4;
 }
-/* 出發把手(connectingfrom): 保持強調, 標示線之來源 */
+/* 出發把手(origin): 保持強調, 標示線之來源 */
 .vue-flow__handle[data-connect-role="origin"] {
   box-shadow: 0 0 0 3px rgba(0, 65, 208, 0.35);
 }

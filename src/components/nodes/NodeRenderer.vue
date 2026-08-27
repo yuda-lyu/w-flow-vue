@@ -37,6 +37,8 @@
       @dimensions="$emit('dimensions', $event)"
       @node-resize="$emit('node-resize', $event)"
       @node-resize-end="$emit('node-resize-end', $event)"
+      @resize-start="$emit('resize-start', $event)"
+      @node-resize-cancel="$emit('node-resize-cancel', $event)"
       @node-activate="$emit('node-activate', $event)"
       @node-anchors-unfix="$emit('node-anchors-unfix', $event)"
     />

@@ -5,7 +5,7 @@
   <div
     :style="`width:${widthInp}px; height:${heightInp}px;`"
     :data-flow-id="flowId"
-    :class="{ 'vue-flow--connecting': isConnecting, 'vue-flow--multiselecting': multiSelectMode }"
+    :class="{ 'vue-flow--connecting': isConnecting, 'vue-flow--multiselecting': multiSelectMode, 'vue-flow--gesturing': gesturing }"
   >
   <FlowCanvas
     v-if="inited"
@@ -58,6 +58,8 @@
         @conn-settings-update="onConnSettingsUpdate"
         @conn-settings-delete="onConnSettingsDelete"
         @conn-activate="onConnActivate"
+        @conn-waypoint-start="onConnWaypointStart"
+        @conn-waypoint-end="onConnWaypointEnd"
       />
 
       <NodeRenderer
@@ -95,6 +97,8 @@
         @dimensions="onNodeDimensions"
         @node-resize="onNodeResize"
         @node-resize-end="onNodeResizeEnd"
+        @resize-start="onNodeResizeStart"
+        @node-resize-cancel="onNodeResizeCancel"
         @node-activate="onNodeActivate"
         @node-anchors-unfix="onNodeAnchorsUnfix"
       />
@@ -125,6 +129,7 @@
 
 <script>
 import FlowCanvas from './canvas/FlowCanvas.vue'
+import { classifyHit, isCanvasBlank } from '../js/hitTest.mjs'
 import ViewportTransform from './canvas/ViewportTransform.vue'
 import BackgroundLayer from './canvas/BackgroundLayer.vue'
 import SelectionBox from './canvas/SelectionBox.vue'
@@ -136,7 +141,7 @@ import { getHandlePosition, getOverlappingNodes, snapPosition, clampPosition } f
 import { clearStepCache } from '../js/edgePath'
 import { generateId } from '../js/graph'
 import { assessConnection } from '../js/connectPolicy.mjs'
-import { findHandleElAt, describeHandleEndpoint, setHandleConnectStatus, setHandleConnectRole } from '../js/handleDom.mjs'
+import { findHandleElAt, describeHandleEndpoint, setHandleConnectStatus, setHandleConnectRole, setDomFlag } from '../js/handleDom.mjs'
 import { NODE_DEFAULTS, CONN_DEFAULTS } from '../js/defaults'
 import { previewDelete, applyDelete, previewNodeTypeChange, findDuplicateIds, snapshotDeep } from '../js/graphMutation.mjs'
 
@@ -169,6 +174,21 @@ import { previewDelete, applyDelete, previewNodeTypeChange, findDuplicateIds, sn
  * @prop {boolean}  [opt.multiSelectEnabled=true]          Enable multi-selection (box select + Shift+Click)
  * @prop {string}   [opt.boxSelectionKeyCode='Shift']     Key to hold for box selection (drag on canvas)
  * @prop {string}   [opt.multiSelectionKeyCode='Shift']   Key to hold for Shift+Click add/remove selection
+ *
+ * ─── Interaction contract(互動契約, 全文見 spec/流程_互動契約.md)───
+ * 不變量(invariants):
+ * - 一次一手勢: activeGesture ∈ null|pan|drag|resize|connect|waypoint|boxselect; 啟動即關閉全部 popup,
+ *   期間根 class vue-flow--gesturing 抑制非擁有者元素之 hover affordance, 任何 popup 開啟入口(含公開 API)拒開。
+ * - 建線雙向出發、嚴格配對: 自 source 把手出發只能落他節點 target, 自 target 出發只能落他節點 source;
+ *   候選一律正規化為 { from: source 端, to: target 端 }, validator / connect 事件形狀不變。
+ *   自我連線與同類把手一律 not-allowed(出發節點之其他把手與他節點同類把手於建線期間淡化)。
+ * - affordance(齒輪/四角/把手/轉折點/工具列)之 click/dblclick/contextmenu 不代表宿主元素或畫布發事件。
+ * - 主鍵限制對所有手勢一致; 終止路徑(mouseup/blur/視窗外放開/destroy/上鎖)走同一收尾。
+ * - 上鎖切換時: 進行中之 connect/boxselect 取消, drag/resize/waypoint 取消提交(ghost 復原不寫回)。
+ * 1.0.37 行為變更(Behavior changes): connect-end.reason 集合更新(見 funValidConnCreating);
+ *   connect-start.handleType 可為 'target'; 節點齒輪/把手/四角上之雙擊與右鍵不再發 node-double-click /
+ *   node-context-menu; 縮放四角與轉折點只認主鍵; 按住連線本體拖曳不再平移畫布; 工具列上之雙擊/右鍵不再發
+ *   canvas-dblclick / pane-context-menu。
  *
  * ─── Multi-select mode(複選模式契約)───
  * multiSelectionKey 按住(且 multiSelectEnabled、elementsSelectable、未鎖定)期間為「複選模式」:
@@ -343,8 +363,9 @@ import { previewDelete, applyDelete, previewNodeTypeChange, findDuplicateIds, sn
  *   須為同步純函式(無副作用): 除放開(commit)外, 拖線中游標移入把手(hover 目標變更)時亦會被呼叫一次,
  *   以即時標示落點可否連線(valid/invalid); 兩處收到之 connection 形狀完全相同(含已烙印之 fromPosition/toPosition)。
  *   connect-end 事件之第二參數為判定結果 { valid, reason, connection }(additive, 第一參數仍為原生 event),
- *   reason ∈ 'no-endpoint'|'origin-not-source'|'target-not-target'|'not-connectable'|'self'|'missing-node'|
+ *   reason ∈ 'no-endpoint'|'unknown-handle'|'self'|'same-kind'|'not-connectable'|'missing-node'|
  *   'from-output'|'to-input'|'duplicate'|'custom'|'cancelled'|null
+ *   (1.0.37 起雙向出發: 'origin-not-source'/'target-not-target' 由 'same-kind' 取代, 見 Interaction contract)
  *
  * ─── Default Connection ────────────────────────────────────
  * @prop {string}   [opt.defConnType='bezier']            Default conn type: 'bezier' | 'straight' | 'step' | 'smoothstep'
@@ -388,6 +409,9 @@ export default {
             //複選鍵是否生效(行為判準, 非渲染狀態): 供Node/EdgeWrapper之事件handler呼叫;
             //以getter注入而非prop下傳——此值只影響行為不影響渲染輸出, prop形式會使按/放複選鍵時全部wrapper白重渲染一輪
             getMultiSelectActive: () => this.isMultiSelectActive,
+            //進行中手勢(一次一手勢)與 popup 開啟閘門(getter注入, 同上慣例; 契約見 spec/流程_互動契約.md §5-§6)
+            getActiveGesture: () => this.activeGesture,
+            getCanOpenPopup: () => this.canOpenPopup(),
             //刪除確認進行中(getter注入, 同上慣例): 供設定表單之刪除鈕呈現 pending
             getDeleteConfirming: () => this.deleteConfirming,
         }
@@ -432,6 +456,8 @@ export default {
             //經computed isConnecting供既有守衛/測試讀取); 欄位全數預宣告, 只改欄位不換容器
             connectionVisual: {
                 active: false,
+                //出發把手類型('source'|'target'): ConnectionLine 據此以正規化後之 source/target 參數繪預覽線(spec §4)
+                originType: 'source',
                 fromX: 0,
                 fromY: 0,
                 fromPosition: 'bottom',
@@ -446,6 +472,12 @@ export default {
 
             //複選模式(渲染面scalar, 由isMultiSelectActive之watcher維護; 契約見JSDoc「Multi-select mode」)
             multiSelectMode: false,
+
+            //進行中手勢(單值, 一次一手勢): null | 'pan' | 'drag' | 'resize' | 'connect' | 'waypoint' | 'boxselect'
+            //(非渲染面; 供守衛與 inject getter 讀取)
+            activeGesture: null,
+            //根 class 用之渲染面 scalar(僅於 null↔非 null 翻轉時寫入, 與 multiSelectMode 同一慣例)
+            gesturing: false,
 
             //刪除確認進行中(等待宿主 funConfirmDeleting 回覆): 供設定表單之刪除鈕呈現 pending 並防連點
             deleteConfirming: false,
@@ -878,7 +910,8 @@ export default {
             const t = e.target
             if (!t || !t.tagName) return false
             const tag = t.tagName.toUpperCase()
-            return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || t.isContentEditable === true
+            //BUTTON 亦排除: 焦點停在設定表單按鈕(如刪除鈕)時按 Delete 不得誤刪畫布選取
+            return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || tag === 'BUTTON' || t.isContentEditable === true
         },
         onKeyDown(e) {
             if (this.isEditableKeyTarget(e)) return
@@ -918,9 +951,12 @@ export default {
             this.$emit('pane-click', event)
         },
         onCanvasContextMenu(event) {
+            //工具列(panel)上之右鍵不代表畫布(affordance 不代表宿主, spec §3); 節點/邊自身已 .stop 不會到此
+            if (classifyHit(event.target, this.$el) === 'panel') return
             this.$emit('pane-context-menu', event)
         },
         onCanvasDblClick(event) {
+            if (classifyHit(event.target, this.$el) === 'panel') return
             // Calculate flow-space position from the click
             const rect = this.$refs.canvas.getContainerRect()
             if (!rect) return
@@ -939,41 +975,26 @@ export default {
         //畫布層手勢(框選/平移)之目標排除: 按在節點, 連線, 連接點, 縮放把手, 齒輪錨區, 轉折點, 控制選單上時不啟動
         //why: 這些元素各有自己的手勢語義(拖節點/拉連線/縮放/開設定/拖轉折點/操作選單), 畫布層再搶一個手勢會互相干擾;
         //     它們刻意不用@mousedown.stop(stopPropagation會擋掉window層WPopup互斥協調), 故mousedown必定冒泡至此
+        //分類單一來源: hitTest.classifyHit(以本 flow 根為界); 非畫布空白即排除。
+        //(原版此處與 onCanvasMouseDown 各維護一份清單且不一致——後者漏 .vue-flow__edge, 按住線本體拖曳會平移, 實測已重現)
         isCanvasInteractiveTarget(event) {
-            const t = event && event.target
-            if (!t || !t.closest) return false
-            return !!t.closest([
-                '.vue-flow__node',
-                '.vue-flow__edge',
-                '.vue-flow__handle',
-                '.vue-flow__resize',
-                '.vue-flow__node-settings',
-                '.vue-flow__node-settings-anchor',
-                '.vue-flow__edge-settings',
-                '.vue-flow__edge-waypoint',
-                '.vue-flow__panel',
-            ].join(','))
+            return !isCanvasBlank(event && event.target, this.$el)
         },
         onCanvasMouseDown(event) {
             if (event.target.closest && event.target.closest('.vue-flow__popup')) return
             //非主鍵不啟動任何畫布層手勢: 判準對齊NodeWrapper.onMouseDown之event.button !== 0
             if (event.button !== 0) return
+            //一次一手勢
+            if (this.activeGesture) return
+            //只有按在畫布空白才啟動畫布層手勢(框選/平移); 節點/邊/把手/齒輪/四角/轉折點/工具列各有自己的手勢語義,
+            //它們刻意不用@mousedown.stop(stopPropagation會擋掉window層WPopup互斥協調), 故mousedown必定冒泡至此
+            if (!isCanvasBlank(event.target, this.$el)) return
             if (this.elementsSelectable && this.isBoxSelectActive) {
-                if (!this.isCanvasInteractiveTarget(event)) {
-                    this.startSelection(event)
-                }
+                this.startSelection(event)
                 return
             }
             if (this.panOnDrag) {
-                const target = event.target
-                const isOnNode = target.closest && target.closest('.vue-flow__node')
-                const isOnHandle = target.closest && target.closest('.vue-flow__handle')
-                //齒輪等UI元素/左上角控制選單/連線轉折點之mousedown不啟動平移(取代其@mousedown.stop, 使mousedown仍能冒泡至window做popup互斥關閉;
-                // .vue-flow__panel=Controls垂直選單, .vue-flow__edge-waypoint=連線轉折點拖曳鈕, 否則按之再拖曳會誤觸發平移)
-                const isOnUi = target.closest && target.closest('.vue-flow__node-settings, .vue-flow__edge-settings, .vue-flow__panel, .vue-flow__edge-waypoint')
-                if (!isOnNode && !isOnHandle && !isOnUi) {
-                    this.startPan(event)
-                }
+                this.startPan(event)
             }
         },
         onCanvasMouseMove(event) {
@@ -1073,12 +1094,73 @@ export default {
             }
         },
 
+        // --- Gesture lifecycle(一次一手勢, spec/流程_互動契約.md §5) ---
+        //啟動: 設 activeGesture、根 class(渲染面 scalar 僅於翻轉時寫入)、擁有者標記(dataset, 不觸發重渲染)、關閉全部 popup。
+        //why 關 popup: 把手/四角之 mousedown 帶 .stop, WPopup 掛在 window 之互斥關閉收不到(實測 A 之 popup 於自 B 拉線/縮放 B
+        //期間整段不關); 統一於手勢啟動處關閉, 各手勢入口不再各自為政
+        beginGesture(type, ownerEl) {
+            this.activeGesture = type
+            if (!this.gesturing) this.gesturing = true
+            this._gestureOwnerEl = ownerEl || null
+            setDomFlag(this._gestureOwnerEl, 'data-gesture-owner', true)
+            this.closeAllPopups()
+        },
+        //結束: 只有同型手勢才清除(防他手勢之收尾誤清), 收尾路徑(mouseup/blur/destroy/上鎖)共用
+        endGesture(type) {
+            if (this.activeGesture !== type) return
+            this.activeGesture = null
+            if (this.gesturing) this.gesturing = false
+            setDomFlag(this._gestureOwnerEl, 'data-gesture-owner', null)
+            this._gestureOwnerEl = null
+        },
+        //popup 開啟閘門(overlay 規則 §6): 供 Node/EdgeWrapper 經 inject 讀取, 含公開 API 與 panToNode 之延遲開啟
+        canOpenPopup() {
+            return !this.isMultiSelectActive && !this.activeGesture
+        },
+        closeAllPopups() {
+            const ns = (this.$refs.nodeRenderer && this.$refs.nodeRenderer.$refs.wrappers) || []
+            const es = (this.$refs.edgeRenderer && this.$refs.edgeRenderer.$refs.wrappers) || []
+            for (const w of ns) if (w && w.closePopups) w.closePopups()
+            for (const w of es) if (w && w.closePopups) w.closePopups()
+        },
+        //上鎖切換時之手勢政策(§5): connect/boxselect 取消; drag 取消提交(ghost 復原不寫回);
+        //resize/waypoint 由子元件持有監聽, 於其收尾事件到達時依 locked 取消提交(見 onNodeResizeEnd / onConnSettingsUpdate)
+        cancelGesturesForLock() {
+            if (this.isConnecting) this.cancelConnect()
+            if (this.isSelecting) this.cancelSelection()
+            if (this.isDraggingNode) this.cancelDrag()
+        },
+        cancelDrag() {
+            if (this.dragNodeStartPositions) {
+                for (let id in this.dragNodeStartPositions) this.dragPositions[id] = null
+            }
+            this.isDraggingNode = false
+            this.draggingNodeId = null
+            this.dragStartPos = null
+            this.dragNodeStartPositions = null
+            this.endGesture('drag')
+        },
+        onNodeResizeStart({ el }) {
+            this.beginGesture('resize', el)
+        },
+        onNodeResizeCancel({ nodeId }) {
+            if (nodeId in this.dragPositions) this.dragPositions[nodeId] = null
+            this.endGesture('resize')
+        },
+        onConnWaypointStart({ el }) {
+            this.beginGesture('waypoint', el)
+        },
+        onConnWaypointEnd() {
+            this.endGesture('waypoint')
+        },
+
         // --- Pan ---
         startPan(event) {
             //手動平移優先於程式動畫, 否則二者同時寫viewport而互相覆寫
             this.cancelViewportAnimation()
             this.isPanning = true
             this.panStartPos = { x: event.clientX, y: event.clientY }
+            this.beginGesture('pan', null)
         },
         doPan(event) {
             const dx = event.clientX - this.panStartPos.x
@@ -1100,6 +1182,7 @@ export default {
         endPan() {
             this.isPanning = false
             this.panStartPos = null
+            this.endGesture('pan')
             this.emitViewportChange()
         },
 
@@ -1132,11 +1215,14 @@ export default {
                 if (canMove(n)) starts[node.id] = { x: n.position.x, y: n.position.y }
             }
             if (!starts[node.id]) return
+            //一次一手勢(縱深第二層: NodeWrapper.onMouseDown 已擋)
+            if (this.activeGesture) return
 
             this.isDraggingNode = true
             this.draggingNodeId = node.id
             this.dragStartPos = { x: event.clientX, y: event.clientY }
             this.dragNodeStartPositions = starts
+            this.beginGesture('drag', this.$el.querySelector(`.vue-flow__node[data-id="${node.id}"]`))
 
             //啟用被拖節點之ghost(per-key賦值, 僅通知讀該鍵之元件), 之後每步僅原地改x/y
             for (let id in starts) {
@@ -1177,6 +1263,11 @@ export default {
             }
         },
         endDrag(event) {
+            //上鎖中之拖曳取消提交(§5): ghost 復原, 不寫回不發 update:nodes
+            if (this.locked) {
+                this.cancelDrag()
+                return
+            }
             // Write final positions back to opt.nodes, 並關閉ghost(per-key設回null)
             if (this.dragNodeStartPositions) {
                 for (let id in this.dragNodeStartPositions) {
@@ -1194,6 +1285,7 @@ export default {
             this.draggingNodeId = null
             this.dragStartPos = null
             this.dragNodeStartPositions = null
+            this.endGesture('drag')
             clearStepCache()
             if (dragNode) {
                 this.$emit('node-drag-stop', { node: dragNode, event })
@@ -1206,11 +1298,13 @@ export default {
             if (this.locked || !this.nodesConnectable) return
             //複選模式中不啟動建線(把手已隱藏, 此為縱深第二層; 守衛先於任何狀態/標記之設定)
             if (this.isMultiSelectActive) return
-            //建線只能自source(連出)型handle出發: target(連入)型handle拖曳不啟動建線, 維持方向語義
-            if (payload.handleType !== 'source') return
+            //雙向出發(spec §4): source 與 target 把手皆可出發; 型別非二者即不啟動
+            const originType = payload.handleType
+            if (originType !== 'source' && originType !== 'target') return
             //重入守衛(縱深第二層, Handle已擋非主鍵): 拉線途中他途再送connect-start不得重跑啟動流程,
-            //否則出發把手標記/狀態被改寫而失去清理參照
+            //否則出發把手標記/狀態被改寫而失去清理參照; 一次一手勢: 他手勢進行中亦不啟動
             if (this.isConnecting) return
+            if (this.activeGesture) return
             //節點不存在即不啟動: 此檢查須先於狀態設定, 否則早退會留下isConnecting與把手標記
             const node = this.nodeById(payload.nodeId)
             if (!node) return
@@ -1219,32 +1313,41 @@ export default {
             const originEl = payload.event
                 ? (payload.event.currentTarget || (payload.event.target && payload.event.target.closest && payload.event.target.closest('.vue-flow__handle')))
                 : null
+            //出發節點元素: 標 data-connect-origin-node 使其全部其他把手立即呈 not-allowed(自我連線, 純 CSS 不需 hover 判定)
+            const originNodeEl = originEl && originEl.closest ? originEl.closest('.vue-flow__node') : null
             this._connectOrigin = {
                 nodeId: payload.nodeId,
                 handleId: payload.handleId || null,
-                type: 'source',
+                type: originType,
                 position: payload.handlePosition || null,
                 binding: payload.handleBinding || 'auto',
                 connectable: true,
                 element: originEl || null,
+                nodeElement: originNodeEl,
             }
             this._connectHoverEl = null
             setHandleConnectRole(originEl, 'origin')
+            setDomFlag(originNodeEl, 'data-connect-origin-node', true)
+            //根標記出發類型: 他節點之同類把手據此淡化並 not-allowed(spec §4)
+            setDomFlag(this.$el, 'data-connect-from', originType)
+            this.beginGesture('connect', originNodeEl)
 
+            this.connectionVisual.originType = originType
             this.connectionVisual.active = true
             this.connectingFrom = payload
 
+            //起點幾何依實際把手類型(same-side 時 target=0.33 / source=0.67, 與把手渲染同一基準)
             const pos = getHandlePosition(
                 node, payload.handlePosition,
                 this.nodeInternals[payload.nodeId] || {},
-                'source', this.defNode
+                originType, this.defNode
             )
             this.connectionVisual.fromX = pos.x
             this.connectionVisual.fromY = pos.y
             this.connectionVisual.fromPosition = payload.handlePosition
             this.connectionVisual.toX = pos.x
             this.connectionVisual.toY = pos.y
-            this.connectionVisual.toPosition = 'top'
+            this.connectionVisual.toPosition = this.defaultFarPosition()
             this.connectionVisual.dropStatus = 'none'
 
             this.$emit('connect-start', {
@@ -1266,7 +1369,7 @@ export default {
                 setHandleConnectStatus(this._connectHoverEl, null)
                 this._connectHoverEl = handleEl
                 let status = 'none'
-                let toPosition = 'top'
+                let toPosition = this.defaultFarPosition()
                 if (handleEl) {
                     const target = describeHandleEndpoint(handleEl, this.flowId)
                     if (target) {
@@ -1343,8 +1446,17 @@ export default {
             this.connectingFrom = null
             setHandleConnectStatus(this._connectHoverEl, null)
             this._connectHoverEl = null
-            if (this._connectOrigin) setHandleConnectRole(this._connectOrigin.element, null)
+            if (this._connectOrigin) {
+                setHandleConnectRole(this._connectOrigin.element, null)
+                setDomFlag(this._connectOrigin.nodeElement, 'data-connect-origin-node', null)
+            }
             this._connectOrigin = null
+            setDomFlag(this.$el, 'data-connect-from', null)
+            this.endGesture('connect')
+        },
+        //建線中無 hover 把手時之遠端預設方位: 遠端是 target 把手(預設在 top)或 source 把手(預設在 bottom)
+        defaultFarPosition() {
+            return this.connectionVisual.originType === 'target' ? 'bottom' : 'top'
         },
 
         // --- Selection ---
@@ -1485,6 +1597,8 @@ export default {
             this.$emit('conn-settings-click', payload)
         },
         onConnSettingsUpdate({ conn, key, value }) {
+            //上鎖中之轉折點拖曳取消提交(§5): 拖曳中上鎖後放開, 不寫回 points
+            if (key === 'points' && this.locked && this.activeGesture === 'waypoint') return
             let c = this.connById(conn.id)
             if (c) {
                 this.$set(c, key, value)
@@ -1533,6 +1647,7 @@ export default {
             const rect = this.$refs.canvas.getContainerRect()
             if (!rect) return //rect取不到即不進入框選態, 否則留下isSelecting為真之殘留狀態
             this.isSelecting = true
+            this.beginGesture('boxselect', null)
             this.selectionCrossedThreshold = false
             this.selectionStartPos = {
                 x: event.clientX - rect.left,
@@ -1566,6 +1681,7 @@ export default {
             this.selectionStartPos = null
             this.selectionVisual.box = null
             this.selectionCrossedThreshold = false
+            this.endGesture('boxselect')
         },
         endSelection() {
             //未跨門檻(原地按放)不提交選取: 否則零面積框恰落於游標下元素內時會取代既有選取,
@@ -1777,6 +1893,12 @@ export default {
             this.updateNodeInternals(nodeId, { width, height })
         },
         onNodeResizeEnd({ nodeId, width, height, x, y }) {
+            //上鎖中之縮放取消提交(§5; 與 onNodeResize 之 locked 守衛對稱——預覽已被擋, 不得提交使用者未見之尺寸)
+            if (this.locked) {
+                this.onNodeResizeCancel({ nodeId })
+                return
+            }
+            this.endGesture('resize')
             let node = this.nodeById(nodeId)
             if (node) {
                 node.width = width
@@ -1883,6 +2005,8 @@ export default {
         },
         toggleInteractive() {
             this.locked = !this.locked
+            //進入上鎖: 進行中手勢依 §5 政策取消(原版只翻旗標, 拉線/框選會帶著上鎖態繼續)
+            if (this.locked) this.cancelGesturesForLock()
             this.$emit('toggle-interactive', this.locked)
         },
         panToNode(nodeId, opt) {
@@ -1996,9 +2120,12 @@ export default {
 .vue-flow--connecting .vue-flow__handle[data-connect-status="valid"] {
   cursor: crosshair !important;
 }
-/* 判定不合法之落點, 以及永不可作為落點之 source 把手: not-allowed(不可連) */
+/* 判定不合法之落點、出發節點之其他把手(自我連線)、他節點之同類把手(根 data-connect-from 標示出發類型):
+   not-allowed(不可連; 後二者不需 hover 判定即刻正確, spec §4) */
 .vue-flow--connecting .vue-flow__handle[data-connect-status="invalid"],
-.vue-flow--connecting .vue-flow__handle--source:not([data-connect-role="origin"]) {
+.vue-flow--connecting .vue-flow__node[data-connect-origin-node] .vue-flow__handle:not([data-connect-role="origin"]),
+.vue-flow--connecting[data-connect-from="source"] .vue-flow__handle--source:not([data-connect-role="origin"]),
+.vue-flow--connecting[data-connect-from="target"] .vue-flow__handle--target:not([data-connect-role="origin"]) {
   cursor: not-allowed !important;
 }
 /* 建線期間隱藏齒輪/縮放把手/邊轉折點(避免遮擋落點與誤觸; waypoint與齒輪縮放同屬元素專屬操作) */
@@ -2006,6 +2133,28 @@ export default {
 .vue-flow--connecting .vue-flow__edge-settings,
 .vue-flow--connecting .vue-flow__resize,
 .vue-flow--connecting .vue-flow__edge-waypoint {
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+/* ─── 任何手勢進行中(根 class .vue-flow--gesturing; 契約 §5): 非擁有者元素之 hover affordance 抑制 ───
+   實測: 拖曳 A 經過 B 時 B 亮起齒輪/四角/陰影, 邊加深; 手勢中途經之元素不得反應。
+   擁有者(data-gesture-owner, 被拖/被縮放之節點或被拖轉折點之邊)保留其手勢所需之 affordance */
+.vue-flow--gesturing .vue-flow__node:not([data-gesture-owner]) .vue-flow__node-settings-anchor,
+.vue-flow--gesturing .vue-flow__node:not([data-gesture-owner]) .vue-flow__resize-group,
+.vue-flow--gesturing .vue-flow__edge:not([data-gesture-owner]) .vue-flow__edge-settings-anchor {
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+.vue-flow--gesturing .vue-flow__node:not([data-gesture-owner]):not(.vue-flow__node--selected):hover {
+  box-shadow: none !important;
+}
+.vue-flow--gesturing .vue-flow__edge--hovered:not([data-gesture-owner]):not(.vue-flow__edge--selected) > path {
+  stroke: #b1b1b7;
+}
+/* 建線中亦為手勢: 齒輪/四角已由上方規則隱藏; 拖曳中之擁有者節點不顯示齒輪與四角(正在移動, 非設定時機) */
+.vue-flow--gesturing .vue-flow__node--dragging .vue-flow__node-settings-anchor,
+.vue-flow--gesturing .vue-flow__node--dragging .vue-flow__resize-group {
   opacity: 0 !important;
   pointer-events: none !important;
 }
