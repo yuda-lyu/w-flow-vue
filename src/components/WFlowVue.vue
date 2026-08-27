@@ -274,6 +274,17 @@ import { previewDelete, applyDelete, previewNodeTypeChange, findDuplicateIds, sn
  * @prop {string}   [opt.defNodeFromPosition='top']       Default incoming handle position
  * @prop {string}   [opt.defNodePopupDirection='right']   Default settings popup direction
  *
+ * ─── Default Handle(連接點)───
+ * 把手圓心落在節點外框盒邊上(與連線端點同一基準; 定位扣除節點外框寬); hover 放大 2px 圓心不動。
+ * @prop {string}   [opt.defHandleSourceFaceColor='#555555'] 連出點(source)背景色
+ * @prop {string}   [opt.defHandleSourceEdgeColor='#ffffff'] 連出點框線色
+ * @prop {number}   [opt.defHandleSourceEdgeWidth=1]         連出點框線寬(px)
+ * @prop {number}   [opt.defHandleSourceSize=10]             連出點大小(px, 外徑含框線)
+ * @prop {string}   [opt.defHandleTargetFaceColor='#ffffff'] 連入點(target)背景色
+ * @prop {string}   [opt.defHandleTargetEdgeColor='#1a1918'] 連入點框線色
+ * @prop {number}   [opt.defHandleTargetEdgeWidth=1]         連入點框線寬(px)
+ * @prop {number}   [opt.defHandleTargetSize=10]             連入點大小(px, 外徑含框線)
+ *
  * ─── Default Creating Connection ────────────────────────────────────────────────────────
  * @prop {string}   [opt.defConnCreatingType='bezier']     Drag-line type: 'bezier' | 'straight' | 'step' | 'smoothstep'
  * @prop {string}   [opt.defConnCreatingEdgeColor='#b1b1b7']  Drag-line color
@@ -742,6 +753,15 @@ export default {
                 toPosition: o.defNodeToPosition || d.toPosition,
                 fromPosition: o.defNodeFromPosition || d.fromPosition,
                 popupDirection: o.defNodePopupDirection || d.popupDirection,
+                //連接點(把手)樣式: 數值型以 !== undefined 判斷(0 為合法之框線寬)
+                handleSourceFaceColor: o.defHandleSourceFaceColor || d.handleSourceFaceColor,
+                handleSourceEdgeColor: o.defHandleSourceEdgeColor || d.handleSourceEdgeColor,
+                handleSourceEdgeWidth: o.defHandleSourceEdgeWidth !== undefined ? o.defHandleSourceEdgeWidth : d.handleSourceEdgeWidth,
+                handleSourceSize: o.defHandleSourceSize || d.handleSourceSize,
+                handleTargetFaceColor: o.defHandleTargetFaceColor || d.handleTargetFaceColor,
+                handleTargetEdgeColor: o.defHandleTargetEdgeColor || d.handleTargetEdgeColor,
+                handleTargetEdgeWidth: o.defHandleTargetEdgeWidth !== undefined ? o.defHandleTargetEdgeWidth : d.handleTargetEdgeWidth,
+                handleTargetSize: o.defHandleTargetSize || d.handleTargetSize,
             }
         },
         defConn() {

@@ -10,6 +10,7 @@
       :locked="locked"
       :offset="targetOffsetFor(p)"
       :custom-style="targetHandleStyleFor(p)"
+      :node-edge-width="nodeEdgeWidth"
       @connect-start="$emit('connect-start', $event)"
     />
     <div class="vue-flow__node-label" :style="labelStyle">{{ node.name }}</div>
@@ -23,6 +24,7 @@
       :locked="locked"
       :offset="sourceOffsetFor(p)"
       :custom-style="sourceHandleStyleFor(p)"
+      :node-edge-width="nodeEdgeWidth"
       @connect-start="$emit('connect-start', $event)"
     />
   </div>
@@ -31,6 +33,7 @@
 <script>
 import Handle from './Handle.vue'
 import { sourceHandleSides, targetHandleSides } from '../../js/anchorPolicy.mjs'
+import { nodeBorderWidth } from '../../js/nodeStyle.mjs'
 
 export default {
     name: 'DefaultNode',
@@ -44,6 +47,10 @@ export default {
     computed: {
         dn() {
             return this.getDefNode()
+        },
+        //節點外框寬: 把手定位之扣除量(與 NodeWrapper 之 border 同一解析)
+        nodeEdgeWidth() {
+            return nodeBorderWidth(this.node, this.dn)
         },
         //把手集合由 anchorPolicy 單一來源解析: 預設 Auto 把手永遠存在, Fixed 錨點附加;
         //佈局方法(offset/style)以 side 為鍵, 故另以 usedXxxSides 提供純 side 陣列

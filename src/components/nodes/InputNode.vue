@@ -9,6 +9,7 @@
       :binding="h.binding"
       :connectable="connectable"
       :locked="locked"
+      :node-edge-width="nodeEdgeWidth"
       @connect-start="$emit('connect-start', $event)"
     />
   </div>
@@ -17,6 +18,7 @@
 <script>
 import Handle from './Handle.vue'
 import { sourceHandleSides } from '../../js/anchorPolicy.mjs'
+import { nodeBorderWidth } from '../../js/nodeStyle.mjs'
 
 export default {
     name: 'InputNode',
@@ -30,6 +32,9 @@ export default {
     computed: {
         dn() {
             return this.getDefNode()
+        },
+        nodeEdgeWidth() {
+            return nodeBorderWidth(this.node, this.dn)
         },
         //把手集合由 anchorPolicy 單一來源解析: 預設 Auto 把手永遠存在, 各出邊之 Fixed 錨點附加
         sourceHandles() {

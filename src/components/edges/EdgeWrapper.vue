@@ -1,9 +1,18 @@
 <template>
+  <!-- 點擊類事件(click/dblclick/contextmenu)統一掛在 <g>: 線本體、label 區(hover rect 與 label span)、
+       轉折點等一切子元素冒泡至此同一處理——舊寫法只掛在 interaction path 與 rect, label span(位於 foreignObject,
+       疊在 rect 之上)之點擊/雙擊/右鍵全部漏接(實測: label 單擊不發 conn-click 不選取, 雙擊/右鍵無事件);
+       齒輪錨區與轉折點於 handler 內排除(各有自己的手勢語義). .stop 維持舊語義(不冒泡至 canvas 之 pane-click)
+       hover 視覺以 vue-flow__edge--hovered class 驅動而非 :hover: 選取時 EdgeRenderer 會把本 <g> 搬到最後(置頂),
+       DOM 重新插入會令 :hover 樣式從初始態重算並重跑 transition(齒輪閃一下, 實測已重現); class 隨元件狀態存在, 插入即為終態 -->
   <g
     :class="classes"
     :data-id="conn.id"
     @mouseenter="onGroupMouseEnter"
     @mouseleave="onGroupMouseLeave"
+    @click.stop="onGroupClick"
+    @dblclick.stop="onGroupDoubleClick"
+    @contextmenu.stop="onGroupContextMenu"
   >
     <!-- Hover zone around label + settings icon area (below interaction path in z-order) -->
     <rect
@@ -13,15 +22,11 @@
       height="36"
       fill="transparent"
       pointer-events="all"
-      @click.stop="onClick"
     />
     <!-- Interaction path (wider, invisible) -->
     <path
       :d="pathData.path"
       class="vue-flow__edge-interaction"
-      @click.stop="onClick"
-      @dblclick.stop="onDoubleClick"
-      @contextmenu.stop="onContextMenu"
     />
     <!-- Visible path -->
     <path
@@ -105,8 +110,14 @@
                 @show="$emit('conn-settings-click', { conn: conn })"
               >
                 <template v-slot:trigger>
-                  <!-- 不用@mousedown.stop: stopPropagation會連window層popup互斥協調一併擋掉(致其他popup無法關閉); 防canvas startPan改由onCanvasMouseDown排除.vue-flow__edge-settings處理 -->
-                  <span class="vue-flow__edge-settings">
+                  <!-- 不用@mousedown.stop: stopPropagation會連window層popup互斥協調一併擋掉(致其他popup無法關閉); 防canvas startPan改由onCanvasMouseDown排除.vue-flow__edge-settings處理
+                       hover 樣式以 gearHovered class 驅動(理由見 <g> 註解: 置頂重插入時 :hover 會閃) -->
+                  <span
+                    class="vue-flow__edge-settings"
+                    :class="{ 'vue-flow__edge-settings--hover': gearHovered }"
+                    @mouseenter="gearHovered = true"
+                    @mouseleave="gearHovered = false"
+                  >
                     <svg viewBox="0 0 20 20" width="14" height="14" fill="currentColor">
                       <path d="M11.078 0l.294 1.833a7.587 7.587 0 0 1 2.174 1.25l1.725-.618 1.078 1.87-1.43 1.217a7.508 7.508 0 0 1 0 2.498l1.43 1.217-1.078 1.87-1.725-.618a7.587 7.587 0 0 1-2.174 1.25L11.078 14H8.922l-.294-1.833a7.587 7.587 0 0 1-2.174-1.25l-1.725.618-1.078-1.87 1.43-1.217a7.508 7.508 0 0 1 0-2.498L3.65 4.733l1.078-1.87 1.725.618a7.587 7.587 0 0 1 2.174-1.25L8.922 0h2.156zM10 4.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5z" transform="translate(0 3)"/>
                     </svg>
@@ -187,6 +198,7 @@ export default {
     data() {
         return {
             hovered: false,
+            gearHovered: false,
             infoPopupShow: false,
             infoPopupEditable: true,
             settingsPopupShow: false,
@@ -316,6 +328,7 @@ export default {
                 {
                     'vue-flow__edge--selected': this.selected,
                     'vue-flow__edge--animated': this.conn.animated,
+                    'vue-flow__edge--hovered': this.hovered,
                 },
             ]
         },
@@ -391,7 +404,31 @@ export default {
         },
         onGroupMouseLeave(event) {
             this.hovered = false
+            this.gearHovered = false
             this.$emit('conn-mouseleave', { conn: this.conn, event })
+        },
+        //<g> 層之點擊類事件分流: 齒輪錨區(開設定 popup/activate 由其自身 handler 處理)與轉折點(拖曳手勢, 放開後之 click
+        //不得視為點線)一律略過; 其餘(線本體/label 區/hover rect)走原 onClick 語義。
+        //target 為 <g> 自身亦略過: mousedown 與 mouseup 落在不同子元素時(如拖轉折點放開於 label rect 上), 瀏覽器把 click
+        //派發到共同祖先——那是一次拖曳而非點擊(e2e 轉折點拖曳案例實測: 誤開資訊 popup)
+        isGestureTarget(event) {
+            const t = event && event.target
+            if (!t) return false
+            if (t === event.currentTarget) return true
+            if (!t.closest) return false
+            return !!t.closest('.vue-flow__edge-settings-anchor, .vue-flow__edge-waypoint')
+        },
+        onGroupClick(event) {
+            if (this.isGestureTarget(event)) return
+            this.onClick(event)
+        },
+        onGroupDoubleClick(event) {
+            if (this.isGestureTarget(event)) return
+            this.onDoubleClick(event)
+        },
+        onGroupContextMenu(event) {
+            if (this.isGestureTarget(event)) return
+            this.onContextMenu(event)
         },
         //資訊popup之開關請求由本元件裁決, 判準與NodeWrapper一致(見其onInfoPopupInput之why)
         onInfoPopupInput(val) {
@@ -530,11 +567,12 @@ export default {
 .vue-flow__edge-waypoint:active {
   cursor: grabbing;
 }
-.vue-flow__edge:hover > path {
+/* hover 視覺由 --hovered class 驅動(非 :hover), 理由見模板 <g> 註解 */
+.vue-flow__edge--hovered > path {
   stroke: #555;
 }
 .vue-flow__edge--selected > path,
-.vue-flow__edge--selected:hover > path {
+.vue-flow__edge--selected.vue-flow__edge--hovered > path {
   filter: drop-shadow(0 0 2px rgba(220, 38, 38, 0.8)) drop-shadow(0 0 4px rgba(220, 38, 38, 0.5)) drop-shadow(0 0 6px rgba(220, 38, 38, 0.25));
 }
 .vue-flow__edge--animated > path:not(.vue-flow__edge-interaction) {
@@ -597,7 +635,7 @@ export default {
   pointer-events: all;
   transition: border-color 0.15s ease, background 0.15s ease;
 }
-.vue-flow__edge-settings:hover {
+.vue-flow__edge-settings--hover {
   border-color: #666;
   background: #f0f0f0;
   color: #333;

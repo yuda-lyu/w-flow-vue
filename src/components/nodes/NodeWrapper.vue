@@ -618,12 +618,13 @@ export default {
 }
 
 
-/* Shared SVG shape base styles */
+/* Shared SVG shape base styles: 外框由 SVG stroke 繪製, 容器 border 為 0(非透明 1px)——
+   使 padding box 與外框盒重合, 形狀 stroke、把手圓心、連線端點同以外框盒為基準(見 nodeStyle.nodeBorderWidth) */
 .vue-flow__node--diamond,
 .vue-flow__node--ellipse,
 .vue-flow__node--triangle {
   background: transparent !important;
-  border-color: transparent !important;
+  border-width: 0 !important;
   border-radius: 0 !important;
 }
 .vue-flow__node--diamond:hover,
