@@ -82,22 +82,38 @@ describe('FlowCanvas', () => {
 })
 
 describe('BackgroundLayer', () => {
+    //D7: pattern id 由宿主給定, 每實例唯一; D8: bgColor 有值才繪底色 rect
+    test('pattern id 依 prop; 兩實例不同名', () => {
+        const a = mount(BackgroundLayer, { propsData: { patternId: 'vf-bg-a' } })
+        const b = mount(BackgroundLayer, { propsData: { patternId: 'vf-bg-b' } })
+        expect(a.find('pattern').attributes('id')).toBe('vf-bg-a')
+        expect(b.find('pattern').attributes('id')).toBe('vf-bg-b')
+        expect(a.find('rect[fill^="url"]').attributes('fill')).toBe('url(#vf-bg-a)')
+    })
+    test('bgColor 未設不繪底色; 設定即繪滿版 rect', () => {
+        const none = mount(BackgroundLayer, { propsData: { patternId: 'p' } })
+        expect(none.findAll('rect').length).toBe(1)
+        const w = mount(BackgroundLayer, { propsData: { patternId: 'p', bgColor: '#123456' } })
+        const rects = w.findAll('rect')
+        expect(rects.length).toBe(2)
+        expect(rects.at(0).attributes('fill')).toBe('#123456')
+    })
     test('renders svg with pattern', () => {
-        const wrapper = mount(BackgroundLayer)
+        const wrapper = mount(BackgroundLayer, { propsData: { patternId: 'p1' } })
         expect(wrapper.find('svg').exists()).toBe(true)
         expect(wrapper.find('pattern').exists()).toBe(true)
     })
 
     test('renders dots pattern by default', () => {
         const wrapper = mount(BackgroundLayer, {
-            propsData: { variant: 'dots' },
+            propsData: { variant: 'dots', patternId: 'p1' },
         })
         expect(wrapper.find('circle').exists()).toBe(true)
     })
 
     test('renders lines pattern', () => {
         const wrapper = mount(BackgroundLayer, {
-            propsData: { variant: 'lines' },
+            propsData: { variant: 'lines', patternId: 'p1' },
         })
         expect(wrapper.find('circle').exists()).toBe(false)
         expect(wrapper.find('path').exists()).toBe(true)

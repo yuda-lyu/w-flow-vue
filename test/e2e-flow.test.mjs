@@ -1,5 +1,5 @@
 /**
- * E2E 圖台互動測試(Playwright)—— 單檔雙模式,對應 spec/流程_圖台互動.md 之 E2E-001 ~ E2E-037。
+ * E2E 圖台互動測試(Playwright)—— 單檔雙模式,對應 spec/流程_圖台互動.md 之 E2E-001 ~ E2E-038。
  *
  * 前置: npm run serve(dev server 須在 127.0.0.1:8080)
  *
@@ -12,12 +12,15 @@
  * - 產製端與比對端共用同一個 case 函式與 captureStable, 兩邊不會漂移。
  * - 語意斷言為主(對應 spec 之可觀察陳述), pixel baseline 為補強層。
  * - setup 階段得直接設定 opt 資料(如塞入轉折點); act 階段一律走真實滑鼠/鍵盤。
+ * - 初始視口: 元件預設 fitViewOnInit(首幀量測後 fit), E2E-038 專測此行為(rawInit, 不重設);
+ *   其餘 case 之前置於 openPage 將視口重設為原點 {0,0,1}(setup, 非 act), 語意斷言與 baseline 皆以原點視口為基準。
  */
 import fs from 'fs'
 import path from 'path'
 import { fileURLToPath } from 'url'
 import { chromium } from 'playwright'
 import { baseUrl, captureStable, assertBaselineMatch } from './e2e-setup.mjs'
+import { nodesBounds, computeFitView } from '../src/js/viewport.mjs'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const baselineDir = path.join(__dirname, 'pics')
@@ -89,11 +92,35 @@ function evalVm(page, body, arg = null) {
     }, { body, arg })
 }
 
-async function openPage(browser) {
+async function openPage(browser, opts = {}) {
     const page = await browser.newPage({ viewport: { width: VW, height: VH } })
+    if (opts.rawInit) {
+        //初始化觀察器(E2E-038): 於任何頁面腳本前掛 rAF 記錄, 逐幀記錄 pending class / viewport transform / 可見性
+        await page.addInitScript(() => {
+            window.__initFrames = []
+            const tick = () => {
+                const root = document.querySelector('[data-flow-id]')
+                const vp = document.querySelector('.vue-flow__viewport')
+                if (root && vp) {
+                    window.__initFrames.push({
+                        pending: root.classList.contains('vue-flow--pending'),
+                        transform: vp.style.transform,
+                        visibility: getComputedStyle(vp).visibility,
+                    })
+                }
+                if (window.__initFrames.length < 300) requestAnimationFrame(tick)
+            }
+            requestAnimationFrame(tick)
+        })
+    }
     await page.goto(baseUrl)
     await page.waitForSelector('.vue-flow__edge', { timeout: 20000 })
     await page.waitForTimeout(800)
+    if (!opts.rawInit) {
+        //前置(非 act): 既有 case 以原點視口為基準(元件預設初始化 fit 由 E2E-038 專測)
+        await evalVm(page, 'vm.setViewport({ x: 0, y: 0, zoom: 1 }); return true')
+        await page.waitForTimeout(100)
+    }
     //掛事件記錄器(assert 用, 非 act)
     await evalVm(page, `
         window.__ev = []
@@ -249,8 +276,8 @@ const setConnField = (page, connId, key, value) => evalVm(page, `
 // ─────────────────────────── cases ───────────────────────────
 
 /** 建構 case(避免物件字面量在單行展開, 亦統一結構) */
-function mkCase(id, kebab, run) {
-    return { id, kebab, run }
+function mkCase(id, kebab, run, opts) {
+    return { id, kebab, run, opts: opts || {} }
 }
 
 const CASES = [
@@ -1241,6 +1268,37 @@ const CASES = [
         expectOk('E2E-037 label 兩側空白不可點', selC.length === 0, `selectedConns=${JSON.stringify(selC)}`)
     }),
 
+    mkCase('E2E-038', 'init-fit', async (page) => {
+        //spec: 預設 fitViewOnInit —— 首幀隱藏量測 → fit → 顯示 → init; 使用者不會看到 fit 前之一幀
+        const frames = await page.evaluate(() => window.__initFrames)
+        const visible = frames.filter(f => f.visibility === 'visible')
+        const transforms = [...new Set(visible.map(f => f.transform))]
+        expectOk('E2E-038 可見期間 viewport transform 唯一(無 pre-fit 幀)', visible.length > 0 && transforms.length === 1, `transforms=${JSON.stringify(transforms)} frames=${frames.length}`)
+        expectOk('E2E-038 可見之第一幀已非原點視口', !!visible[0] && !/scale\(1\)$/.test(visible[0].transform) && !visible[0].pending, `first=${JSON.stringify(visible[0])}`)
+        expectOk('E2E-038 pending 期間不可見', frames.every(f => !f.pending || f.visibility === 'hidden'), 'pending frame was visible')
+        //viewport = computeFitView(可見節點包絡, 容器, padding=50, maxZoom=zoomMax)
+        const st = await evalVm(page, `
+            const rect = vm.$refs.canvas.getContainerRect()
+            return { viewport: { ...vm.viewport }, nodes: JSON.parse(JSON.stringify(vm.nodes)), internals: JSON.parse(JSON.stringify(vm.nodeInternals)),
+                defNode: JSON.parse(JSON.stringify(vm.defNode)), container: { width: rect.width, height: rect.height }, zoomMax: vm.zoomMax,
+                pending: vm.viewPending, hasPendingClass: vm.$el.classList.contains('vue-flow--pending') }
+        `)
+        const exp = computeFitView(nodesBounds(st.nodes, st.internals, st.defNode), st.container, { padding: 50, maxZoom: st.zoomMax })
+        const near = (a, b) => Math.abs(a - b) < 1e-6
+        expectOk('E2E-038 viewport 等於 fit 計算結果', !!exp && near(st.viewport.zoom, exp.zoom) && near(st.viewport.x, exp.x) && near(st.viewport.y, exp.y), `vp=${JSON.stringify(st.viewport)} exp=${JSON.stringify(exp)}`)
+        expectOk('E2E-038 初始化完成後無 pending', st.pending === false && st.hasPendingClass === false, `pending=${st.pending} class=${st.hasPendingClass}`)
+        //全部節點落在畫布內
+        const inside = await page.evaluate(() => {
+            const c = document.querySelector('.vue-flow').getBoundingClientRect()
+            return [...document.querySelectorAll('.vue-flow__node')].every(n => {
+                const r = n.getBoundingClientRect()
+                return r.left >= c.left && r.top >= c.top && r.right <= c.right && r.bottom <= c.bottom
+            })
+        })
+        expectOk('E2E-038 全部節點落在畫布內', inside === true, 'some node outside canvas')
+        await shot(page, 'flow-E2E-038-init-fit', { clip: await getCanvasClip(page) })
+    }, { rawInit: true }),
+
 ]
 
 // ─────────────────────────── runner ───────────────────────────
@@ -1257,7 +1315,7 @@ async function run() {
         //per-case fresh browser: 每個 case 全新 browser/context/page, 不帶前一 case 狀態
         const browser = await chromium.launch()
         try {
-            const page = await openPage(browser)
+            const page = await openPage(browser, c.opts)
             await c.run(page)
         }
         catch (err) {

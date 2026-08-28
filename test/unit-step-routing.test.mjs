@@ -1,8 +1,7 @@
-import { calculateStepPoints, clearStepCache } from '../src/js/stepRouting'
+import { calculateStepPoints } from '../src/js/stepRouting'
 
 describe('step-routing', () => {
     beforeEach(() => {
-        clearStepCache()
     })
 
     describe('calculateStepPoints', () => {
@@ -73,15 +72,26 @@ describe('step-routing', () => {
         })
     })
 
-    describe('clearStepCache', () => {
-        test('does not throw', () => {
-            expect(() => clearStepCache()).not.toThrow()
+    //D1: 路由無模組級快取——相同端點、不同障礙物須各自計算(兩實例/兩圖狀態同幀不得互相污染)
+    describe('no shared cache across obstacle sets', () => {
+        const src = [100, 100, 'right', 400, 100, 'left', 20]
+        test('same endpoints, different terminal rects → independent results', () => {
+            //路由只看起訖節點矩形(draw.io OrthConnector): 有矩形走 lookupRoute, 無矩形走 stubFallback, 兩者結果不同
+            const nodes = [
+                { id: 's', position: { x: 0, y: 80 }, width: 100, height: 40 },
+                { id: 't', position: { x: 400, y: 80 }, width: 100, height: 40 },
+            ]
+            const withRects = calculateStepPoints(...src, nodes, {})
+            const noRects = calculateStepPoints(...src, [], {})
+            const withRectsAgain = calculateStepPoints(...src, nodes, {})
+            expect(JSON.stringify(withRects)).toBe(JSON.stringify(withRectsAgain))
+            expect(JSON.stringify(noRects)).not.toBe(JSON.stringify(withRects))
         })
-
-        test('can be called multiple times', () => {
-            clearStepCache()
-            clearStepCache()
-            clearStepCache()
+        test('sub-frame endpoint nudge is not served from a rounded key', () => {
+            const a = calculateStepPoints(100, 100, 'right', 400, 100, 'left', 20, [], {})
+            const b = calculateStepPoints(103, 100, 'right', 400, 100, 'left', 20, [], {})
+            expect(a[0].x).toBe(100)
+            expect(b[0].x).toBe(103)
         })
     })
 

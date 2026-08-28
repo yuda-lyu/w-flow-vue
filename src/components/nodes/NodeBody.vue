@@ -1,11 +1,13 @@
 <template>
   <div class="vue-flow__node-body" :style="bodyStyle">
-    <NodeFace :node="node" :lastW="lastW" :lastH="lastH" />
+    <NodeFace :node="node" :def-node="defNode" :shape="shape" :lastW="lastW" :lastH="lastH" />
     <div class="vue-flow__node-content">
       <div class="vue-flow__node-label" :style="labelStyle">{{ node.name }}</div>
     </div>
     <NodePorts
       :node="node"
+      :def-node="defNode"
+      :shape="shape"
       :connectable="connectable"
       :locked="locked"
       @connect-start="$emit('connect-start', $event)"
@@ -34,9 +36,11 @@ import { labelOffsetStyle } from '../../js/nodeStyle.mjs'
 export default {
     name: 'NodeBody',
     components: { NodeFace, NodePorts },
-    inject: { getDefNode: { default: () => () => ({}) } },
     props: {
         node: { type: Object, required: true },
+        //由 NodeWrapper 算一次後下傳(shape 單一解析; 子元件不再各自 inject 重算)
+        defNode: { type: Object, default: () => ({}) },
+        shape: { type: String, default: 'rectangle' },
         connectable: { type: Boolean, default: true },
         selected: { type: Boolean, default: false },
         resizable: { type: Boolean, default: true },
@@ -54,7 +58,7 @@ export default {
     },
     computed: {
         labelStyle() {
-            return labelOffsetStyle(this.node, this.getDefNode())
+            return labelOffsetStyle(this.node, this.defNode)
         },
         bodyStyle() {
             const w = this.lastW || this.node.width
@@ -111,12 +115,4 @@ export default {
 .vue-flow__resize--top-right { top: -5px; right: -5px; cursor: nesw-resize; }
 .vue-flow__resize--bottom-left { bottom: -5px; left: -5px; cursor: nesw-resize; }
 .vue-flow__resize--bottom-right { bottom: -5px; right: -5px; cursor: nwse-resize; }
-.vue-flow__fade-enter-active,
-.vue-flow__fade-leave-active {
-  transition: opacity 0.15s ease;
-}
-.vue-flow__fade-enter,
-.vue-flow__fade-leave-to {
-  opacity: 0;
-}
 </style>

@@ -22,6 +22,16 @@ export function isSide(v) {
     return SIDES.indexOf(v) >= 0
 }
 
+/** 邊之外向單位法向量(方位 → 方向; 非法方位視為 bottom) */
+export function sideNormal(side) {
+    switch (side) {
+    case 'top': return { x: 0, y: -1 }
+    case 'left': return { x: -1, y: 0 }
+    case 'right': return { x: 1, y: 0 }
+    default: return { x: 0, y: 1 }
+    }
+}
+
 /** 對邊(建線中無 hover 落點時預覽線遠端之預設方位) */
 export function oppositeSide(side) {
     return OPPOSITE[side] || TARGET_FALLBACK

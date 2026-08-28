@@ -7,7 +7,7 @@
  * Based on AppExamConnectivity.vue defaults:
  *   A center: (350, 250), Node size: 100×40, Offset: 200
  */
-import { calculateStepPoints, clearStepCache } from '../src/js/stepRouting.mjs'
+import { calculateStepPoints } from '../src/js/stepRouting.mjs'
 import fs from 'fs'
 import path from 'path'
 import { fileURLToPath } from 'url'
@@ -51,7 +51,6 @@ for (let srcPos of positions) {
                 { id: 'B', position: { x: bx, y: by }, width: NODE_W, height: NODE_H },
             ]
 
-            clearStepCache()
             let pts = calculateStepPoints(
                 sH.x, sH.y, srcPos,
                 tH.x, tH.y, tgtPos,

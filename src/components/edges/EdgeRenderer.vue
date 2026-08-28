@@ -1,11 +1,13 @@
 <template>
   <svg class="vue-flow__edges">
-    <EdgeMarkerDefs :conns="conns" />
+    <EdgeMarkerDefs :conns="conns" :def-conn="defConn" />
     <EdgeWrapper
       v-for="conn in visibleConns"
       ref="wrappers"
       :key="conn.id"
       :conn="conn"
+      :def-node="defNode"
+      :def-conn="defConn"
       :source-node="nodeMap[conn.from]"
       :target-node="nodeMap[conn.to]"
       :selected="isSelected(conn.id)"
@@ -49,6 +51,9 @@ export default {
     props: {
         conns: { type: Array, default: () => [] },
         nodes: { type: Array, default: () => [] },
+        //節點/連線預設(opt.def* 解析結果): 低頻配置以 props 下傳
+        defNode: { type: Object, default: () => ({}) },
+        defConn: { type: Object, default: () => ({}) },
         nodeInternals: { type: Object, default: () => ({}) },
         selectedConnIds: { type: Array, default: () => [] },
         //宿主自訂popup內容之scoped slot函式, 原樣下傳EdgeWrapper(取代條件式slot轉發, 見SlotOutlet之why)

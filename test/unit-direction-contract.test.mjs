@@ -14,7 +14,7 @@ import EdgeWrapper from '../src/components/edges/EdgeWrapper.vue'
 import { getHandlePosition } from '../src/js/geometry.mjs'
 import { nodeShape } from '../src/js/nodeStyle.mjs'
 import { getBezierPath, getStepPath, getSmoothStepPath } from '../src/js/edgePath.mjs'
-import { calculateStepPoints, clearStepCache } from '../src/js/stepRouting.mjs'
+import { calculateStepPoints } from '../src/js/stepRouting.mjs'
 
 const mountFlow = (opt) => mount(WFlowVue, { propsData: { opt }, attachTo: document.body })
 const nodesAB = [
@@ -63,7 +63,6 @@ describe('R2 轉折點路徑遵守兩端法線', () => {
 
 describe('R3 建線預覽之 step fallback 遵守方位', () => {
     test('無節點矩形: top 出發向上走 stub, bottom 抵達自下方進入', () => {
-        clearStepCache()
         const pts = calculateStepPoints(0, 0, 'top', 100, 100, 'bottom', 20, [], {})
         expect(pts[0]).toEqual({ x: 0, y: 0 })
         expect(pts[1]).toEqual({ x: 0, y: -20 })
@@ -74,7 +73,6 @@ describe('R3 建線預覽之 step fallback 遵守方位', () => {
         }
     })
     test('right 出發 → left 抵達: 兩 stub 水平, 中段垂直', () => {
-        clearStepCache()
         const pts = calculateStepPoints(0, 0, 'right', 200, 100, 'left', 20, [], {})
         expect(pts[1]).toEqual({ x: 20, y: 0 })
         expect(pts[pts.length - 2]).toEqual({ x: 180, y: 100 })
@@ -83,7 +81,6 @@ describe('R3 建線預覽之 step fallback 遵守方位', () => {
 
 describe('R4 step 快取 key 含 offset', () => {
     test('同端點不同 offset 得不同 stub 長度', () => {
-        clearStepCache()
         const a = calculateStepPoints(0, 0, 'top', 100, 100, 'bottom', 10, [], {})
         const b = calculateStepPoints(0, 0, 'top', 100, 100, 'bottom', 50, [], {})
         expect(a[1]).toEqual({ x: 0, y: -10 })

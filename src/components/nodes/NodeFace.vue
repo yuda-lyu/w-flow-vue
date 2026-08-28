@@ -4,7 +4,7 @@
     <svg
       v-if="isDiamond"
       class="vue-flow__shape-svg"
-      :viewBox="diamondViewBox"
+      :viewBox="svgViewBox"
       preserveAspectRatio="none"
     >
       <polygon
@@ -55,29 +55,32 @@
 </template>
 
 <script>
-import { nodeShape, isTriangleShape } from '../../js/nodeStyle.mjs'
+import { isTriangleShape } from '../../js/nodeStyle.mjs'
+import { resolveNodeSize } from '../../js/geometry.mjs'
 
 export default {
     name: 'NodeFace',
-    inject: { getDefNode: { default: () => () => ({}) } },
     props: {
         node: { type: Object, required: true },
+        defNode: { type: Object, default: () => ({}) },
+        //有效形狀(NodeWrapper 以 nodeStyle.nodeShape 單一解析後下傳)
+        shape: { type: String, default: 'rectangle' },
         lastW: { type: Number, default: 0 },
         lastH: { type: Number, default: 0 },
     },
     computed: {
         dn() {
-            return this.getDefNode()
+            return this.defNode
+        },
+        //形狀面尺寸: 與幾何/路由/fit 同一 resolveNodeSize(實測優先, 再宣告尺寸)
+        faceSize() {
+            return resolveNodeSize(this.node, { width: this.lastW, height: this.lastH }, this.dn)
         },
         nodeW() {
-            return this.node.width || this.lastW || 150
+            return this.faceSize.width
         },
         nodeH() {
-            return this.node.height || this.lastH || 40
-        },
-        //有效形狀(nodeStyle.nodeShape 單一解析; 與把手佈局/邊端點同一基準)
-        shape() {
-            return nodeShape(this.node, this.dn)
+            return this.faceSize.height
         },
         isDiamond() {
             return this.shape === 'diamond'
@@ -104,10 +107,6 @@ export default {
         },
         svgViewBox() {
             return '0 0 ' + this.nodeW + ' ' + this.nodeH
-        },
-        diamondViewBox() {
-            if (!this.isDiamond) return '0 0 150 40'
-            return this.svgViewBox
         },
     },
 }

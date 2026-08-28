@@ -1,29 +1,13 @@
 // --- Step path routing using draw.io OrthConnector algorithm ---
-
-let _cache = new Map()
-let _cacheFrame = -1
-
-export function clearStepCache() {
-    _cache.clear()
-    _cacheFrame = -1
-}
+import { resolveNodeSize } from './geometry.mjs'
+import { sideNormal } from './anchorPolicy.mjs'
 
 export function calculateStepPoints(
     sourceX, sourceY, sourcePosition,
     targetX, targetY, targetPosition,
     offset, allNodes, nodeInternals
 ) {
-    // --- Per-frame cache ---
-    let frame = Math.floor(Date.now() / 16)
-    if (frame !== _cacheFrame) {
-        _cache.clear(); _cacheFrame = frame
-    }
     let hOff = offset || 24
-    let ck = Math.round(sourceX / 10) + ',' + Math.round(sourceY / 10) + ',' +
-        Math.round(targetX / 10) + ',' + Math.round(targetY / 10) + ',' +
-        sourcePosition + ',' + targetPosition + ',' + hOff
-    let cached = _cache.get(ck)
-    if (cached) return cached
 
     // Collect obstacles (bbox for all visible nodes)
     let obs = []
@@ -32,8 +16,7 @@ export function calculateStepPoints(
         for (let i = 0; i < allNodes.length; i++) {
             let n = allNodes[i]
             if (n.hidden) continue
-            let w = (ni[n.id] && ni[n.id].width) || n.width || 100
-            let h = (ni[n.id] && ni[n.id].height) || n.height || 40
+            let { width: w, height: h } = resolveNodeSize(n, ni[n.id])
             obs.push({ l: n.position.x, t: n.position.y, r: n.position.x + w, b: n.position.y + h })
         }
     }
@@ -49,8 +32,6 @@ export function calculateStepPoints(
             : segmentFallback(sourceX, sourceY, targetX, targetY, sObs, tObs)
     }
 
-    if (_cache.size > 200) _cache.clear()
-    _cache.set(ck, result)
     return result
 }
 
@@ -263,9 +244,10 @@ function lookupRoute(sourceX, sourceY, sourcePosition, targetX, targetY, targetP
  * 兩端各沿外向法線走 stub, 兩 stub 端點間以 L/Z 形直角相連。
  */
 function stubFallback(sx, sy, sPos, tx, ty, tPos, stub) {
-    let dir = (p) => (p === 'top' ? [0, -1] : p === 'left' ? [-1, 0] : p === 'right' ? [1, 0] : [0, 1])
-    let sd = dir(sPos)
-    let td = dir(tPos)
+    let sn = sideNormal(sPos)
+    let tn = sideNormal(tPos)
+    let sd = [sn.x, sn.y]
+    let td = [tn.x, tn.y]
     let s1 = { x: sx + sd[0] * stub, y: sy + sd[1] * stub }
     let t1 = { x: tx + td[0] * stub, y: ty + td[1] * stub }
     let pts = [{ x: sx, y: sy }, s1]

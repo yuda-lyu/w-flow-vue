@@ -47,6 +47,12 @@ export const CONN_DEFAULTS = {
 /** 設定齒輪顯示方式 */
 export const SETTINGS_TRIGGERS = ['hover', 'click', 'dblclick']
 
+/** dblclick 模式下, 單擊之資訊 popup 延後開啟之雙擊判定窗(ms): 期間收到 dblclick 即取消 */
+export const INFO_POPUP_DEFER_MS = 250
+
+/** 設定表單之線寬上限(節點外框/連線線寬共用) */
+export const EDGE_WIDTH_MAX = 24
+
 /** 節點設定更新入口受理之欄位(schema allowlist): 已移除之 type / toPosition / fromPosition 不在其中 */
 export const NODE_SETTING_KEYS = [
     'name', 'description', 'shape', 'popupDirection', 'fontSize', 'fontColor', 'faceColor', 'edgeColor', 'edgeWidth',

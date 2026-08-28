@@ -1,7 +1,8 @@
 /**
  * 節點樣式之共用解析(NodeWrapper 與 NodeBody/把手共用同一基準)
  */
-import { sideAnchorFraction } from './geometry.mjs'
+import { sideAnchorFraction } from './shapeAnchor.mjs'
+import { resolveNodeSize } from './geometry.mjs'
 
 export const SHAPES = ['rectangle', 'diamond', 'ellipse', 'triangle', 'triangle-right', 'triangle-down', 'triangle-left']
 
@@ -73,9 +74,7 @@ export function handlePlacementStyle(shape, side, nodeBorder) {
 export function labelOffsetStyle(node, defNode) {
     const s = nodeShape(node, defNode)
     if (!isTriangleShape(s)) return null
-    const d = defNode || {}
-    const w = node.width || d.width || 150
-    const h = node.height || d.height || 40
+    const { width: w, height: h } = resolveNodeSize(node, null, defNode)
     let x = 0
     let y = 0
     if (s === 'triangle-right') x = Math.round(-w / 6)

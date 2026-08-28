@@ -8,8 +8,9 @@
  */
 import { mount } from '@vue/test-utils'
 import NodePorts from '../src/components/nodes/NodePorts.vue'
-import { sideAnchorFraction, getHandlePosition } from '../src/js/geometry.mjs'
-import { handlePlacementStyle } from '../src/js/nodeStyle.mjs'
+import { sideAnchorFraction } from '../src/js/shapeAnchor.mjs'
+import { getHandlePosition } from '../src/js/geometry.mjs'
+import { handlePlacementStyle, nodeShape } from '../src/js/nodeStyle.mjs'
 
 const SHAPES = ['rectangle', 'diamond', 'ellipse', 'triangle', 'triangle-right', 'triangle-down', 'triangle-left']
 const SIDES = ['top', 'right', 'bottom', 'left']
@@ -60,7 +61,7 @@ describe('Q2 28 格: 把手圓心 == geometry 端點', () => {
         const node = { id: 'n', shape, position: { x: 10, y: 20 }, width: 120, height: 80, edgeWidth }
         const isSvg = shape !== 'rectangle'
         const border = isSvg ? 0 : edgeWidth
-        const w = mount(NodePorts, { propsData: { node }, provide: { getDefNode: () => ({}) } })
+        const w = mount(NodePorts, { propsData: { node, defNode: {}, shape: nodeShape(node, {}) } })
         const el = w.find(`.vue-flow__handle[data-handle-position="${side}"]`).element
         //Q2 之座標系: 節點外框盒左上為原點; geometry 以 node.position 為外框盒左上
         const g = getHandlePosition(node, side, {})

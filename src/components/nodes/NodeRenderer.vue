@@ -5,6 +5,7 @@
       ref="wrappers"
       :key="node.id"
       :node="node"
+      :def-node="defNode"
       :selected="isSelected(node.id)"
       :dragging="isDragging(node.id)"
       :popup-slot-fn="popupSlotFn"
@@ -53,6 +54,8 @@ export default {
     components: { NodeWrapper },
     props: {
         nodes: { type: Array, default: () => [] },
+        //節點預設(opt.defNode* 解析結果): 低頻配置以 props 下傳(高頻手勢狀態才走 getter inject)
+        defNode: { type: Object, default: () => ({}) },
         selectedNodeIds: { type: Array, default: () => [] },
         //拖曳中節點之集合(鍵為nodeId), 由WFlowVue於真正接受拖曳後下傳其dragNodeStartPositions;
         //未接受(locked/nodesDraggable=false)或未拖曳時為null

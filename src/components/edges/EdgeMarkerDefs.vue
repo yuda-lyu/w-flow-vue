@@ -25,14 +25,14 @@ import { resolveMarker, markerDef } from '../../js/edgeMarker.mjs'
  */
 export default {
     name: 'EdgeMarkerDefs',
-    inject: { getDefConn: { default: () => () => ({}) } },
     props: {
         conns: { type: Array, default: () => [] },
+        defConn: { type: Object, default: () => ({}) },
     },
     computed: {
         markers() {
             const set = new Map()
-            const defConn = this.getDefConn()
+            const defConn = this.defConn
             this.conns.forEach(conn => {
                 for (const end of ['start', 'end']) {
                     const spec = resolveMarker(conn, defConn, end)

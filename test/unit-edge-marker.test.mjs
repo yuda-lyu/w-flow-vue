@@ -107,7 +107,7 @@ describe('K5 兩端獨立與 Defs/Wrapper 一致', () => {
             { id: 'e1', from: '1', to: '2', markerStart: 'arrow', markerEnd: 'arrowclosed', markerEndSize: 14, markerEndColor: '#ff0000' },
             { id: 'e2', from: '2', to: '1', markerEnd: 'arrowclosed', markerEndSize: 14, markerEndColor: '#ff0000' },
         ]
-        const defs = mount(EdgeMarkerDefs, { propsData: { conns }, provide: { getDefConn: () => dc } })
+        const defs = mount(EdgeMarkerDefs, { propsData: { conns, defConn: dc } })
         const ids = defs.findAll('marker').wrappers.map(m => m.attributes('id'))
         expect(ids).toHaveLength(2)
         expect(ids).toContain(resolveMarker(conns[0], dc, 'start').id)

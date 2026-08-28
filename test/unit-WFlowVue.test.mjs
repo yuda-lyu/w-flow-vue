@@ -149,8 +149,8 @@ describe('WFlowVue', () => {
     })
 
     describe('viewport', () => {
-        test('default viewport is applied', () => {
-            const wrapper = createWrapper({ center: [50, 100], zoom: 1.5 })
+        test('default viewport is applied (fitViewOnInit=false)', () => {
+            const wrapper = createWrapper({ fitViewOnInit: false, center: [50, 100], zoom: 1.5 })
             expect(wrapper.vm.viewport).toEqual({ x: 50, y: 100, zoom: 1.5 })
             wrapper.destroy()
         })

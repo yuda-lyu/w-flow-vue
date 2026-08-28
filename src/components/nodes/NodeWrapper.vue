@@ -30,6 +30,8 @@
       <template v-slot:trigger>
         <NodeBody
           :node="node"
+          :def-node="dn"
+          :shape="shape"
           :connectable="connectable"
           :selected="selected"
           :resizable="resizable"
@@ -80,7 +82,7 @@
         <template v-slot:trigger>
           <div class="vue-flow__node-settings">
             <svg viewBox="0 0 20 20" width="14" height="14" fill="currentColor">
-              <path d="M11.078 0l.294 1.833a7.587 7.587 0 0 1 2.174 1.25l1.725-.618 1.078 1.87-1.43 1.217a7.508 7.508 0 0 1 0 2.498l1.43 1.217-1.078 1.87-1.725-.618a7.587 7.587 0 0 1-2.174 1.25L11.078 14H8.922l-.294-1.833a7.587 7.587 0 0 1-2.174-1.25l-1.725.618-1.078-1.87 1.43-1.217a7.508 7.508 0 0 1 0-2.498L3.65 4.733l1.078-1.87 1.725.618a7.587 7.587 0 0 1 2.174-1.25L8.922 0h2.156zM10 4.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5z" transform="translate(0 3)"/>
+              <path :d="gearPath" transform="translate(0 3)"/>
             </svg>
           </div>
         </template>
@@ -106,26 +108,29 @@ import NodeSettingsForm from '../ui/NodeSettingsForm.vue'
 import SlotOutlet from '../ui/SlotOutlet.vue'
 import WPopup from 'w-component-vue/src/components/WPopup.vue'
 import { classifyHit, isAffordanceHit } from '../../js/hitTest.mjs'
+import { resolveNodeSize, computeResize } from '../../js/geometry.mjs'
+import elementPopups from '../mixins/elementPopups.mjs'
+import { GEAR_PATH } from '../../js/icons.mjs'
+import { startDocumentGesture, crossedThreshold, gestureBlockedReason } from '../../js/domGesture.mjs'
 import { nodeShape, isTriangleShape } from '../../js/nodeStyle.mjs'
 
-//雙擊判定窗(ms): dblclick 模式下單擊之資訊 popup 延後此時間再開, 期間雙擊即取消
-const DBL_MS = 250
 
 export default {
     name: 'NodeWrapper',
     components: { NodeBody, NodeSettingsForm, SlotOutlet, WPopup },
+    //popup 狀態機(資訊/設定互斥、複選關閉、開啟閘門、設定入口三模式)共用 mixin
+    mixins: [elementPopups],
     inject: {
-        getDefNode: { default: () => () => ({}) },
         getDragGhost: { default: () => () => null },
-        //複選鍵是否生效: getter注入而非prop——只被事件handler讀取, 不進渲染面, 按/放複選鍵時不觸發重渲染
-        getMultiSelectActive: { default: () => () => false },
+        //視口縮放(client 位移 → 畫布位移換算; 高頻手勢狀態走 getter)
+        getViewportZoom: { default: () => () => 1 },
         //進行中手勢(一次一手勢, spec/流程_互動契約.md §5): 有手勢時不啟動縮放/拖曳
         getActiveGesture: { default: () => () => null },
-        //popup 可否開啟(overlay 規則 §6): 複選模式或任何手勢進行中一律拒開(含公開 API 之程式化開啟)
-        getCanOpenPopup: { default: () => () => true },
     },
     props: {
         node: { type: Object, required: true },
+        //節點預設(opt.defNode*): 低頻配置 props 下傳, 算一次 shape/dn 再往下傳
+        defNode: { type: Object, default: () => ({}) },
         selected: { type: Boolean, default: false },
         draggable: { type: Boolean, default: true },
         connectable: { type: Boolean, default: true },
@@ -154,7 +159,7 @@ export default {
     },
     computed: {
         dn() {
-            return this.getDefNode()
+            return this.defNode
         },
         //有效形狀(nodeStyle.nodeShape 單一解析; 與節點面/把手/邊端點同一基準)
         shape() {
@@ -172,13 +177,12 @@ export default {
         isSvgShape() {
             return this.isDiamond || this.isEllipse || this.isTriangle
         },
-        //複選模式(反應式讀取注入getter): 供watcher清popup與各開啟入口gating
-        multiSelectActive() {
-            return this.getMultiSelectActive()
+        //設定 popup 之可互動旗標(elementPopups.canOpenSettings): 節點以 draggable 為準
+        settingsInteractive() {
+            return this.draggable
         },
-        //齒輪可見: 只有 hover 模式於移入時顯示; click/dblclick 模式不顯示齒輪(直接開 popup)
-        gearVisible() {
-            return this.settingsTrigger === 'hover' && this.hovered
+        gearPath() {
+            return GEAR_PATH
         },
         classes() {
             const nodeClasses = this.node.class
@@ -204,8 +208,10 @@ export default {
             const g = this.getDragGhost(n.id)
             const px = g ? g.x : n.position.x
             const py = g ? g.y : n.position.y
-            const w = (g && g.width !== undefined) ? g.width : n.width
-            const h = (g && g.height !== undefined) ? g.height : n.height
+            //佈局尺寸: ghost > 節點明確尺寸 > defNode(opt.defNodeWidth/Height); 實測值不回寫為佈局來源(resolveNodeSize live=null)
+            const declared = resolveNodeSize(n, null, d)
+            const w = (g && g.width !== undefined) ? g.width : (n.width || declared.width)
+            const h = (g && g.height !== undefined) ? g.height : (n.height || declared.height)
             const style = {
                 transform: `translate(${px}px, ${py}px)`,
                 zIndex: n.zIndex || 0,
@@ -237,28 +243,15 @@ export default {
     },
     data() {
         return {
-            hovered: false,
-            infoPopupShow: false,
-            infoPopupEditable: true,
-            settingsPopupShow: false,
-            cachedW: 0,
-            cachedH: 0,
+            //實測尺寸快取初值 null: 首次量測即使為 0×0 亦回報一次(初始尺寸 barrier 需要每個節點皆回報)
+            cachedW: null,
+            cachedH: null,
         }
     },
     watch: {
-        settingsPopupShow(val) {
-            if (val) this.infoPopupShow = false
-        },
-        infoPopupShow(val) {
-            if (val) this.settingsPopupShow = false
-        },
-        //複選模式引擎時關閉本節點已開之popup(進入模式=畫面收束為純選取操作; 開啟入口另有各自gating,
-        //本watcher只負責清理既有狀態); computed經注入getter建立反應式依賴, watcher具值相等檢查故僅於翻轉時執行
-        multiSelectActive(val) {
-            if (val) {
-                this.infoPopupShow = false
-                this.settingsPopupShow = false
-            }
+        //上鎖切換(契約 §5): 本節點持有之 document 手勢(拖曳追蹤/縮放)取消提交——縮放經 node-resize-cancel 通知 WFlowVue 清手勢與 ghost
+        locked(val) {
+            if (val) this.cancelLocalGestures()
         },
     },
     mounted() {
@@ -268,13 +261,16 @@ export default {
         this.reportDimensions()
     },
     beforeDestroy() {
-        this.cancelPendingInfo()
         //拖曳/縮放進行中被銷毀時, 掛在document上的監聽器與插入document.head之全域游標樣式
         //都不會自行移除, 於此一併收尾
-        this.endMouseGesture(false)
-        this.endResizeGesture(false)
+        this.cancelLocalGestures()
     },
     methods: {
+        //本節點持有之 document 手勢一併取消(destroy / 上鎖共用): 縮放不提交(node-resize-cancel)
+        cancelLocalGestures() {
+            this.endMouseGesture(false)
+            this.endResizeGesture(false)
+        },
         reportDimensions() {
             if (!this.$el) return
             const w = this.$el.offsetWidth
@@ -290,9 +286,7 @@ export default {
             if (!g) return
             this._mouseGesture = null
             this._mouseDownPos = null
-            document.removeEventListener('mousemove', g.onDragMove)
-            document.removeEventListener('mouseup', g.onDragEnd)
-            window.removeEventListener('blur', g.onDragEnd)
+            g.dispose()
             if (restorePopup && !this.infoPopupEditable) {
                 setTimeout(() => {
                     this.infoPopupEditable = true
@@ -307,12 +301,7 @@ export default {
             const g = this._resizeGesture
             if (!g) return false
             this._resizeGesture = null
-            document.removeEventListener('mousemove', g.onMouseMove)
-            document.removeEventListener('mouseup', g.onMouseUp)
-            window.removeEventListener('blur', g.onMouseUp)
-            if (g.cursorStyle && g.cursorStyle.parentNode) {
-                g.cursorStyle.parentNode.removeChild(g.cursorStyle)
-            }
+            g.dispose()
             if (restorePopup) {
                 setTimeout(() => {
                     this.infoPopupEditable = true
@@ -367,39 +356,29 @@ export default {
             this.$emit('drag-prepare', { node: this.node, event })
             const startX = event.clientX
             const startY = event.clientY
-            const gesture = { crossed: false, onDragMove: null, onDragEnd: null }
-            gesture.onDragMove = (e) => {
-                //mouseup落在視窗外時不會送達document, 監聽器會殘留;
-                //此處確認主鍵仍按著, 否則於無按鍵狀態下跨門檻會誤啟動拖曳(幽靈拖曳)
-                if ((e.buttons & 1) === 0) {
-                    this.endMouseGesture()
-                    return
-                }
-                if (gesture.crossed) return
-                if (Math.abs(e.clientX - startX) > 2 || Math.abs(e.clientY - startY) > 2) {
-                    gesture.crossed = true
-                    this.infoPopupEditable = false
-                    //拖曳延後至跨越位移門檻才啟動
-                    //why: 若於mousedown即emit drag-start, 無位移之純點擊於mouseup仍會走endDrag→回寫座標→emit update:nodes,
-                    //     宿主收到未變更之全量節點而誤判有未儲存變更
-                    //event傳原始mousedown事件, 使WFlowVue之dragStartPos取按下當下座標(改傳本次mousemove會少算門檻位移);
-                    //moveEvent供WFlowVue於啟動當下立即補跑一次doDrag, 否則跨門檻後立刻放開會完全沒有位移
-                    this.$emit('drag-start', { node: this.node, event, moveEvent: e })
-                }
-                //刻意不移除mousemove: 後續仍需靠它做buttons清理, crossed旗標已保證不會重複啟動
-            }
-            gesture.onDragEnd = () => {
-                this.endMouseGesture()
-            }
-            this._mouseGesture = gesture
-            document.addEventListener('mousemove', gesture.onDragMove)
-            document.addEventListener('mouseup', gesture.onDragEnd)
-            //視窗失焦後收不到mouseup, 本地監聽與popup態同樣需收尾(WFlowVue之onWindowBlur只收父層狀態)
-            window.addEventListener('blur', gesture.onDragEnd)
+            let crossed = false
+            //document 層手勢(domGesture): mouseup / blur / buttons-lost(視窗外放開)皆同一收尾;
+            //拖曳提交與否由 WFlowVue 之 document 監聽決定, 此處只管本地手勢與 popup 態
+            this._mouseGesture = startDocumentGesture({
+                onMove: (e) => {
+                    if (crossed) return
+                    if (crossedThreshold(startX, startY, e.clientX, e.clientY)) {
+                        crossed = true
+                        this.infoPopupEditable = false
+                        //拖曳延後至跨越位移門檻才啟動
+                        //why: 若於mousedown即emit drag-start, 無位移之純點擊於mouseup仍會走endDrag→回寫座標→emit update:nodes,
+                        //     宿主收到未變更之全量節點而誤判有未儲存變更
+                        //event傳原始mousedown事件, 使WFlowVue之dragStartPos取按下當下座標(改傳本次mousemove會少算門檻位移);
+                        //moveEvent供WFlowVue於啟動當下立即補跑一次doDrag, 否則跨門檻後立刻放開會完全沒有位移
+                        this.$emit('drag-start', { node: this.node, event, moveEvent: e })
+                    }
+                },
+                onEnd: () => this.endMouseGesture(),
+            })
         },
         //點齒輪=元素專屬操作: 該節點成為唯一active(掛@click之時序理由見模板註解)
         onSettingsAnchorClick(event) {
-            this.$emit('node-activate', { node: this.node, event })
+            this.emitActivate(event)
         },
         onMouseUp(event) {
             if (!this._mouseDownPos) return
@@ -433,62 +412,9 @@ export default {
             }
             this.$emit('node-double-click', { node: this.node, event })
         },
-        //click/dblclick 模式之直接開啟: 走同一閘門(複選/手勢中拒開), 並如點齒輪般使本節點成為唯一 active
-        openSettingsPopup(event) {
-            if (!this.draggable || this.locked || !this.settingsEnabled) return
-            if (!this.canOpenPopup()) return
-            this.settingsPopupShow = true
+        //直接開設定/點齒輪/縮放: 本節點成為唯一 active(elementPopups.openSettingsPopup 亦經此發出)
+        emitActivate(event) {
             this.$emit('node-activate', { node: this.node, event })
-        },
-        //popup 開啟閘門(overlay 規則 spec §6): 複選模式 或 任何手勢進行中 一律拒開;
-        //判準用multiSelectActive而非「鍵被按下」——選取不可用時(鎖定/檢視模式)該鍵無複選語義, 點擊仍應照常開popup
-        canOpenPopup() {
-            return !this.getMultiSelectActive() && this.getCanOpenPopup()
-        },
-        //資訊popup之開關請求由本元件裁決(WPopup之isolated為預設false, 故trigger點擊只是$emit請求, 實際狀態由v-model擁有者決定)
-        //why: 關閉請求一律放行, 且不可改用editable抑制——editable會連evHide與外部點擊關閉一併擋掉, 使已開之popup關不掉
-        onInfoPopupInput(val) {
-            if (val && !this.canOpenPopup()) {
-                return
-            }
-            //click 模式: 點擊即開設定 popup, 資訊 popup 讓位(兩者同為點擊觸發, 不可同時)
-            if (val && this.settingsTrigger === 'click' && this.settingsEnabled && this.draggable && !this.locked) return
-            //dblclick 模式: 瀏覽器於雙擊前必先派發 click, 資訊 popup 若立即開啟會先閃現再被設定 popup 取代;
-            //故延後一個雙擊判定窗(DBL_MS)再開, 期間收到 dblclick 即取消——使用者看到的只有「單擊=資訊, 雙擊=設定」
-            if (val && this.settingsTrigger === 'dblclick' && this.settingsEnabled && this.draggable && !this.locked) {
-                this.cancelPendingInfo()
-                this._infoTimer = setTimeout(() => {
-                    this._infoTimer = null
-                    if (this.canOpenPopup()) this.infoPopupShow = true
-                }, DBL_MS)
-                return
-            }
-            this.infoPopupShow = val
-        },
-        cancelPendingInfo() {
-            if (this._infoTimer) {
-                clearTimeout(this._infoTimer)
-                this._infoTimer = null
-            }
-        },
-        //設定popup之開關同樣由本元件裁決(拒開條件同上; 關閉請求一律放行)
-        onSettingsPopupInput(val) {
-            if (val && !this.canOpenPopup()) {
-                return
-            }
-            this.settingsPopupShow = val
-        },
-        //宿主API入口同樣gating: 程式化開啟於複選/手勢中亦拒絕(回傳false供呼叫端判斷)
-        openInfoPopup() {
-            if (!this.canOpenPopup()) return false
-            this.infoPopupShow = true
-            return true
-        },
-        //關閉本節點全部 popup(手勢啟動時由 WFlowVue.closeAllPopups 統一呼叫: 把手/四角之 mousedown 帶 .stop,
-        //WPopup 掛在 window 之互斥關閉收不到, 實測 A 之資訊 popup 於自 B 把手拉線/縮放 B 期間整段不關)
-        closePopups() {
-            this.infoPopupShow = false
-            this.settingsPopupShow = false
         },
         //手勢武裝中阻止原生HTML5 drag(拖曳選取文字/圖片/連結): 原生drag一旦接管, mousemove事件流被drag事件流取代;
         //未武裝時(齒輪/nodrag區/非主鍵/未按下)不干涉, 宿主自訂拖放不受影響
@@ -520,10 +446,8 @@ export default {
             this.$emit('node-delete-request', { node: this.node })
         },
         onResizeStart(event, edge) {
-            //複選模式中不啟動縮放(把手已隱藏, 縱深第二層; 守衛先於任何emit/preventDefault/樣式建立)
-            if (this.getMultiSelectActive()) return
-            //主鍵判準在 NodeBody 之 DOM 入口(onResizeMouseDown); 此處守一次一手勢
-            if (this.getActiveGesture()) return
+            //啟動守衛(domGesture.gestureBlockedReason): 複選模式 / 進行中手勢不啟動(主鍵判準在 NodeBody 之 DOM 入口); 守衛先於任何 emit/preventDefault/樣式建立
+            if (gestureBlockedReason({ multiSelectActive: this.getMultiSelectActive(), activeGesture: this.getActiveGesture() })) return
             //新手勢開始前先收掉上一次殘留者(視窗外放開未送達 mouseup 時), 避免監聽器與全域游標樣式疊加
             this.endResizeGesture(false)
             //縮放=元素專屬操作: 該節點成為唯一active(elementsSelectable守衛在WFlowVue.onNodeActivate)
@@ -536,102 +460,37 @@ export default {
             })
             event.preventDefault()
 
-            // Lock cursor for the entire drag duration
             const cursorMap = {
                 'top-left': 'nwse-resize',
                 'bottom-right': 'nwse-resize',
                 'top-right': 'nesw-resize',
                 'bottom-left': 'nesw-resize',
             }
-            const lockedCursor = cursorMap[edge] || 'default'
-            const cursorStyle = document.createElement('style')
-            cursorStyle.textContent = '* { cursor: ' + lockedCursor + ' !important; }'
-            document.head.appendChild(cursorStyle)
-
             const startX = event.clientX
             const startY = event.clientY
-            const startW = this.node.width || this.$el.offsetWidth
-            const startH = this.node.height || this.$el.offsetHeight
-            const startPosX = this.node.position.x
-            const startPosY = this.node.position.y
+            const start = {
+                x: this.node.position.x,
+                y: this.node.position.y,
+                width: this.node.width || this.$el.offsetWidth,
+                height: this.node.height || this.$el.offsetHeight,
+            }
             const snap = this.snapGridSize
-            const minSize = snap || 10
-            // Get zoom from the viewport transform
-            const viewport = this.$el.closest('.vue-flow__viewport')
-            const zoom = viewport ? parseFloat(viewport.style.transform.match(/scale\(([^)]+)\)/)?.[1] || 1) : 1
-
-            const snapVal = (v) => snap ? Math.max(snap, Math.round(v / snap) * snap) : Math.max(minSize, Math.round(v))
-
-            const resizeRight = (dx) => snapVal(startW + dx)
-            const resizeLeft = (dx) => {
-                const newW = snapVal(startW - dx)
-                return { w: newW, x: startPosX + (startW - newW) }
-            }
-            const resizeBottom = (dy) => snapVal(startH + dy)
-            const resizeTop = (dy) => {
-                const newH = snapVal(startH - dy)
-                return { h: newH, y: startPosY + (startH - newH) }
-            }
-
-            const onMouseMove = (e) => {
-                const dx = (e.clientX - startX) / zoom
-                const dy = (e.clientY - startY) / zoom
-                let newW = startW; let newH = startH; let newX = startPosX; let newY = startPosY
-
-                if (edge === 'top-left') {
-                    let rl2 = resizeLeft(dx); newW = rl2.w; newX = rl2.x
-                    let rt2 = resizeTop(dy); newH = rt2.h; newY = rt2.y
-                }
-                else if (edge === 'top-right') {
-                    newW = resizeRight(dx)
-                    let rt3 = resizeTop(dy); newH = rt3.h; newY = rt3.y
-                }
-                else if (edge === 'bottom-left') {
-                    let rl3 = resizeLeft(dx); newW = rl3.w; newX = rl3.x
-                    newH = resizeBottom(dy)
-                }
-                else if (edge === 'bottom-right') {
-                    newW = resizeRight(dx)
-                    newH = resizeBottom(dy)
-                }
-
-                //closure追蹤縮放最終值供resize-end發送
-                //why: 縮放中node本體不變動(ghost僅作用於視覺), this.node.*是原值, 不可作為結果
-                lastW = newW
-                lastH = newH
-                lastX = newX
-                lastY = newY
-
-                this.$emit('node-resize', {
-                    nodeId: this.node.id,
-                    width: newW,
-                    height: newH,
-                    x: newX,
-                    y: newY,
-                })
-            }
-
-            let lastW = startW
-            let lastH = startH
-            let lastX = startPosX
-            let lastY = startPosY
-
-            const onMouseUp = () => {
-                if (!this.endResizeGesture()) return
-                this.$emit('node-resize-end', {
-                    nodeId: this.node.id,
-                    width: lastW,
-                    height: lastH,
-                    x: lastX,
-                    y: lastY,
-                })
-            }
-
-            this._resizeGesture = { onMouseMove, onMouseUp, cursorStyle }
-            document.addEventListener('mousemove', onMouseMove)
-            document.addEventListener('mouseup', onMouseUp)
-            //視窗失焦後收不到mouseup, 全域游標樣式與監聽器同樣需收尾
-            window.addEventListener('blur', onMouseUp)
+            const zoom = this.getViewportZoom() || 1
+            //closure追蹤縮放最終值供resize-end發送
+            //why: 縮放中node本體不變動(ghost僅作用於視覺), this.node.*是原值, 不可作為結果
+            let last = { ...start }
+            //document 層手勢(domGesture): 期間鎖定整頁游標; mouseup / blur / buttons-lost 皆以最後 ghost 提交(同一收尾)
+            this._resizeGesture = startDocumentGesture({
+                cursor: cursorMap[edge] || 'default',
+                onMove: (e) => {
+                    last = computeResize(edge, start, { dx: (e.clientX - startX) / zoom, dy: (e.clientY - startY) / zoom }, { snap, minSize: snap || 10 })
+                    this.$emit('node-resize', { nodeId: this.node.id, ...last })
+                },
+                onEnd: () => {
+                    if (!this.endResizeGesture()) return
+                    this.$emit('node-resize-end', { nodeId: this.node.id, ...last })
+                },
+            })
         },
     },
 }
@@ -670,10 +529,6 @@ export default {
 
 /* Settings icon anchor (positioning only) */
 /* click/dblclick 模式: 錨區只供 popup 定位, 齒輪 icon 不可見亦不可點 */
-.vue-flow__node-settings-anchor--silent .vue-flow__node-settings {
-  visibility: hidden;
-  pointer-events: none;
-}
 .vue-flow__node-settings-anchor {
   position: absolute;
   top: -8px;
@@ -750,12 +605,4 @@ export default {
   filter: drop-shadow(0 0 6px rgba(0, 0, 0, 0.1));
 }
 /* Fade transition for settings icon and resize handles */
-.vue-flow__fade-enter-active,
-.vue-flow__fade-leave-active {
-  transition: opacity 0.15s ease;
-}
-.vue-flow__fade-enter,
-.vue-flow__fade-leave-to {
-  opacity: 0;
-}
 </style>

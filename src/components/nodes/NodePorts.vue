@@ -5,6 +5,7 @@
       :key="side"
       :position="side"
       :shape="shape"
+      :style-vars="handleVars"
       :connectable="connectable"
       :locked="locked"
       :node-edge-width="nodeEdgeWidth"
@@ -16,7 +17,7 @@
 <script>
 import Handle from './Handle.vue'
 import { SIDES } from '../../js/anchorPolicy.mjs'
-import { nodeBorderWidth, nodeShape } from '../../js/nodeStyle.mjs'
+import { nodeBorderWidth, handleStyleVars } from '../../js/nodeStyle.mjs'
 
 /**
  * 節點之四個連接點(top/right/bottom/left 各一, 完全對稱, 無連出/連入之分)。
@@ -25,9 +26,11 @@ import { nodeBorderWidth, nodeShape } from '../../js/nodeStyle.mjs'
 export default {
     name: 'NodePorts',
     components: { Handle },
-    inject: { getDefNode: { default: () => () => ({}) } },
     props: {
         node: { type: Object, required: true },
+        defNode: { type: Object, default: () => ({}) },
+        //有效形狀(NodeWrapper 單一解析後下傳)
+        shape: { type: String, default: 'rectangle' },
         connectable: { type: Boolean, default: true },
         locked: { type: Boolean, default: false },
     },
@@ -36,11 +39,11 @@ export default {
             return SIDES
         },
         dn() {
-            return this.getDefNode()
+            return this.defNode
         },
-        //有效形狀(nodeStyle.nodeShape 單一解析, 與節點面/邊端點同一基準)
-        shape() {
-            return nodeShape(this.node, this.dn)
+        //把手樣式變數(四把手同一組): 於此算一次, 四個 Handle 共用
+        handleVars() {
+            return handleStyleVars(this.dn)
         },
         //節點外框寬: 把手定位之外推量(與 NodeWrapper 之 border 同一解析)
         nodeEdgeWidth() {

@@ -1,13 +1,13 @@
 <template>
   <div class="vue-flow__settings-form" :style="formStyle">
     <label v-if="!isEx('name')">Name
-      <input type="text" :value="node.name || ''" @input="$emit('update', 'name', $event.target.value)">
+      <input type="text" :value="eff('name')" @input="$emit('update', 'name', $event.target.value)">
     </label>
     <label v-if="!isEx('description')">Description
-      <input type="text" :value="node.description || ''" @input="$emit('update', 'description', $event.target.value)">
+      <input type="text" :value="eff('description')" @input="$emit('update', 'description', $event.target.value)">
     </label>
     <label v-if="!isEx('shape')">Shape
-      <select :value="node.shape || defNode.shape" @input="$emit('update', 'shape', $event.target.value)">
+      <select :value="eff('shape')" @input="$emit('update', 'shape', $event.target.value)">
         <option value="rectangle">Rectangle</option>
         <option value="diamond">Diamond</option>
         <option value="ellipse">Ellipse</option>
@@ -18,7 +18,7 @@
       </select>
     </label>
     <label v-if="!isEx('popupDirection')">Popup Direction
-      <select :value="node.popupDirection || defNode.popupDirection" @input="$emit('update', 'popupDirection', $event.target.value)">
+      <select :value="eff('popupDirection')" @input="$emit('update', 'popupDirection', $event.target.value)">
         <option value="top">Top</option>
         <option value="right">Right</option>
         <option value="bottom">Bottom</option>
@@ -26,19 +26,19 @@
       </select>
     </label>
     <label v-if="!isEx('fontSize')">Font Size
-      <input type="number" :value="node.fontSize || defNode.fontSize" :min="defNode.fontSizeMin" :max="defNode.fontSizeMax" @input="onFontSizeInput($event.target.value)">
+      <input type="number" :value="eff('fontSize')" :min="defNode.fontSizeMin" :max="defNode.fontSizeMax" @input="onFontSizeInput($event.target.value)">
     </label>
     <label v-if="!isEx('fontColor')">Font Color
-      <WColorSelect :value="node.fontColor || defNode.fontColor" :size="160" :colorBlockSize="16" :showColorText="false" :btnText="colorConfirmText" @input="$emit('update', 'fontColor', $event)" />
+      <WColorSelect :value="eff('fontColor')" :size="160" :colorBlockSize="16" :showColorText="false" :btnText="colorConfirmText" @input="$emit('update', 'fontColor', $event)" />
     </label>
     <label v-if="!isEx('faceColor')">Face Color
-      <WColorSelect :value="node.faceColor || defNode.faceColor" :size="160" :colorBlockSize="16" :showColorText="false" :btnText="colorConfirmText" @input="$emit('update', 'faceColor', $event)" />
+      <WColorSelect :value="eff('faceColor')" :size="160" :colorBlockSize="16" :showColorText="false" :btnText="colorConfirmText" @input="$emit('update', 'faceColor', $event)" />
     </label>
     <label v-if="!isEx('edgeColor')">Edge Color
-      <WColorSelect :value="node.edgeColor || defNode.edgeColor" :size="160" :colorBlockSize="16" :showColorText="false" :btnText="colorConfirmText" @input="$emit('update', 'edgeColor', $event)" />
+      <WColorSelect :value="eff('edgeColor')" :size="160" :colorBlockSize="16" :showColorText="false" :btnText="colorConfirmText" @input="$emit('update', 'edgeColor', $event)" />
     </label>
     <label v-if="!isEx('edgeWidth')">Edge Width
-      <input type="number" :value="node.edgeWidth !== undefined ? node.edgeWidth : defNode.edgeWidth" min="1" max="24" @input="onEdgeWidthInput($event.target.value)">
+      <input type="number" :value="eff('edgeWidth')" min="1" :max="edgeWidthMax" @input="onEdgeWidthInput($event.target.value)">
     </label>
     <!-- 刪除不做內建二次確認: 是否需要確認由宿主以 opt.funConfirmDeleting(async)決定, 未提供即直接刪除。
          等待宿主確認期間按鈕 disabled(pending): 慢流程若毫無回饋會被當成沒反應而連點 -->
@@ -50,117 +50,28 @@
 
 <script>
 import WColorSelect from 'w-component-vue/src/components/WColorSelect.vue'
+import settingsForm from '../mixins/settingsForm.mjs'
 
+/** 節點設定表單: 欄位有效值/排除/文字/刪除確認態/數值 clamp 皆由 mixins/settingsForm 提供, 本檔只有節點欄位 */
 export default {
+    name: 'NodeSettingsForm',
     components: { WColorSelect },
-    inject: {
-        //刪除確認進行中(getter注入, 預設值使本元件可獨立掛載): 等待宿主回覆期間刪除鈕 disabled
-        getDeleteConfirming: { default: () => () => false },
-        //設定表單文字(刪除鈕/色票確認鈕; 由 WFlowVue 依 opt 注入, 預設英文)
-        getSettingsText: { default: () => () => ({}) },
-    },
+    mixins: [settingsForm],
     props: {
         node: { type: Object, required: true },
         defNode: { type: Object, required: true },
-        textFontSize: { type: String, default: '' },
-        excludes: { type: Array, default: () => [] },
     },
     computed: {
-        deleteConfirming() {
-            return this.getDeleteConfirming()
+        item() {
+            return this.node
         },
-        deleteText() {
-            return this.getSettingsText().nodeDelete || 'Delete'
+        defaults() {
+            return this.defNode
         },
-        colorConfirmText() {
-            return this.getSettingsText().colorConfirm || 'Confirm'
-        },
-        formStyle() {
-            let s = {}
-            if (this.textFontSize) s.fontSize = this.textFontSize
-            return s
-        },
-    },
-    methods: {
-        isEx(key) {
-            return this.excludes.indexOf(key) >= 0
-        },
-        onFontSizeInput(val) {
-            let n = Number(val)
-            let d = this.defNode
-            if (!val || isNaN(n) || n < d.fontSizeMin) return
-            if (n > d.fontSizeMax) n = d.fontSizeMax
-            this.$emit('update', 'fontSize', n)
-        },
-        onEdgeWidthInput(val) {
-            let n = Number(val)
-            if (!val || isNaN(n) || n < 1) return
-            if (n > 24) n = 24
-            this.$emit('update', 'edgeWidth', n)
+        deleteTextKey() {
+            return 'nodeDelete'
         },
     },
 }
 </script>
 
-<style>
-.vue-flow__settings-form {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  min-width: 180px;
-}
-.vue-flow__settings-form label {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 8px;
-  font-size: 12px;
-}
-.vue-flow__settings-form select,
-.vue-flow__settings-form input[type="number"],
-.vue-flow__settings-form input[type="text"] {
-  width: 100px;
-  font-size: 12px;
-  padding: 1px 4px;
-  border: 1px solid #ccc;
-  border-radius: 3px;
-}
-.vue-flow__settings-form input[type="color"] {
-  width: 32px;
-  height: 24px;
-  padding: 0;
-  border: 1px solid #ccc;
-  cursor: pointer;
-  flex-shrink: 0;
-}
-.vue-flow__delete-area {
-  margin-top: 4px;
-  padding-top: 8px;
-  border-top: 1px solid #eee;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-}
-.vue-flow__delete-btn {
-  padding: 3px 10px;
-  font-size: 11px;
-  border: 1px solid #dc2626;
-  border-radius: 3px;
-  color: #fff;
-  background: #dc2626;
-  cursor: pointer;
-}
-.vue-flow__delete-btn:hover {
-  background: #b91c1c;
-  border-color: #b91c1c;
-}
-/* 等待宿主確認期間: 淡化且不可再點(尺寸與文字不變, 不造成版面跳動) */
-.vue-flow__delete-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-.vue-flow__delete-btn:disabled:hover {
-  background: #dc2626;
-  border-color: #dc2626;
-}
-</style>

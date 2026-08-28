@@ -3,8 +3,17 @@
 import {
     getHandlePosition,
     getOverlappingNodes,
-    clampPosition, snapPosition
-} from '../src/js/geometry'
+    clampPosition, snapPosition, resolveNodeSize } from '../src/js/geometry'
+
+describe('resolveNodeSize(D4 單一尺寸來源)', () => {
+    test('優先序: live > node 明確數值 > defNode > NODE_DEFAULTS; 非正數/非數值跳過', () => {
+        expect(resolveNodeSize({ width: 120, height: 50 }, { width: 130, height: 55 }, { width: 200, height: 80 })).toEqual({ width: 130, height: 55 })
+        expect(resolveNodeSize({ width: 120, height: 50 }, { width: 0, height: 0 }, { width: 200, height: 80 })).toEqual({ width: 120, height: 50 })
+        expect(resolveNodeSize({ width: '10em' }, null, { width: 200, height: 80 })).toEqual({ width: 200, height: 80 })
+        expect(resolveNodeSize({}, null, {})).toEqual({ width: 100, height: 40 })
+        expect(resolveNodeSize(null, undefined, undefined)).toEqual({ width: 100, height: 40 })
+    })
+})
 
 describe('geometry', () => {
     const node = { id: '1', position: { x: 100, y: 50 }, width: 150, height: 40 }
@@ -39,9 +48,13 @@ describe('geometry', () => {
             expect(pos).toEqual({ x: 100, y: 60 })
         })
 
-        test('defaults to 150x40 if no dimensions', () => {
+        test('無尺寸時回退 NODE_DEFAULTS(100x40, 與佈局/形狀面/路由同一來源)', () => {
             const pos = getHandlePosition({ id: '1', position: { x: 0, y: 0 } }, 'bottom', {})
-            expect(pos).toEqual({ x: 75, y: 40 })
+            expect(pos).toEqual({ x: 50, y: 40 })
+        })
+        test('defNode 尺寸(opt.defNodeWidth/Height)優先於 NODE_DEFAULTS', () => {
+            const pos = getHandlePosition({ id: '1', position: { x: 0, y: 0 } }, 'bottom', {}, { width: 200, height: 80 })
+            expect(pos).toEqual({ x: 100, y: 80 })
         })
     })
 

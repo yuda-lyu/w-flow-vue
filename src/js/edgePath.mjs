@@ -2,16 +2,16 @@
  * Edge path generators for different edge types.
  */
 
-import { calculateStepPoints, clearStepCache } from './stepRouting.mjs'
-
-export { clearStepCache }
+import { calculateStepPoints } from './stepRouting.mjs'
+import { CONN_DEFAULTS } from './defaults.mjs'
+import { sideNormal } from './anchorPolicy.mjs'
 
 /**
- * Normalize conn.points (forced waypoints) into [{x,y},...].
- * Accepts [[x,y],...] or [{x,y},...]; returns null when absent/invalid so callers
- * can fall back to automatic routing.
+ * 轉折點嚴格解析(runtime domain parser): [[x,y],...] 或 [{x,y},...] → [{x,y},...];
+ * 任一點非有限數即整批無效回 null(呼叫端回退自動路由)。
+ * 表單之草稿容錯解析另在 ConnSettingsForm.draftWaypoints(語義不同, 不共用)。
  */
-function normalizeConnPoints(points) {
+export function parseWaypoints(points) {
     if (!Array.isArray(points) || points.length === 0) return null
     const pts = []
     for (const p of points) {
@@ -39,7 +39,7 @@ function normalizeConnPoints(points) {
 function orthogonalizeThroughPoints(
     sourceX, sourceY, sourcePosition,
     targetX, targetY, targetPosition,
-    waypoints, stub = 20
+    waypoints, stub = CONN_DEFAULTS.defOffset
 ) {
     const pts = [{ x: sourceX, y: sourceY }]
     const push = (p) => {
@@ -131,17 +131,6 @@ function buildRoundedPath(points, borderRadius) {
     return { path, labelX: label.x, labelY: label.y }
 }
 
-/** 邊之外向單位法向量(方位 → 方向) */
-function sideNormal(position) {
-    switch (position) {
-    case 'top': return { x: 0, y: -1 }
-    case 'bottom': return { x: 0, y: 1 }
-    case 'left': return { x: -1, y: 0 }
-    case 'right': return { x: 1, y: 0 }
-    default: return { x: 0, y: 1 }
-    }
-}
-
 /**
  * Calculate the control point offset for bezier curves based on handle position.
  */
@@ -166,7 +155,7 @@ export function getBezierPath({
     points,
 }) {
     // Forced waypoints: smooth curve passing exactly through each point (Catmull-Rom → cubic)
-    const wps = normalizeConnPoints(points)
+    const wps = parseWaypoints(points)
     if (wps) {
         const pts = [{ x: sourceX, y: sourceY }, ...wps, { x: targetX, y: targetY }]
         //兩端切線沿外向法線(方向契約), 中間點沿 Catmull-Rom
@@ -224,7 +213,7 @@ export function getBezierPath({
  */
 export function getStraightPath({ sourceX, sourceY, targetX, targetY, points }) {
     // Forced waypoints: polyline through each point
-    const wps = normalizeConnPoints(points)
+    const wps = parseWaypoints(points)
     if (wps) {
         const pts = [{ x: sourceX, y: sourceY }, ...wps, { x: targetX, y: targetY }]
         const path = pts.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x},${p.y}`).join(' ')
@@ -245,12 +234,12 @@ export function getStraightPath({ sourceX, sourceY, targetX, targetY, points }) 
 export function getStepPath({
     sourceX, sourceY, sourcePosition = 'bottom',
     targetX, targetY, targetPosition = 'top',
-    offset = 20,
+    offset = CONN_DEFAULTS.defOffset,
     allNodes, nodeInternals,
     points,
 }) {
     // Forced waypoints bypass automatic routing (anchors still honored at both ends)
-    const wps = normalizeConnPoints(points)
+    const wps = parseWaypoints(points)
     const pts = wps
         ? orthogonalizeThroughPoints(sourceX, sourceY, sourcePosition, targetX, targetY, targetPosition, wps, offset)
         : calculateStepPoints(
@@ -271,12 +260,12 @@ export function getSmoothStepPath({
     sourceX, sourceY, sourcePosition = 'bottom',
     targetX, targetY, targetPosition = 'top',
     borderRadius = 5,
-    offset = 20,
+    offset = CONN_DEFAULTS.defOffset,
     allNodes, nodeInternals,
     points,
 }) {
     // Forced waypoints bypass automatic routing (anchors still honored at both ends)
-    const wps = normalizeConnPoints(points)
+    const wps = parseWaypoints(points)
     const pts = wps
         ? orthogonalizeThroughPoints(sourceX, sourceY, sourcePosition, targetX, targetY, targetPosition, wps, offset)
         : calculateStepPoints(
@@ -311,4 +300,16 @@ function labelAtHalfLength(pts) {
         acc += segLen
     }
     return { x: pts[pts.length - 1].x, y: pts[pts.length - 1].y }
+}
+
+const PATH_FUNCTIONS = {
+    bezier: getBezierPath,
+    straight: getStraightPath,
+    step: getStepPath,
+    smoothstep: getSmoothStepPath,
+}
+
+/** 邊型 → 路徑函式(未知邊型回 bezier); EdgeWrapper 與 ConnectionLine 共用同一對照表 */
+export function getPathFunction(type) {
+    return PATH_FUNCTIONS[type] || PATH_FUNCTIONS.bezier
 }

@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    
+    <meta charset="utf-8">
+    <title>js/resolveOpt.mjs - Documentation</title>
+    
+    
+    <script src="scripts/prettify/prettify.js"></script>
+    <script src="scripts/prettify/lang-css.js"></script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc.css">
+    <script src="scripts/nav.js" defer></script>
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body>
+
+<input type="checkbox" id="nav-trigger" class="nav-trigger" />
+<label for="nav-trigger" class="navicon-button x">
+  <div class="navicon"></div>
+</label>
+
+<label for="nav-trigger" class="overlay"></label>
+
+<nav >
+    
+    
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-EdgeMarkerDefs.html">EdgeMarkerDefs</a></li><li><a href="module-Handle.html">Handle</a></li><li><a href="module-NodeBody.html">NodeBody</a></li><li><a href="module-NodePorts.html">NodePorts</a></li><li><a href="module-NodeSettingsForm.html">NodeSettingsForm</a></li></ul><h3>Events</h3><ul><li><a href="global.html#event:elements-deleted%25E6%2589%2580%25E6%259C%2589%25E5%2588%25AA%25E9%2599%25A4%25E8%25B7%25AF%25E5%25BE%2591%25E5%25AE%258C%25E6%2588%2590%25E5%25BE%258C%25E7%259A%2586%25E7%2599%25BC%25E5%2587%25BA(%25E6%2596%25BCupdate:*%25E4%25B9%258B%25E5%25BE%258C%25E3%2580%2581%25E6%259C%2580%25E5%25BE%258C%25E7%2599%25BC%25E5%2587%25BA),payload:%257Bfrom,requested:%257BnodeIds,connIds%257D,deleted:%257BnodeIds,connIds,nodes,conns%257D,cascades:%255B%257BnodeId,connIds%257D%255D,notFound:%257BnodeIds,connIds%257D,excluded:%257BnodeIds,connIds%257D%257D-deleted.nodes/conns%25E7%2582%25BA%25E8%25A2%25AB%25E5%2588%25AA%25E7%2595%25B6%25E4%25B8%258B%25E4%25B9%258B%25E6%25B7%25B1%25E8%25A4%2587%25E8%25A3%25BD%25E5%25BF%25AB%25E7%2585%25A7(JSON%25E5%25BE%2580%25E8%25BF%2594,%25E5%2590%258CgetFlowData);id%25E6%25B8%2585%25E5%2596%25AE%25E4%25BE%259B%25E8%25BC%2595%25E9%2587%258F%25E8%25A8%2598%25E5%25B8%25B3;-cascades%25E5%258F%25AA%25E6%258F%258F%25E8%25BF%25B0%25E5%259B%25A0%25E6%259E%259C(%25E5%2593%25AA%25E6%25A2%259D%25E9%2582%258A%25E5%259B%25A0%25E5%2593%25AA%25E5%2580%258B%25E7%25AF%2580%25E9%25BB%259E%25E8%2580%258C%25E5%2588%25AA),%25E8%25A8%2598%25E5%25B8%25B3%25E4%25BB%25A5deleted.*Ids%25E7%2582%25BA%25E6%25BA%2596(%25E5%25B7%25B2%25E5%258E%25BB%25E9%2587%258D);-%25E4%25B8%258D%25E5%2590%25AB%25E5%2588%25AA%25E5%25BE%258C%25E5%2585%25A8%25E9%2587%258F%25E5%25BF%25AB%25E7%2585%25A7(remain):%25E9%259C%2580%25E8%25A6%2581%25E8%2580%2585%25E5%2591%25BC%25E5%258F%25ABgetFlowData()%25E6%2588%2596%25E6%25B2%25BF%25E7%2594%25A8update:nodes/update:conns%25E3%2580%2582%25E5%2588%25AA%25E9%2599%25A4%25E5%258F%25AA%25E6%259C%2589%25E9%2580%2599%25E4%25B8%2580%25E5%2580%258B%25E5%25AE%258C%25E6%2588%2590%25E4%25BA%258B%25E4%25BB%25B6%25E3%2580%2582%25E6%2589%2580%25E6%259C%2589%25E5%2585%25A5%25E5%258F%25A3%25E5%2590%258C%25E4%25B8%2580%25E5%25BA%258F%25E5%2588%2597:(%25E5%2583%2585%25E5%25AF%25A6%25E9%259A%259B%25E8%25AE%258A%25E5%258B%2595%25E4%25B9%258B%25E9%259B%2586%25E5%2590%2588)update:nodes%25E2%2586%2592update:conns%25E2%2586%2592elements-deleted%25E3%2580%2582">elements-deleted 所有刪除路徑完成後皆發出(於 update:* 之後、最後發出),payload:
+  { from, requested:{nodeIds,connIds}, deleted:{nodeIds,connIds,nodes,conns}, cascades:[{nodeId,connIds}],
+    notFound:{nodeIds,connIds}, excluded:{nodeIds,connIds} }
+  - deleted.nodes/conns 為被刪當下之深複製快照(JSON 往返,同 getFlowData);id 清單供輕量記帳;
+  - cascades 只描述因果(哪條邊因哪個節點而刪),記帳以 deleted.*Ids 為準(已去重);
+  - 不含刪後全量快照(remain):需要者呼叫 getFlowData() 或沿用 update:nodes / update:conns。
+  刪除只有這一個完成事件。所有入口同一序列:(僅實際變動之集合)update:nodes → update:conns → elements-deleted。</a></li></ul><h3>Global</h3><ul><li><a href="global.html#CONN_SETTING_KEYS">CONN_SETTING_KEYS</a></li><li><a href="global.html#DRAG_THRESHOLD_PX">DRAG_THRESHOLD_PX</a></li><li><a href="global.html#EDGE_WIDTH_MAX">EDGE_WIDTH_MAX</a></li><li><a href="global.html#FIELD_POLICY">FIELD_POLICY</a></li><li><a href="global.html#GEAR_PATH">GEAR_PATH</a></li><li><a href="global.html#INFO_POPUP_DEFER_MS">INFO_POPUP_DEFER_MS</a></li><li><a href="global.html#MARKER_TYPES">MARKER_TYPES</a></li><li><a href="global.html#MENU_OPT_KEYS">MENU_OPT_KEYS</a></li><li><a href="global.html#NODE_DEFAULTS">NODE_DEFAULTS</a></li><li><a href="global.html#NODE_SETTING_KEYS">NODE_SETTING_KEYS</a></li><li><a href="global.html#RECT_FRACTION">RECT_FRACTION</a></li><li><a href="global.html#SETTINGS_TRIGGERS">SETTINGS_TRIGGERS</a></li><li><a href="global.html#SIDES">SIDES</a></li><li><a href="global.html#applyDelete">applyDelete</a></li><li><a href="global.html#assessConnection">assessConnection</a></li><li><a href="global.html#assessGraphConnection">assessGraphConnection</a></li><li><a href="global.html#buildConnectionCandidate">buildConnectionCandidate</a></li><li><a href="global.html#buildRoundedPath">buildRoundedPath</a></li><li><a href="global.html#canOpenPopup">canOpenPopup</a></li><li><a href="global.html#canOpenSettings">canOpenSettings</a></li><li><a href="global.html#clampPosition">clampPosition</a></li><li><a href="global.html#clampZoom">clampZoom</a></li><li><a href="global.html#classifyHit">classifyHit</a></li><li><a href="global.html#clientToLocal">clientToLocal</a></li><li><a href="global.html#computeCenterView">computeCenterView</a></li><li><a href="global.html#computeConnStyle">computeConnStyle</a></li><li><a href="global.html#computeEdgeClasses">computeEdgeClasses</a></li><li><a href="global.html#computeFitView">computeFitView</a></li><li><a href="global.html#computeLabelStyle">computeLabelStyle</a></li><li><a href="global.html#computeResize">computeResize</a></li><li><a href="global.html#connSourceSide">connSourceSide</a></li><li><a href="global.html#connTargetSide">connTargetSide</a></li><li><a href="global.html#crossedThreshold">crossedThreshold</a></li><li><a href="global.html#darkenColor">darkenColor</a></li><li><a href="global.html#describeHandleEndpoint">describeHandleEndpoint</a></li><li><a href="global.html#easeInOutCubic">easeInOutCubic</a></li><li><a href="global.html#effectiveAnimated">effectiveAnimated</a></li><li><a href="global.html#effectiveEdgeType">effectiveEdgeType</a></li><li><a href="global.html#findDuplicateIds">findDuplicateIds</a></li><li><a href="global.html#findHandleElAt">findHandleElAt</a></li><li><a href="global.html#fixSvgNs">fixSvgNs</a></li><li><a href="global.html#flowToScreen">flowToScreen</a></li><li><a href="global.html#gearVisible">gearVisible</a></li><li><a href="global.html#generateId">generateId</a></li><li><a href="global.html#gestureBlockedReason">gestureBlockedReason</a></li><li><a href="global.html#getBezierPath">getBezierPath</a></li><li><a href="global.html#getControlOffset">getControlOffset</a></li><li><a href="global.html#getHandlePosition">getHandlePosition</a></li><li><a href="global.html#getOverlappingNodes">getOverlappingNodes</a></li><li><a href="global.html#getPathFunction">getPathFunction</a></li><li><a href="global.html#getSmoothStepPath">getSmoothStepPath</a></li><li><a href="global.html#getStepPath">getStepPath</a></li><li><a href="global.html#getStraightPath">getStraightPath</a></li><li><a href="global.html#handlePlacementStyle">handlePlacementStyle</a></li><li><a href="global.html#handleStyleVars">handleStyleVars</a></li><li><a href="global.html#infoOpenPlan">infoOpenPlan</a></li><li><a href="global.html#installGlobalCursor">installGlobalCursor</a></li><li><a href="global.html#isAffordanceHit">isAffordanceHit</a></li><li><a href="global.html#isCanvasBlank">isCanvasBlank</a></li><li><a href="global.html#isSide">isSide</a></li><li><a href="global.html#labelAtHalfLength">labelAtHalfLength</a></li><li><a href="global.html#labelOffsetStyle">labelOffsetStyle</a></li><li><a href="global.html#lookupRoute">lookupRoute</a></li><li><a href="global.html#markerDef">markerDef</a></li><li><a href="global.html#markerId">markerId</a></li><li><a href="global.html#markerUrl">markerUrl</a></li><li><a href="global.html#nodeBorderWidth">nodeBorderWidth</a></li><li><a href="global.html#nodeShape">nodeShape</a></li><li><a href="global.html#nodesBounds">nodesBounds</a></li><li><a href="global.html#oppositeSide">oppositeSide</a></li><li><a href="global.html#optComputeds">optComputeds</a></li><li><a href="global.html#orthogonalizeThroughPoints">orthogonalizeThroughPoints</a></li><li><a href="global.html#pairEndpoints">pairEndpoints</a></li><li><a href="global.html#parseWaypoints">parseWaypoints</a></li><li><a href="global.html#pickMenuValue">pickMenuValue</a></li><li><a href="global.html#previewDelete">previewDelete</a></li><li><a href="global.html#rectsOverlap">rectsOverlap</a></li><li><a href="global.html#resolveContainerSize">resolveContainerSize</a></li><li><a href="global.html#resolveDefConn">resolveDefConn</a></li><li><a href="global.html#resolveDefNode">resolveDefNode</a></li><li><a href="global.html#resolveLineStyle">resolveLineStyle</a></li><li><a href="global.html#resolveMarker">resolveMarker</a></li><li><a href="global.html#resolveNodeSize">resolveNodeSize</a></li><li><a href="global.html#resolveOpt">resolveOpt</a></li><li><a href="global.html#resolveOptValue">resolveOptValue</a></li><li><a href="global.html#resolveSettingsText">resolveSettingsText</a></li><li><a href="global.html#screenToFlow">screenToFlow</a></li><li><a href="global.html#segmentFallback">segmentFallback</a></li><li><a href="global.html#setDomFlag">setDomFlag</a></li><li><a href="global.html#setHandleConnectRole">setHandleConnectRole</a></li><li><a href="global.html#setHandleConnectStatus">setHandleConnectStatus</a></li><li><a href="global.html#settingsOpensOn">settingsOpensOn</a></li><li><a href="global.html#sideAnchorFraction">sideAnchorFraction</a></li><li><a href="global.html#sideNormal">sideNormal</a></li><li><a href="global.html#snapPosition">snapPosition</a></li><li><a href="global.html#snapshotDeep">snapshotDeep</a></li><li><a href="global.html#startDocumentGesture">startDocumentGesture</a></li><li><a href="global.html#stubFallback">stubFallback</a></li><li><a href="global.html#uniq">uniq</a></li><li><a href="global.html#zoomAroundPoint">zoomAroundPoint</a></li></ul>
+    
+</nav>
+
+<div id="main">
+    
+    <h1 class="page-title">js/resolveOpt.mjs</h1>
+    
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/**
+ * opt 解析 —— 單一來源。WFlowVue 之每個 opt 鍵對應一個 computed(名稱即鍵名, 由 OPT_SPEC 生成),
+ * 不再逐鍵手寫 fallback 樣板; 群組型(defNode / defConn / settingsText / menu)以具名解析函式提供。
+ *
+ * kind(回退規則, 依 JSDoc 契約逐鍵指定):
+ *   defined  : opt 值 !== undefined 即採用(布林/數值 0 為合法值)
+ *   truthy   : opt 值為 truthy 即採用(空字串/0/null 回退)
+ *   enum     : 值須在 values 內, 否則回退
+ *   nonneg   : 有限且 >= 0 之數值, 否則回退
+ *   notFalse : 只有明確 false 才關閉(預設開)
+ *   nullable : truthy 即採用, 否則 null
+ *   fn       : 須為函式, 否則 null
+ */
+import { NODE_DEFAULTS, CONN_DEFAULTS, SETTINGS_TRIGGERS } from './defaults.mjs'
+
+export const OPT_SPEC = {
+    //尺寸
+    widthInp: { key: 'width', kind: 'truthy', def: 800 },
+    heightInp: { key: 'height', kind: 'truthy', def: 600 },
+    //互動能力
+    nodesDraggable: { kind: 'defined', def: true },
+    nodesConnectable: { kind: 'defined', def: true },
+    nodesResizable: { kind: 'defined', def: true },
+    elementsSelectable: { kind: 'defined', def: true },
+    selectNodesOnDrag: { kind: 'defined', def: true },
+    multiSelectEnabled: { kind: 'defined', def: true },
+    boxSelectionKeyCode: { kind: 'truthy', def: 'Shift' },
+    multiSelectionKeyCode: { kind: 'truthy', def: 'Shift' },
+    deleteKeyEnabled: { kind: 'defined', def: false },
+    deleteKeyCode: { kind: 'truthy', def: 'Backspace' },
+    snapToGrid: { kind: 'defined', def: false },
+    snapGridSize: { kind: 'truthy', def: 20 },
+    //設定入口: 'hover' | 'click' | 'dblclick'(非法值回退 dblclick)
+    nodesSettingsEnabled: { kind: 'defined', def: true },
+    connsSettingsEnabled: { kind: 'defined', def: true },
+    nodesSettingsTrigger: { kind: 'enum', values: SETTINGS_TRIGGERS, def: 'dblclick' },
+    connsSettingsTrigger: { kind: 'enum', values: SETTINGS_TRIGGERS, def: 'dblclick' },
+    nodesSettingsExcludes: { kind: 'truthy', def: [] },
+    connsSettingsExcludes: { kind: 'truthy', def: [] },
+    //視口
+    zoomOnScroll: { kind: 'defined', def: true },
+    panOnDrag: { kind: 'defined', def: true },
+    zoomMin: { kind: 'defined', def: 0.5 },
+    zoomMax: { kind: 'defined', def: 2 },
+    zoom: { kind: 'defined', def: 1 },
+    center: { kind: 'truthy', def: [0, 0] },
+    panLimits: { kind: 'nullable' },
+    fitViewOnInit: { kind: 'notFalse' },
+    fitViewPadding: { kind: 'nonneg', def: 50 },
+    //建線預覽線
+    defConnCreatingType: { kind: 'truthy', def: 'bezier' },
+    defConnCreatingEdgeColor: { kind: 'truthy', def: CONN_DEFAULTS.edgeColor },
+    defConnCreatingEdgeWidth: { kind: 'defined', def: 1 },
+    defConnCreatingEdgeDasharray: { kind: 'truthy', def: '5 5' },
+    //畫布背景
+    platformBackgroundPatternType: { kind: 'truthy', def: 'dots' },
+    platformBackgroundPatternGap: { kind: 'defined', def: 20 },
+    platformBackgroundPatternSize: { kind: 'defined', def: 1 },
+    platformBackgroundPatternColor: { kind: 'truthy', def: '#81818a' },
+    platformBackgroundColor: { kind: 'truthy', def: '#fff' },
+    //popup 樣式
+    settingsPopupBackgroundColor: { kind: 'truthy', def: '#fff' },
+    settingsPopupTextColor: { kind: 'truthy', def: '#333' },
+    settingsPopupTextFontSize: { kind: 'truthy', def: '12px' },
+    inforPopupBackgroundColor: { kind: 'truthy', def: '#fff' },
+    inforPopupTitleTextColor: { kind: 'truthy', def: '#333' },
+    inforPopupTitleTextFontSize: { kind: 'truthy', def: '12px' },
+    inforPopupDescriptionTextColor: { kind: 'truthy', def: '#888' },
+    inforPopupDescriptionTextFontSize: { kind: 'truthy', def: '10px' },
+    //callback
+    funValidConnCreating: { kind: 'nullable' },
+    //刪除確認(async): 未提供即直接刪除, 提供則須回傳 true 才真的刪除
+    funConfirmDeleting: { kind: 'fn' },
+}
+
+/** 依 OPT_SPEC 解析單一鍵 */
+export function resolveOptValue(opt, name) {
+    const spec = OPT_SPEC[name]
+    if (!spec) throw new Error(`resolveOpt: unknown opt name '${name}'`)
+    const v = (opt || {})[spec.key || name]
+    switch (spec.kind) {
+    case 'defined': return v !== undefined ? v : spec.def
+    case 'truthy': return v || spec.def
+    case 'enum': return spec.values.indexOf(v) >= 0 ? v : spec.def
+    case 'nonneg': return (typeof v === 'number' &amp;&amp; isFinite(v) &amp;&amp; v >= 0) ? v : spec.def
+    case 'notFalse': return v !== false
+    case 'nullable': return v || null
+    case 'fn': return typeof v === 'function' ? v : null
+    default: throw new Error(`resolveOpt: unknown kind '${spec.kind}'`)
+    }
+}
+
+/** 全部純量鍵一次解析(測試/除錯用; 元件內以 optComputeds 逐鍵 computed, 避免整包失效) */
+export function resolveOpt(opt) {
+    const r = {}
+    for (const name of Object.keys(OPT_SPEC)) r[name] = resolveOptValue(opt, name)
+    return r
+}
+
+/** 供 Vue computed 展開: 每個 OPT_SPEC 鍵一個 computed(讀 this.opt) */
+export function optComputeds() {
+    const c = {}
+    for (const name of Object.keys(OPT_SPEC)) {
+        c[name] = function() {
+            return resolveOptValue(this.opt, name)
+        }
+    }
+    return c
+}
+
+/** 設定表單可改文字(非字串或空字串回退預設) */
+export function resolveSettingsText(opt) {
+    const o = opt || {}
+    const str = (v, d) => (typeof v === 'string' &amp;&amp; v !== '' ? v : d)
+    return {
+        nodeDelete: str(o.nodesSettingsDeleteText, 'Delete'),
+        connDelete: str(o.connsSettingsDeleteText, 'Delete'),
+        colorConfirm: str(o.settingsColorConfirmText, 'Confirm'),
+    }
+}
+
+/** 節點預設(opt.defNode* / opt.defHandle* → NODE_DEFAULTS); 數值型以 !== undefined 判斷(0 為合法之框線寬) */
+export function resolveDefNode(opt) {
+    const o = opt || {}
+    const d = NODE_DEFAULTS
+    return {
+        shape: o.defNodeShape || d.shape,
+        width: o.defNodeWidth || d.width,
+        height: o.defNodeHeight || d.height,
+        fontSize: o.defNodeFontSize || d.fontSize,
+        fontSizeMin: o.defNodeFontSizeMin || d.fontSizeMin,
+        fontSizeMax: o.defNodeFontSizeMax || d.fontSizeMax,
+        fontColor: o.defNodeFontColor || d.fontColor,
+        faceColor: o.defNodeFaceColor || d.faceColor,
+        edgeColor: o.defNodeEdgeColor || d.edgeColor,
+        edgeWidth: o.defNodeEdgeWidth !== undefined ? o.defNodeEdgeWidth : d.edgeWidth,
+        popupDirection: o.defNodePopupDirection || d.popupDirection,
+        //連接點(把手)樣式(四把手同一組)
+        handleFaceColor: o.defHandleFaceColor || d.handleFaceColor,
+        handleEdgeColor: o.defHandleEdgeColor || d.handleEdgeColor,
+        handleEdgeWidth: o.defHandleEdgeWidth !== undefined ? o.defHandleEdgeWidth : d.handleEdgeWidth,
+        handleSize: o.defHandleSize || d.handleSize,
+    }
+}
+
+/** 連線預設(opt.defConn* → CONN_DEFAULTS): 兩端方位/箭頭/animated/step offset 皆在此 */
+export function resolveDefConn(opt) {
+    const o = opt || {}
+    const d = CONN_DEFAULTS
+    return {
+        type: o.defConnType || d.type,
+        fontSize: o.defConnFontSize || d.fontSize,
+        fontSizeMin: o.defConnFontSizeMin || d.fontSizeMin,
+        fontSizeMax: o.defConnFontSizeMax || d.fontSizeMax,
+        fontColor: o.defConnFontColor || d.fontColor,
+        edgeColor: o.defConnEdgeColor || d.edgeColor,
+        edgeWidth: o.defConnEdgeWidth !== undefined ? o.defConnEdgeWidth : d.edgeWidth,
+        edgeDasharray: o.defConnEdgeDasharray || '',
+        fromPosition: o.defConnFromPosition || d.fromPosition,
+        toPosition: o.defConnToPosition || d.toPosition,
+        markerStart: o.defConnMarkerStart || d.markerStart,
+        markerStartSize: o.defConnMarkerStartSize || d.markerStartSize,
+        markerStartColor: o.defConnMarkerStartColor || d.markerStartColor,
+        markerEnd: o.defConnMarkerEnd || d.markerEnd,
+        markerEndSize: o.defConnMarkerEndSize || d.markerEndSize,
+        markerEndColor: o.defConnMarkerEndColor || d.markerEndColor,
+        animated: o.defConnAnimated !== undefined ? o.defConnAnimated : d.animated,
+        defOffset: o.defOffset != null ? o.defOffset : d.defOffset,
+    }
+}
+
+/**
+ * 垂直選單設定: 自 opt 原樣透傳(不套預設)——各項未給或型別不符由 Controls.vue 之 menuDef 回退,
+ * 預設值單一來源在 Controls(icon 預設需 @mdi/js 常數), 本模組刻意不複製一份。
+ */
+export const MENU_OPT_KEYS = [
+    'useMenu', 'menuPosition', 'menuYShift', 'useSetting',
+    'menuSettingIcon', 'menuSettingTooltip',
+    'useMenuItemZoomIn', 'menuZoomInIcon', 'menuZoomInTooltip',
+    'useMenuItemZoomOut', 'menuZoomOutIcon', 'menuZoomOutTooltip',
+    'useMenuItemFitView', 'menuFitViewIcon', 'menuFitViewTooltip',
+    'useMenuItemLock', 'menuLockIcon', 'menuLockTooltip', 'menuLockIconLocked', 'menuLockTooltipLocked',
+    'menuIconColor', 'menuIconColorHover', 'menuIconColorFocus', 'menuIconSize',
+    'menuBackgroundColor', 'menuBackgroundColorHover', 'menuBackgroundColorFocus',
+    'menuSeparatorColor', 'menuShadow',
+    'menuTooltipTextColor', 'menuTooltipTextFontSize', 'menuTooltipBackgroundColor',
+]
+export function pickMenuOpt(opt) {
+    const o = opt || {}
+    const r = {}
+    for (const k of MENU_OPT_KEYS) r[k] = o[k]
+    return r
+}
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+    
+    
+</div>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 4.0.5</a> on Fri Aug 28 2026 11:14:34 GMT+0800 (台北標準時間) using the <a href="https://github.com/clenemt/docdash">docdash</a> theme.
+</footer>
+
+<script>prettyPrint();</script>
+<script src="scripts/polyfill.js"></script>
+<script src="scripts/linenumber.js"></script>
+
+
+
+</body>
+</html>

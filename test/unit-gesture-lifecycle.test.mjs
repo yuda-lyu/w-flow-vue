@@ -11,6 +11,8 @@
  *    waypoint 之 points 更新於上鎖時忽略。
  * G6 主鍵限制: 四角與轉折點之右鍵 mousedown 不啟動手勢。
  * G7 waypoint 收尾: 視窗失焦與元件銷毀皆移除 document 監聽與全域游標樣式, activeGesture 歸零。
+ * G8 pan 於上鎖時取消(契約 §5 上鎖列: pan 取消); 刪除拖曳中之節點走 cancelDrag 單一路徑, activeGesture 歸零(否則之後所有手勢/popup 被閘門擋死)。
+ * G9 邊 label 位移追蹤: 僅主鍵; mouseup / blur / destroy 皆卸除 document 監聽(重入先收上一輪)。
  */
 import { mount } from '@vue/test-utils'
 import WFlowVue from '../src/components/WFlowVue.vue'
@@ -206,6 +208,131 @@ describe('G5 上鎖切換之手勢政策', () => {
         expect(w.vm.activeGesture).toBe(null)
         w.destroy()
     })
+})
+
+describe('G8 上鎖取消 pan; 刪除拖曳中節點歸零手勢', () => {
+    test('pan 進行中上鎖: isPanning false、activeGesture null、不發 viewport-change', async () => {
+        const w = mountFlow()
+        await w.vm.$nextTick()
+        await gestures.pan.start(w)
+        expect(w.vm.isPanning).toBe(true)
+        expect(w.vm.activeGesture).toBe('pan')
+        //初始 fit 已發過一次 viewport-change; 取消 pan 不得再發
+        const vcBefore = (w.emitted('viewport-change') || []).length
+        w.vm.toggleInteractive()
+        expect(w.vm.isPanning).toBe(false)
+        expect(w.vm.activeGesture).toBe(null)
+        expect((w.emitted('viewport-change') || []).length).toBe(vcBefore)
+        docUp()
+        expect(w.vm.activeGesture).toBe(null)
+        w.destroy()
+    })
+    test('拖曳中刪除該節點: 手勢歸零, 之後可再啟動手勢與開 popup', async () => {
+        const w = mountFlow()
+        await w.vm.$nextTick()
+        await gestures.drag.start(w)
+        expect(w.vm.activeGesture).toBe('drag')
+        await w.vm.deleteNodes(['1'])
+        await w.vm.$nextTick()
+        expect(w.vm.isDraggingNode).toBe(false)
+        expect(w.vm.activeGesture).toBe(null)
+        expect(w.vm.gesturing).toBe(false)
+        expect(w.vm.canOpenPopup()).toBe(true)
+        docUp()
+        await gestures.pan.start(w)
+        expect(w.vm.activeGesture).toBe('pan')
+        docUp()
+        w.destroy()
+    })
+})
+
+describe('G9 邊 label 位移追蹤收尾', () => {
+    const labelEl = (w) => w.find('.vue-flow__edge[data-id="e1"] .vue-flow__edge-label')
+    test('右鍵不掛監聽; 主鍵 mouseup 卸除; blur 卸除; 重入先收上一輪', async () => {
+        const w = mountFlow()
+        await w.vm.$nextTick()
+        const e = ew(w, 'e1')
+        await labelEl(w).trigger('mousedown', { button: 2 })
+        expect(e._labelGesture).toBeFalsy()
+        await labelEl(w).trigger('mousedown', { button: 0 })
+        expect(e._labelGesture).toBeTruthy()
+        const first = e._labelGesture
+        await labelEl(w).trigger('mousedown', { button: 0 })
+        expect(e._labelGesture).not.toBe(first)
+        docUp()
+        expect(e._labelGesture).toBeFalsy()
+        await labelEl(w).trigger('mousedown', { button: 0 })
+        window.dispatchEvent(new Event('blur'))
+        expect(e._labelGesture).toBeFalsy()
+        w.destroy()
+    })
+    test('進行中銷毀: 監聽卸除(domGesture tracker dispose), 之後 mouseup 不再觸碰', async () => {
+        const w = mountFlow()
+        await w.vm.$nextTick()
+        const e = ew(w, 'e1')
+        await labelEl(w).trigger('mousedown', { button: 0 })
+        const g = e._labelGesture
+        expect(g.isActive()).toBe(true)
+        const spy = jest.spyOn(document, 'removeEventListener')
+        w.destroy()
+        expect(e._labelGesture).toBeFalsy()
+        expect(g.isActive()).toBe(false)
+        expect(spy.mock.calls.some(c => c[0] === 'mousemove')).toBe(true)
+        expect(spy.mock.calls.some(c => c[0] === 'mouseup')).toBe(true)
+        spy.mockRestore()
+    })
+})
+
+//G10 六手勢 × 五終止原因矩陣(契約 §5 終止列): mouseup / blur / buttons-lost / destroy / lock 皆同一收尾——
+//activeGesture 與根 class 歸零, 無全域游標樣式殘留, 子元件手勢 tracker 皆已 dispose。
+//刻意允許: destroy 後 activeGesture 不再檢查(元件已銷毀, 狀態無宿主可讀), 只驗游標樣式與 tracker。
+describe('G10 手勢 × 終止原因矩陣', () => {
+    const trackers = (w) => {
+        const r = []
+        for (const n of w.vm.$refs.nodeRenderer.$refs.wrappers) r.push(n._mouseGesture, n._resizeGesture)
+        for (const e of w.vm.$refs.edgeRenderer.$refs.wrappers) r.push(e._waypointGesture, e._labelGesture)
+        return r.filter(Boolean)
+    }
+    const terminate = {
+        mouseup: (w) => docUp(),
+        blur: (w) => { window.dispatchEvent(new Event('blur')); w.vm.onWindowBlur() },
+        'buttons-lost': (w) => document.dispatchEvent(new MouseEvent('mousemove', { bubbles: true, buttons: 0, clientX: 40, clientY: 40 })),
+        lock: (w) => w.vm.toggleInteractive(),
+    }
+    for (const gname of Object.keys(gestures)) {
+        for (const reason of Object.keys(terminate)) {
+            test(`${gname} × ${reason}`, async () => {
+                const w = mountFlow()
+                await w.vm.$nextTick()
+                await gestures[gname].start(w)
+                expect(w.vm.activeGesture).toBe(gname === 'boxselect' ? 'boxselect' : gname)
+                terminate[reason](w)
+                await w.vm.$nextTick()
+                expect(w.vm.activeGesture).toBe(null)
+                expect(w.vm.gesturing).toBe(false)
+                expect(w.classes()).not.toContain('vue-flow--gesturing')
+                expect(cursorStyles().length).toBe(0)
+                expect(trackers(w).filter(t => t.isActive()).length).toBe(0)
+                //終止後可再啟動手勢(閘門已放開); 框選之 Shift 先放開, 否則再按下仍是框選
+                docUp()
+                document.dispatchEvent(new KeyboardEvent('keyup', { key: 'Shift', bubbles: true }))
+                if (reason === 'lock') w.vm.toggleInteractive()
+                await gestures.pan.start(w)
+                expect(w.vm.activeGesture).toBe('pan')
+                docUp()
+                w.destroy()
+            })
+        }
+        test(`${gname} × destroy`, async () => {
+            const w = mountFlow()
+            await w.vm.$nextTick()
+            await gestures[gname].start(w)
+            const ts = trackers(w)
+            w.destroy()
+            expect(cursorStyles().length).toBe(0)
+            expect(ts.filter(t => t.isActive()).length).toBe(0)
+        })
+    }
 })
 
 describe('G6 主鍵限制', () => {

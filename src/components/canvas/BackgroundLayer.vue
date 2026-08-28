@@ -1,5 +1,12 @@
 <template>
   <svg class="vue-flow__background">
+    <!-- 底色(opt.platformBackgroundColor): 未設定時不繪, 露出畫布預設白底 -->
+    <rect
+      v-if="bgColor"
+      x="0" y="0"
+      width="100%" height="100%"
+      :fill="bgColor"
+    />
     <pattern
       :id="patternId"
       :x="transformedX"
@@ -42,14 +49,13 @@ export default {
         size: { type: Number, default: 1 },
         patternColor: { type: String, default: '#81818a' },
         bgColor: { type: String, default: null },
+        //pattern id 每實例唯一(同頁多個 flow 之 <pattern> 同名時會互相引用)
+        patternId: { type: String, required: true },
         //改收整個viewport物件(而非x/y/zoom三個純量): 令宿主WFlowVue之render僅讀取穩定物件參考,
         //平移時mutate viewport.x/y不再觸發WFlowVue重渲染, 僅本組件之computed重評估更新pattern偏移
         viewport: { type: Object, default: () => ({ x: 0, y: 0, zoom: 1 }) },
     },
     computed: {
-        patternId() {
-            return 'vue-flow-bg-pattern'
-        },
         vpX() {
             return (this.viewport && this.viewport.x) || 0
         },

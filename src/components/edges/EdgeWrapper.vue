@@ -111,7 +111,7 @@
                     @mouseleave="gearHovered = false"
                   >
                     <svg viewBox="0 0 20 20" width="14" height="14" fill="currentColor">
-                      <path d="M11.078 0l.294 1.833a7.587 7.587 0 0 1 2.174 1.25l1.725-.618 1.078 1.87-1.43 1.217a7.508 7.508 0 0 1 0 2.498l1.43 1.217-1.078 1.87-1.725-.618a7.587 7.587 0 0 1-2.174 1.25L11.078 14H8.922l-.294-1.833a7.587 7.587 0 0 1-2.174-1.25l-1.725.618-1.078-1.87 1.43-1.217a7.508 7.508 0 0 1 0-2.498L3.65 4.733l1.078-1.87 1.725.618a7.587 7.587 0 0 1 2.174-1.25L8.922 0h2.156zM10 4.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5z" transform="translate(0 3)"/>
+                      <path :d="gearPath" transform="translate(0 3)"/>
                     </svg>
                   </span>
                 </template>
@@ -137,43 +137,39 @@
 </template>
 
 <script>
-import { getBezierPath, getStraightPath, getStepPath, getSmoothStepPath } from '../../js/edgePath'
+import { getPathFunction, parseWaypoints } from '../../js/edgePath'
+import { effectiveEdgeType, effectiveAnimated, computeConnStyle, computeLabelStyle, computeEdgeClasses } from '../../js/edgeStyle.mjs'
 import { getHandlePosition } from '../../js/geometry'
 import { connSourceSide, connTargetSide } from '../../js/anchorPolicy.mjs'
 import { resolveMarker, markerUrl } from '../../js/edgeMarker.mjs'
+import { classifyHit, isAffordanceHit } from '../../js/hitTest.mjs'
+import elementPopups from '../mixins/elementPopups.mjs'
+import { GEAR_PATH } from '../../js/icons.mjs'
+import { startDocumentGesture, crossedThreshold, gestureBlockedReason } from '../../js/domGesture.mjs'
 import ConnSettingsForm from '../ui/ConnSettingsForm.vue'
 import SlotOutlet from '../ui/SlotOutlet.vue'
 import WPopup from 'w-component-vue/src/components/WPopup.vue'
 import fixSvgNs from '../../js/fixSvgNs.mjs'
 
-//雙擊判定窗(ms): dblclick 模式下單擊之資訊 popup 延後此時間再開, 期間雙擊即取消
-const DBL_MS = 250
-
-const pathFunctions = {
-    bezier: getBezierPath,
-    straight: getStraightPath,
-    step: getStepPath,
-    smoothstep: getSmoothStepPath,
-}
 
 export default {
     name: 'EdgeWrapper',
     //修Vue2 #7330: 本元件位於<svg>內且含foreignObject, 需清除$vnode.ns否則其內HTML元素(含WPopup之slot內容)被建為SVGElement而0x0不可見
-    mixins: [fixSvgNs],
+    //popup 狀態機共用 mixin(elementPopups, 與 NodeWrapper 同一份判準)
+    mixins: [fixSvgNs, elementPopups],
     components: { ConnSettingsForm, SlotOutlet, WPopup },
     inject: {
-        getDefConn: { default: () => () => ({}) },
-        //defNode 供邊端點之形狀解析(nodeStyle.nodeShape; 與把手佈局同一基準)
-        getDefNode: { default: () => () => ({}) },
         getDragGhost: { default: () => () => null },
-        //複選鍵是否生效: getter注入而非prop——只被事件handler讀取, 不進渲染面, 判準與NodeWrapper一致
-        getMultiSelectActive: { default: () => () => false },
+        //視口縮放(client 位移 → 畫布位移換算; 高頻手勢狀態走 getter)
+        getViewportZoom: { default: () => () => 1 },
         //進行中手勢(一次一手勢)與 popup 開啟閘門: 判準與 NodeWrapper 一致(spec/流程_互動契約.md §5-§6)
         getActiveGesture: { default: () => () => null },
-        getCanOpenPopup: { default: () => () => true },
     },
     props: {
         conn: { type: Object, required: true },
+        //節點/連線預設(opt.def*): 低頻配置 props 下傳
+        defNode: { type: Object, default: () => ({}) },
+        defConn: { type: Object, default: () => ({}) },
         sourceNode: { type: Object, default: null },
         targetNode: { type: Object, default: null },
         selected: { type: Boolean, default: false },
@@ -197,48 +193,35 @@ export default {
     },
     data() {
         return {
-            hovered: false,
             gearHovered: false,
-            infoPopupShow: false,
-            infoPopupEditable: true,
-            settingsPopupShow: false,
             dragPts: null, //轉折點拖曳中之暫時座標([[x,y],...]), 比照節點拖曳之ghost: 不改conn.points(prop), 放開才emit由宿主寫回
         }
     },
     watch: {
-        settingsPopupShow(val) {
-            if (val) this.infoPopupShow = false
-        },
-        infoPopupShow(val) {
-            if (val) this.settingsPopupShow = false
-        },
-        //複選模式引擎時關閉本連線已開之popup(與NodeWrapper同契約)
-        multiSelectActive(val) {
-            if (val) {
-                this.infoPopupShow = false
-                this.settingsPopupShow = false
-            }
+        //上鎖切換(契約 §5): 本連線持有之 document 手勢(轉折點拖曳/label 追蹤)取消提交
+        locked(val) {
+            if (val) this.cancelLocalGestures()
         },
     },
     beforeDestroy() {
-        this.cancelPendingInfo()
-        //轉折點拖曳進行中被銷毀: document 監聽與全域游標樣式不會自行移除, 於此收尾並通知 WFlowVue 清手勢(不提交)
-        if (this.endWaypointGesture()) {
-            this.dragPts = null
-            this.$emit('conn-waypoint-end', { conn: this.conn, cancelled: true })
-        }
+        this.cancelLocalGestures()
     },
     computed: {
-        //複選模式(反應式讀取注入getter): 供watcher清popup與各開啟入口gating
-        multiSelectActive() {
-            return this.getMultiSelectActive()
+        //設定 popup 之可互動旗標(elementPopups.canOpenSettings): 連線以 interactive 為準
+        settingsInteractive() {
+            return this.interactive
         },
-        //齒輪可見: 只有 hover 模式於移入時顯示; click/dblclick 模式不顯示齒輪(直接開 popup)
-        gearVisible() {
-            return this.settingsTrigger === 'hover' && this.hovered
+        gearPath() {
+            return GEAR_PATH
+        },
+        effAnimated() {
+            return effectiveAnimated(this.conn, this.dc)
+        },
+        edgeType() {
+            return effectiveEdgeType(this.conn, this.dc)
         },
         dc() {
-            return this.getDefConn()
+            return this.defConn
         },
         hasInfoPopup() {
             //popupSlotFn: 宿主自訂popup內容自slot轉發鏈改為函式prop後, 本元件$scopedSlots不再有宿主slot,
@@ -264,12 +247,12 @@ export default {
         sourcePoint() {
             const n = this.effSourceNode
             if (!n) return { x: 0, y: 0 }
-            return getHandlePosition(n, this.sourcePosition, this.nodeInternals[n.id] || {}, this.getDefNode())
+            return getHandlePosition(n, this.sourcePosition, this.nodeInternals[n.id] || {}, this.defNode)
         },
         targetPoint() {
             const n = this.effTargetNode
             if (!n) return { x: 0, y: 0 }
-            return getHandlePosition(n, this.targetPosition, this.nodeInternals[n.id] || {}, this.getDefNode())
+            return getHandlePosition(n, this.targetPosition, this.nodeInternals[n.id] || {}, this.defNode)
         },
         sourceX() {
             return this.sourcePoint.x
@@ -297,24 +280,9 @@ export default {
         effPoints() {
             return this.dragPts || this.conn.points
         },
-        // 強制轉折點正規化([[x,y],...]或[{x,y},...]皆可), 無效回空陣列
+        //強制轉折點(edgePath.parseWaypoints 嚴格解析, 與路徑函式同一 parser), 無效回空陣列
         waypointPts() {
-            const pts = this.effPoints
-            if (!Array.isArray(pts) || pts.length === 0) return []
-            const r = []
-            for (const p of pts) {
-                let x = null
-                let y = null
-                if (Array.isArray(p) && p.length >= 2) {
-                    x = Number(p[0]); y = Number(p[1])
-                }
-                else if (p && typeof p === 'object') {
-                    x = Number(p.x); y = Number(p.y)
-                }
-                if (!Number.isFinite(x) || !Number.isFinite(y)) return []
-                r.push({ x, y })
-            }
-            return r
+            return parseWaypoints(this.effPoints) || []
         },
         showWaypoints() {
             return this.settingsEnabled && this.interactive && !this.locked && this.waypointPts.length > 0
@@ -328,23 +296,10 @@ export default {
             return { x: Math.round(this.targetX), y: Math.round(this.targetY) }
         },
         classes() {
-            const connClasses = this.conn.class
-                ? (Array.isArray(this.conn.class) ? this.conn.class : [this.conn.class])
-                : []
-            return [
-                'vue-flow__edge',
-                `vue-flow__edge-${this.conn.type || this.dc.type || 'bezier'}`,
-                ...connClasses,
-                {
-                    'vue-flow__edge--selected': this.selected,
-                    'vue-flow__edge--animated': this.conn.animated,
-                    'vue-flow__edge--hovered': this.hovered,
-                },
-            ]
+            return computeEdgeClasses(this.conn, this.dc, { selected: this.selected, hovered: this.hovered })
         },
         pathData() {
-            const type = this.conn.type || this.dc.type || 'bezier'
-            const fn = pathFunctions[type] || pathFunctions.bezier
+            const fn = getPathFunction(this.edgeType)
             return fn({
                 sourceX: this.sourceX,
                 sourceY: this.sourceY,
@@ -360,17 +315,9 @@ export default {
                 offset: this.dc.defOffset,
             })
         },
+        //線色/線寬與 marker 同一 resolveLineStyle; 選取態 +1px(edgeStyle.computeConnStyle)
         connStyle() {
-            const d = this.dc
-            const base = this.conn.style ? { ...this.conn.style } : {}
-            base.stroke = this.conn.edgeColor || d.edgeColor || '#b1b1b1'
-            if (this.conn.edgeWidth !== undefined) base.strokeWidth = this.conn.edgeWidth
-            else if (d.edgeWidth !== undefined) base.strokeWidth = d.edgeWidth
-            //選取態: 線寬加 1px(與節點選取態外框加粗同一語義; 預設 1px → 2px)
-            if (this.selected) base.strokeWidth = (Number(base.strokeWidth) || 1) + 1
-            let dash = this.conn.edgeDasharray !== undefined ? this.conn.edgeDasharray : d.edgeDasharray
-            if (dash) base.strokeDasharray = dash
-            return base
+            return computeConnStyle(this.conn, this.dc, this.selected)
         },
         //兩端箭頭(edgeMarker 單一來源, 與 EdgeMarkerDefs 同一 id)
         markerStartUrl() {
@@ -380,13 +327,7 @@ export default {
             return markerUrl(resolveMarker(this.conn, this.dc, 'end'))
         },
         labelStyle() {
-            const d = this.dc
-            const s = {}
-            const fontSize = this.conn.fontSize || d.fontSize
-            const fontColor = this.conn.fontColor || d.fontColor
-            if (fontSize) s.fontSize = fontSize + 'px'
-            if (fontColor) s.color = fontColor
-            return s
+            return computeLabelStyle(this.conn, this.dc)
         },
     },
     methods: {
@@ -419,8 +360,8 @@ export default {
             const t = event && event.target
             if (!t) return false
             if (t === event.currentTarget) return true
-            if (!t.closest) return false
-            return !!t.closest('.vue-flow__edge-settings-anchor, .vue-flow__edge-waypoint')
+            //affordance(齒輪錨區/轉折點)之分類走 hitTest 單一來源(選擇器清單不再於此另抄一份)
+            return isAffordanceHit(classifyHit(t, this.$el))
         },
         onGroupClick(event) {
             if (this.isGestureTarget(event)) return
@@ -434,79 +375,20 @@ export default {
             if (this.isGestureTarget(event)) return
             this.onContextMenu(event)
         },
-        //popup 開啟閘門: 複選模式 或 任何手勢進行中 一律拒開(判準與NodeWrapper一致)
-        canOpenPopup() {
-            return !this.getMultiSelectActive() && this.getCanOpenPopup()
-        },
-        //資訊popup之開關請求由本元件裁決(見NodeWrapper.onInfoPopupInput之why); 關閉請求一律放行
-        onInfoPopupInput(val) {
-            if (val && !this.canOpenPopup()) {
-                return
-            }
-            //click 模式: 點擊即開設定 popup, 資訊 popup 讓位
-            if (val && this.settingsTrigger === 'click' && this.canOpenSettings()) return
-            if (val) {
-                this.requestInfoPopup()
-                return
-            }
-            this.infoPopupShow = val
+        //直接開設定/點齒輪/轉折點: 本連線成為唯一 active(elementPopups.openSettingsPopup 亦經此發出)
+        emitActivate(event) {
+            this.$emit('conn-activate', { conn: this.conn, event })
         },
         onClick(event) {
             if (this.settingsTrigger === 'click' && this.canOpenSettings()) {
                 //click 模式: 點線直接開設定 popup, 資訊 popup 讓位
                 this.openSettingsPopup(event)
             }
-            else if (this.hasInfoPopup && this.canOpenPopup()) {
-                //連線之popup另有本地直接開啟路徑(非僅WPopup trigger), 故此處亦須擋
+            else if (this.hasInfoPopup) {
+                //連線之popup另有本地直接開啟路徑(非僅WPopup trigger): 同走 elementPopups 之開啟政策(閘門/讓位/延後)
                 this.requestInfoPopup()
             }
             this.$emit('conn-click', { conn: this.conn, event })
-        },
-        //資訊 popup 開啟請求: dblclick 模式下延後一個雙擊判定窗(瀏覽器雙擊前必先派發 click, 立即開會先閃現再被設定 popup 取代),
-        //期間雙擊即取消; 其他模式立即開
-        requestInfoPopup() {
-            if (this.settingsTrigger === 'dblclick' && this.canOpenSettings()) {
-                this.cancelPendingInfo()
-                this._infoTimer = setTimeout(() => {
-                    this._infoTimer = null
-                    if (this.canOpenPopup()) this.infoPopupShow = true
-                }, DBL_MS)
-                return
-            }
-            this.infoPopupShow = true
-        },
-        cancelPendingInfo() {
-            if (this._infoTimer) {
-                clearTimeout(this._infoTimer)
-                this._infoTimer = null
-            }
-        },
-        canOpenSettings() {
-            return this.interactive && !this.locked && this.settingsEnabled && this.canOpenPopup()
-        },
-        //click/dblclick 模式之直接開啟: 同閘門, 並如點齒輪般使本連線成為唯一 active
-        openSettingsPopup(event) {
-            if (!this.canOpenSettings()) return
-            this.settingsPopupShow = true
-            this.$emit('conn-activate', { conn: this.conn, event })
-        },
-        //宿主API入口gating: 程式化開啟於複選/手勢中亦拒絕(回傳false供呼叫端判斷)
-        openInfoPopup() {
-            if (!this.canOpenPopup()) return false
-            this.infoPopupShow = true
-            return true
-        },
-        //設定popup之開關由本元件裁決(拒開條件同上; 關閉請求一律放行)
-        onSettingsPopupInput(val) {
-            if (val && !this.canOpenPopup()) {
-                return
-            }
-            this.settingsPopupShow = val
-        },
-        //關閉本連線全部 popup(手勢啟動時由 WFlowVue.closeAllPopups 統一呼叫, 理由見 NodeWrapper.closePopups)
-        closePopups() {
-            this.infoPopupShow = false
-            this.settingsPopupShow = false
         },
         onDoubleClick(event) {
             if (this.settingsTrigger === 'dblclick') {
@@ -521,26 +403,33 @@ export default {
         onLabelMouseDown(event) {
             //label 文字不可選取亦不可原生拖曳(圖台內文字拖曳無語義; 原生 drag 會接管事件流)
             event.preventDefault()
+            //僅主鍵(與其他手勢同一判準); 重入先收上一輪(mouseup 遺失時之殘留)
+            if (event.button !== 0) return
+            this.endLabelGesture()
             this.infoPopupShow = false
             const startX = event.clientX
             const startY = event.clientY
-            const onMove = (e) => {
-                if (Math.abs(e.clientX - startX) > 2 || Math.abs(e.clientY - startY) > 2) {
-                    this.infoPopupEditable = false
-                    document.removeEventListener('mousemove', onMove)
-                }
-            }
-            const onUp = () => {
-                document.removeEventListener('mousemove', onMove)
-                document.removeEventListener('mouseup', onUp)
-                if (!this.infoPopupEditable) {
-                    setTimeout(() => {
-                        this.infoPopupEditable = true
-                    }, 0)
-                }
-            }
-            document.addEventListener('mousemove', onMove)
-            document.addEventListener('mouseup', onUp)
+            //label 位移追蹤(domGesture): 跨門檻即視為拖曳(資訊 popup 不因此次放開而開); mouseup / blur / buttons-lost 同一收尾
+            this._labelGesture = startDocumentGesture({
+                onMove: (e) => {
+                    if (crossedThreshold(startX, startY, e.clientX, e.clientY)) this.infoPopupEditable = false
+                },
+                onEnd: () => {
+                    this._labelGesture = null
+                    if (!this.infoPopupEditable) {
+                        setTimeout(() => {
+                            this.infoPopupEditable = true
+                        }, 0)
+                    }
+                },
+            })
+        },
+        //label 位移追蹤之收尾(mouseup / blur / destroy 共用): 卸 document/window 監聽
+        endLabelGesture() {
+            const g = this._labelGesture
+            if (!g) return false
+            this._labelGesture = null
+            return g.dispose()
         },
         onSettingsUpdate(key, value) {
             this.$emit('conn-settings-update', { conn: this.conn, key, value })
@@ -551,61 +440,54 @@ export default {
         },
         //收掉轉折點拖曳手勢之監聽與全域游標樣式(正常放開/視窗失焦/銷毀共用); 回傳是否確實收到進行中之手勢
         //why: 原版只掛 document mouseup, 視窗失焦或元件銷毀時監聽器與 `* { cursor: move }` 全域樣式殘留整頁
+        //本連線持有之 document 手勢一併取消(destroy / 上鎖共用): 轉折點不提交, 通知 WFlowVue 清手勢與 ghost
+        cancelLocalGestures() {
+            this.endLabelGesture()
+            if (this.endWaypointGesture()) {
+                this.dragPts = null
+                this.$emit('conn-waypoint-end', { conn: this.conn, cancelled: true })
+            }
+        },
         endWaypointGesture() {
             const g = this._waypointGesture
             if (!g) return false
             this._waypointGesture = null
-            document.removeEventListener('mousemove', g.onMouseMove)
-            document.removeEventListener('mouseup', g.onMouseUp)
-            window.removeEventListener('blur', g.onMouseUp)
-            if (g.cursorStyle && g.cursorStyle.parentNode) g.cursorStyle.parentNode.removeChild(g.cursorStyle)
+            g.dispose()
             return true
         },
         onWaypointMouseDown(i, event) {
             if (!this.interactive || this.locked || !this.settingsEnabled) return
-            //複選模式中不啟動轉折點拖曳(標記已隱藏, 縱深第二層; 守衛先於preventDefault/樣式建立)
-            if (this.getMultiSelectActive()) return
-            //僅主鍵; 一次一手勢(判準與把手/四角/節點/畫布一致)
-            if (event.button !== 0) return
-            if (this.getActiveGesture()) return
+            //啟動守衛(domGesture.gestureBlockedReason 單一來源): 複選模式 / 進行中手勢 / 非主鍵不啟動(先於 preventDefault/樣式建立)
+            if (gestureBlockedReason({ button: event.button, multiSelectActive: this.getMultiSelectActive(), activeGesture: this.getActiveGesture() })) return
             this.endWaypointGesture()
             event.preventDefault()
             //手勢生命週期上報(WFlowVue 據此設 activeGesture / 關閉全部 popup / 標記擁有者)
             this.$emit('conn-waypoint-start', { conn: this.conn, event, el: this.$el })
 
-            // 鎖定拖曳游標
-            const cursorStyle = document.createElement('style')
-            cursorStyle.textContent = '* { cursor: move !important; }'
-            document.head.appendChild(cursorStyle)
-
             const startX = event.clientX
             const startY = event.clientY
             const pts0 = this.waypointPts.map(p => [p.x, p.y]) //拖曳起始快照
-            // Get zoom from the viewport transform(同 NodeWrapper 拖曳之換算)
-            const viewport = this.$el.closest('.vue-flow__viewport')
-            const zoom = viewport ? parseFloat(viewport.style.transform.match(/scale\(([^)]+)\)/)?.[1] || 1) : 1
-
-            const onMouseMove = (e) => {
-                const dx = (e.clientX - startX) / zoom
-                const dy = (e.clientY - startY) / zoom
-                const np = pts0.map(p => [p[0], p[1]])
-                np[i] = [Math.round(pts0[i][0] + dx), Math.round(pts0[i][1] + dy)]
-                //僅更新本元件之ghost, 路徑即時重繪; 不mutate conn.points(prop)以免波及宿主之deep watcher
-                this.dragPts = np
-            }
-            const onMouseUp = () => {
-                if (!this.endWaypointGesture()) return
-                //放開才發更新事件(與齒輪表單同一事件流, 由宿主持久化); 事件流為同步, 回來時conn.points已更新故可安全清ghost
-                const value = this.waypointPts.map(p => [p.x, p.y])
-                this.$emit('conn-settings-update', { conn: this.conn, key: 'points', value })
-                this.dragPts = null
-                this.$emit('conn-waypoint-end', { conn: this.conn })
-            }
-            this._waypointGesture = { onMouseMove, onMouseUp, cursorStyle }
-            document.addEventListener('mousemove', onMouseMove)
-            document.addEventListener('mouseup', onMouseUp)
-            //視窗失焦後收不到mouseup, 監聽器與全域游標樣式同樣需收尾(以最後 ghost 提交, 與節點縮放之失焦處理一致)
-            window.addEventListener('blur', onMouseUp)
+            const zoom = this.getViewportZoom() || 1
+            //document 層手勢(domGesture): 期間鎖定 move 游標; mouseup / blur / buttons-lost 皆以最後 ghost 提交(同一收尾)
+            this._waypointGesture = startDocumentGesture({
+                cursor: 'move',
+                onMove: (e) => {
+                    const dx = (e.clientX - startX) / zoom
+                    const dy = (e.clientY - startY) / zoom
+                    const np = pts0.map(p => [p[0], p[1]])
+                    np[i] = [Math.round(pts0[i][0] + dx), Math.round(pts0[i][1] + dy)]
+                    //僅更新本元件之ghost, 路徑即時重繪; 不mutate conn.points(prop)以免波及宿主之deep watcher
+                    this.dragPts = np
+                },
+                onEnd: () => {
+                    if (!this.endWaypointGesture()) return
+                    //放開才發更新事件(與齒輪表單同一事件流, 由宿主持久化); 事件流為同步, 回來時conn.points已更新故可安全清ghost
+                    const value = this.waypointPts.map(p => [p.x, p.y])
+                    this.$emit('conn-settings-update', { conn: this.conn, key: 'points', value })
+                    this.dragPts = null
+                    this.$emit('conn-waypoint-end', { conn: this.conn })
+                },
+            })
         },
         onSettingsDelete() {
             //刪除「請求」(內部通道, 由 WFlowVue.runDelete 裁決與提交; 對宿主之完成事件只有 elements-deleted)
@@ -695,10 +577,6 @@ export default {
   height: 0;
 }
 /* click/dblclick 模式: 錨區只供 popup 定位, 齒輪 icon 不可見亦不可點 */
-.vue-flow__edge-settings-anchor--silent .vue-flow__edge-settings {
-  visibility: hidden;
-  pointer-events: none;
-}
 .vue-flow__edge-settings-anchor {
   position: absolute;
   top: -8px;
@@ -726,12 +604,4 @@ export default {
   color: #333;
 }
 /* Fade transition for settings icon */
-.vue-flow__fade-enter-active,
-.vue-flow__fade-leave-active {
-  transition: opacity 0.15s ease;
-}
-.vue-flow__fade-enter,
-.vue-flow__fade-leave-to {
-  opacity: 0;
-}
 </style>

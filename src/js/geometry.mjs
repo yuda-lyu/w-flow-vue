@@ -1,33 +1,6 @@
 import { nodeShape } from './nodeStyle.mjs'
-
-/**
- * 連接點幾何 —— 單一事實來源(把手渲染 nodeStyle.handlePlacementStyle 與邊端點 getHandlePosition 同用 sideAnchorFraction)。
- *
- * 契約(spec/流程_互動契約.md §4.1): 節點四邊各一連接點, 位於形狀「該邊」之中點——
- *   矩形/菱形/橢圓: 外接矩形四邊中點(菱形為四頂點, 橢圓為四極點)
- *   三角形: 頂點所在邊=頂點; 底邊=底邊中點; 兩斜邊=斜邊中點(仍落在外接矩形之 1/4 或 3/4 處)
- * 射出方向恆為外接矩形該邊之法向量(由 side 決定, 與點位無關), 三角形斜邊上之連接點亦水平/垂直射出。
- */
-
-const RECT_FRACTION = {
-    top: { fx: 0.5, fy: 0 },
-    right: { fx: 1, fy: 0.5 },
-    bottom: { fx: 0.5, fy: 1 },
-    left: { fx: 0, fy: 0.5 },
-}
-//三角形: 斜邊中點落在外接矩形之 1/4、3/4(上下向三角形斜邊在左右; 左右向三角形斜邊在上下)
-const TRI_VERTICAL_FRACTION = { ...RECT_FRACTION, left: { fx: 0.25, fy: 0.5 }, right: { fx: 0.75, fy: 0.5 } }
-const TRI_HORIZONTAL_FRACTION = { ...RECT_FRACTION, top: { fx: 0.5, fy: 0.25 }, bottom: { fx: 0.5, fy: 0.75 } }
-
-/**
- * 形狀 × 邊 → 連接點於外接矩形之比例座標 { fx, fy } ∈ [0,1]
- */
-export function sideAnchorFraction(shape, side) {
-    let table = RECT_FRACTION
-    if (shape === 'triangle' || shape === 'triangle-down') table = TRI_VERTICAL_FRACTION
-    else if (shape === 'triangle-right' || shape === 'triangle-left') table = TRI_HORIZONTAL_FRACTION
-    return table[side] || table.bottom
-}
+import { sideAnchorFraction } from './shapeAnchor.mjs'
+import { NODE_DEFAULTS } from './defaults.mjs'
 
 /**
  * 節點某邊連接點之畫布絕對座標(邊端點與把手圓心同一基準)。
@@ -37,21 +10,36 @@ export function sideAnchorFraction(shape, side) {
  * @param {Object} [defNode] 節點預設(形狀之 defNode 層, 經 nodeStyle.nodeShape 單一解析)
  */
 export function getHandlePosition(node, side, nodeInternals, defNode) {
-    const internals = nodeInternals || {}
-    const w = (internals.width) || node.width || 150
-    const h = (internals.height) || node.height || 40
+    const { width: w, height: h } = resolveNodeSize(node, nodeInternals, defNode)
     const f = sideAnchorFraction(nodeShape(node, defNode), side)
     return { x: node.position.x + w * f.fx, y: node.position.y + h * f.fy }
 }
 
 /**
+ * 節點有效尺寸 —— 單一事實來源(幾何/路由/fit/形狀面/佈局共用同一優先序)。
+ * 優先序: 實測尺寸(live: 量測或進行中 ghost, 須為正數)→ 節點明確數值 → defNode(opt.defNodeWidth/Height)→ NODE_DEFAULTS。
+ * 佈局(CSS width/height)不得把實測值回寫為尺寸來源, 故呼叫端傳 live=null 即取「宣告尺寸」。
+ * @param {Object} node
+ * @param {Object|null} [live] { width, height } 實測或 ghost
+ * @param {Object} [defNode]
+ * @returns {{ width: number, height: number }}
+ */
+export function resolveNodeSize(node, live, defNode) {
+    const n = node || {}
+    const l = live || {}
+    const d = defNode || {}
+    const pos = (v) => (typeof v === 'number' && isFinite(v) && v > 0) ? v : null
+    const width = pos(l.width) || pos(n.width) || pos(d.width) || NODE_DEFAULTS.width
+    const height = pos(l.height) || pos(n.height) || pos(d.height) || NODE_DEFAULTS.height
+    return { width, height }
+}
+
+/**
  * Get all nodes that overlap with a given rectangle.
  */
-export function getOverlappingNodes(rect, nodes, nodeInternals) {
+export function getOverlappingNodes(rect, nodes, nodeInternals, defNode) {
     return nodes.filter(node => {
-        const internals = (nodeInternals && nodeInternals[node.id]) || {}
-        const w = internals.width || node.width || 150
-        const h = internals.height || node.height || 40
+        const { width: w, height: h } = resolveNodeSize(node, nodeInternals && nodeInternals[node.id], defNode)
         const nodeRect = {
             x: node.position.x,
             y: node.position.y,
@@ -96,4 +84,38 @@ export function snapPosition(position, gridSize) {
         x: Math.round(position.x / gridSize) * gridSize,
         y: Math.round(position.y / gridSize) * gridSize,
     }
+}
+
+/**
+ * 四角縮放代數(NodeWrapper 縮放手勢之純計算): 右/下角改寬高, 左/上角以對邊固定(位置隨之移動)。
+ * @param {'top-left'|'top-right'|'bottom-left'|'bottom-right'} edge
+ * @param {{x:number,y:number,width:number,height:number}} start 起始幾何
+ * @param {{dx:number,dy:number}} delta 畫布座標位移
+ * @param {{snap?:number,minSize?:number}} [opt] snap>0 時尺寸吸附格線(最小一格), 否則最小 minSize
+ * @returns {{width:number,height:number,x:number,y:number}}
+ */
+export function computeResize(edge, start, delta, opt) {
+    const o = opt || {}
+    const snap = o.snap || 0
+    const minSize = o.minSize || 10
+    const snapVal = (v) => snap ? Math.max(snap, Math.round(v / snap) * snap) : Math.max(minSize, Math.round(v))
+    const dx = delta.dx || 0
+    const dy = delta.dy || 0
+    let width = start.width
+    let height = start.height
+    let x = start.x
+    let y = start.y
+    const left = edge === 'top-left' || edge === 'bottom-left'
+    const top = edge === 'top-left' || edge === 'top-right'
+    if (left) {
+        width = snapVal(start.width - dx)
+        x = start.x + (start.width - width)
+    }
+    else width = snapVal(start.width + dx)
+    if (top) {
+        height = snapVal(start.height - dy)
+        y = start.y + (start.height - height)
+    }
+    else height = snapVal(start.height + dy)
+    return { width, height, x, y }
 }

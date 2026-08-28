@@ -8,7 +8,7 @@
  * To regenerate snapshots after intentional changes:
  *   node --experimental-vm-modules test/generate-routing-snapshots.mjs
  */
-import { calculateStepPoints, clearStepCache } from '../src/js/stepRouting'
+import { calculateStepPoints } from '../src/js/stepRouting'
 import snapshots from './jsons/routing-snapshots.json'
 
 const NODE_W = 100
@@ -17,7 +17,6 @@ const BUF = 24
 
 describe('routing snapshot regression', () => {
     beforeEach(() => {
-        clearStepCache()
     })
 
     test('snapshot file has 576 cases', () => {

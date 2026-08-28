@@ -10,13 +10,14 @@
 </template>
 
 <script>
-import { handleStyleVars, handlePlacementStyle } from '../../js/nodeStyle.mjs'
+import { handlePlacementStyle } from '../../js/nodeStyle.mjs'
+import { gestureBlockedReason } from '../../js/domGesture.mjs'
 
 /**
  * 連接點(把手): 節點四邊各一, 無連出/連入之分——任一把手皆可作為建線出發點與落點(spec/流程_互動契約.md §3-§4)。
  * 幾何契約: 圓心落在節點外框盒上該邊之連接點(nodeStyle.handlePlacementStyle 與 geometry.getHandlePosition 同一 fraction);
  * 定位含節點外框寬之外推, translate(-50%,-50%) 置中, hover 放大時圓心不動。
- * 樣式(面色/框線色/框線寬/尺寸)由 opt.defHandle* 經 defNode 解析注入(單一組, 四把手相同)。
+ * 樣式(面色/框線色/框線寬/尺寸)由 opt.defHandle* 經 defNode 解析, NodePorts 算一次以 styleVars 下傳(單一組, 四把手相同)。
  * 建線期間之三態視覺由節點/把手之 data-connect-* 標記驅動。
  * @click.stop: 把手為建線手勢之出發/落點, 點擊(按下放開不拖)不得冒泡至 NodeWrapper 之 WPopup trigger
  * 誤開節點資訊 popup; mousedown 早已 .stop 故節點亦不發 node-click, 與之對稱
@@ -29,11 +30,12 @@ export default {
         getMultiSelectActive: { default: () => () => false },
         //進行中手勢(一次一手勢): 已有手勢時不啟動建線
         getActiveGesture: { default: () => () => null },
-        getDefNode: { default: () => () => ({}) },
     },
     props: {
         position: { type: String, required: true }, // 'top' | 'right' | 'bottom' | 'left'
         shape: { type: String, default: 'rectangle' },
+        //把手樣式 CSS 變數(nodeStyle.handleStyleVars, 由 NodePorts 算一次下傳)
+        styleVars: { type: Object, default: () => ({}) },
         connectable: { type: Boolean, default: true },
         locked: { type: Boolean, default: false },
         //所屬節點之外框寬(px): 定位外推量, 由節點元件以 nodeBorderWidth 解析後傳入
@@ -41,7 +43,7 @@ export default {
     },
     computed: {
         handleStyle() {
-            return { ...handleStyleVars(this.getDefNode()), ...handlePlacementStyle(this.shape, this.position, this.nodeEdgeWidth) }
+            return { ...this.styleVars, ...handlePlacementStyle(this.shape, this.position, this.nodeEdgeWidth) }
         },
         classes() {
             return [
@@ -54,12 +56,8 @@ export default {
     methods: {
         onMouseDown(event) {
             if (!this.connectable) return
-            //複選模式中不啟動建線(守衛先於preventDefault, 不吞事件語義)
-            if (this.getMultiSelectActive()) return
-            //一次一手勢: 進行中(拖曳/縮放/轉折點/框選/平移/建線)不再啟動
-            if (this.getActiveGesture()) return
-            //僅主鍵可啟動建線: 右鍵/中鍵不 emit(WFlowVue 之重入守衛為第二層縱深)
-            if (event.button !== 0) return
+            //啟動守衛(domGesture.gestureBlockedReason 單一來源): 複選模式 / 進行中手勢 / 非主鍵皆不啟動(先於 preventDefault, 不吞事件語義)
+            if (gestureBlockedReason({ button: event.button, multiSelectActive: this.getMultiSelectActive(), activeGesture: this.getActiveGesture() })) return
             //阻止文字選取隨拖線啟動(把手上按下拖曳屬建線手勢, 非選字)
             event.preventDefault()
             this.$emit('connect-start', { event, handlePosition: this.position })

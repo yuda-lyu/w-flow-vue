@@ -5,14 +5,7 @@
 </template>
 
 <script>
-import { getBezierPath, getStraightPath, getStepPath, getSmoothStepPath } from '../../js/edgePath'
-
-const pathFunctions = {
-    bezier: getBezierPath,
-    straight: getStraightPath,
-    step: getStepPath,
-    smoothstep: getSmoothStepPath,
-}
+import { getPathFunction } from '../../js/edgePath'
 
 export default {
     name: 'ConnectionLine',
@@ -23,13 +16,15 @@ export default {
         state: { type: Object, required: true }, // { active, fromX, fromY, fromPosition, toX, toY, toPosition, dropStatus }
         type: { type: String, default: 'bezier' },
         lineStyle: { type: Object, default: null },
+        //step/smoothstep 之法線 stub 長(與正式邊同一 defConn.defOffset, 否則放開後路徑跳動)
+        offset: { type: Number, default: undefined },
     },
     computed: {
         active() {
             return this.state.active
         },
         pathD() {
-            const fn = pathFunctions[this.type] || pathFunctions.bezier
+            const fn = getPathFunction(this.type)
             const s = this.state
             return fn({
                 sourceX: s.fromX,
@@ -38,6 +33,7 @@ export default {
                 targetX: s.toX,
                 targetY: s.toY,
                 targetPosition: s.toPosition,
+                offset: this.offset,
             }).path
         },
         //落點判定狀態(dropStatus: 'none'|'valid'|'invalid')→ BEM status class;
