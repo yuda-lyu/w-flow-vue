@@ -111,3 +111,15 @@ export function computeCenterView(center, container, zoom) {
 export function easeInOutCubic(t) {
     return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2
 }
+
+/**
+ * 容器尺寸改變之視口補正: 舊容器中心之畫布點於新容器仍居中(zoom 不變)——地圖庫慣例(Leaflet invalidateSize pan:true)。
+ * 推導: 舊中心畫布點 c = (oldW/2 - x)/z; 令 newW/2 = c*z + x' → x' = x + (newW - oldW)/2(y 同理)。
+ */
+export function recenterForResize(viewport, oldSize, newSize) {
+    return {
+        x: viewport.x + (newSize.width - oldSize.width) / 2,
+        y: viewport.y + (newSize.height - oldSize.height) / 2,
+        zoom: viewport.zoom,
+    }
+}

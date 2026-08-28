@@ -1,5 +1,5 @@
 /**
- * E2E 圖台互動測試(Playwright)—— 單檔雙模式,對應 spec/流程_圖台互動.md 之 E2E-001 ~ E2E-038。
+ * E2E 圖台互動測試(Playwright)—— 單檔雙模式,對應 spec/流程_圖台互動.md 之 E2E-001 ~ E2E-039。
  *
  * 前置: npm run serve(dev server 須在 127.0.0.1:8080)
  *
@@ -1298,6 +1298,41 @@ const CASES = [
         expectOk('E2E-038 全部節點落在畫布內', inside === true, 'some node outside canvas')
         await shot(page, 'flow-E2E-038-init-fit', { clip: await getCanvasClip(page) })
     }, { rawInit: true }),
+
+    mkCase('E2E-039', 'canvas-resize', async (page) => {
+        //spec: opt.width/height 變更 → 舊圖台中心之內容於新圖台仍居中(zoom 不變), 發 resize 事件(payload 含新舊尺寸與 viewport)
+        //setup: 節點 1 置中(其中心即圖台中心之內容)
+        await centerOnNode(page, '1')
+        await evalVm(page, 'window.__rs = []; vm.$on("resize", (p) => window.__rs.push(p)); return true')
+        const nodeCenter = async () => {
+            const b = await (await page.$('.vue-flow__node[data-id="1"]')).boundingBox()
+            return { x: b.x + b.width / 2, y: b.y + b.height / 2 }
+        }
+        const canvasCenter = async () => {
+            const r = await getContainerRect(page)
+            return { x: r.left + r.width / 2, y: r.top + r.height / 2 }
+        }
+        const vp0 = await getViewport(page)
+        //act: 真實點擊 demo 之「set width to 300」
+        await page.locator('button', { hasText: 'set width to 300' }).click()
+        await page.waitForTimeout(300)
+        let nc = await nodeCenter()
+        let cc = await canvasCenter()
+        expectOk('E2E-039 變寬後節點 1 中心仍在圖台中心', Math.abs(nc.x - cc.x) < 1.5 && Math.abs(nc.y - cc.y) < 1.5, `node=${JSON.stringify(nc)} canvas=${JSON.stringify(cc)}`)
+        const vp1 = await getViewport(page)
+        expectOk('E2E-039 zoom 不變', vp1.zoom === vp0.zoom, `zoom ${vp0.zoom} → ${vp1.zoom}`)
+        //act: 真實點擊「set height to 300」
+        await page.locator('button', { hasText: 'set height to 300' }).click()
+        await page.waitForTimeout(300)
+        nc = await nodeCenter()
+        cc = await canvasCenter()
+        expectOk('E2E-039 變高後節點 1 中心仍在圖台中心', Math.abs(nc.x - cc.x) < 1.5 && Math.abs(nc.y - cc.y) < 1.5, `node=${JSON.stringify(nc)} canvas=${JSON.stringify(cc)}`)
+        const rs = await page.evaluate(() => window.__rs)
+        expectOk('E2E-039 resize 事件兩次且 payload 完整', rs.length === 2 && rs[0].width === 300 && rs[0].oldWidth === 800 && rs[1].height === 300 && rs[1].oldHeight === 600 && typeof rs[1].viewport.x === 'number', `rs=${JSON.stringify(rs)}`)
+        const rect = await getContainerRect(page)
+        expectOk('E2E-039 容器尺寸已為 300×300', Math.round(rect.width) === 300 && Math.round(rect.height) === 300, `rect=${rect.width}x${rect.height}`)
+        await shot(page, 'flow-E2E-039-canvas-resize', { clip: await getCanvasClip(page) })
+    }),
 
 ]
 

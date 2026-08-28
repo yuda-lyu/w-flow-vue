@@ -150,7 +150,7 @@ import Controls from './ui/Controls.vue'
 import { getHandlePosition, getOverlappingNodes, snapPosition, clampPosition, resolveNodeSize } from '../js/geometry'
 import { generateId } from '../js/graph'
 import { crossedThreshold } from '../js/domGesture.mjs'
-import { nodesBounds, resolveContainerSize, computeFitView, screenToFlow, clientToLocal, zoomAroundPoint, clampZoom, computeCenterView, easeInOutCubic } from '../js/viewport.mjs'
+import { nodesBounds, resolveContainerSize, computeFitView, screenToFlow, clientToLocal, zoomAroundPoint, clampZoom, computeCenterView, recenterForResize, easeInOutCubic } from '../js/viewport.mjs'
 import { assessConnection } from '../js/connectPolicy.mjs'
 import { findHandleElAt, describeHandleEndpoint, setHandleConnectStatus, setHandleConnectRole, setDomFlag } from '../js/handleDom.mjs'
 import { isSide, oppositeSide, SOURCE_FALLBACK, TARGET_FALLBACK } from '../js/anchorPolicy.mjs'
@@ -166,8 +166,9 @@ import { previewDelete, applyDelete, findDuplicateIds, snapshotDeep } from '../j
  * @prop {Object} opt
  *
  * ─── Canvas ────────────────────────────────────────────────────────────
- * @prop {number}   [opt.width=800]                       Canvas width (px)
- * @prop {number}   [opt.height=600]                      Canvas height (px)
+ * @prop {number}   [opt.width=800]                       Canvas width (px). Changing it after init keeps the content at the old canvas
+ *   center at the new center (zoom unchanged) and emits 'resize' — see @event resize.
+ * @prop {number}   [opt.height=600]                      Canvas height (px). Same resize behavior as opt.width.
  * @prop {Array}    [opt.nodes=[]]                        Node data array
  * @prop {Array}    [opt.conns=[]]                        Connection data array
  *
@@ -362,6 +363,8 @@ import { previewDelete, applyDelete, findDuplicateIds, snapshotDeep } from '../j
  *           'stale'(await 期間出現未經確認之新連帶邊)
  * @method deleteNodes(nodeIds, opt) / deleteConns(connIds, opt) — deleteElements 之便捷包裝
  *
+ * @event resize 圖台尺寸(opt.width / opt.height)變更時發出(於視口補正後), payload { width, height, oldWidth, oldHeight, viewport }.
+ *   視口補正: 舊圖台中心之內容於新圖台仍居中(zoom 不變; 地圖庫慣例, 同 Leaflet invalidateSize 之 pan).
  * @event init 初始 viewport 已定案且圖台可互動時發出(首幀後; fitViewOnInit 時於 fit 完成、解除隱藏後之下一 tick), 只發一次.
  * @event elements-deleted 所有刪除路徑完成後皆發出(於 update:* 之後、最後發出),payload:
  *   { from, requested:{nodeIds,connIds}, deleted:{nodeIds,connIds,nodes,conns}, cascades:[{nodeId,connIds}],
@@ -514,6 +517,18 @@ export default {
         isMultiSelectActive(v) {
             this.multiSelectMode = v
         },
+        //圖台尺寸變更(opt.width/height): 視口補正使舊中心之內容仍居中(zoom 不變), 再發 resize 事件(地圖庫慣例).
+        //初始化 pending 中不補正(初始 fit 逕以新尺寸計算); 程式化補正不視為使用者改動 viewport(不影響首次填入節點之初始 fit)
+        canvasSize(nv, ov) {
+            if (!this.inited || this.viewPending) return
+            if (!ov || (nv.width === ov.width && nv.height === ov.height)) return
+            this.cancelViewportAnimation()
+            const touched = this._viewportTouched
+            this.setViewport(recenterForResize(this.viewport, ov, nv))
+            this.emitViewportChange()
+            this._viewportTouched = touched
+            this.$emit('resize', { width: nv.width, height: nv.height, oldWidth: ov.width, oldHeight: ov.height, viewport: { ...this.viewport } })
+        },
         //ghost鍵預建: 於節點首次渲染前備妥per-key反應式插槽, 讀者才能建立細粒度依賴
         nodes: {
             immediate: true,
@@ -587,6 +602,10 @@ export default {
         },
         menuInp() {
             return pickMenuOpt(this.opt)
+        },
+        //圖台尺寸(供 resize 補正之 watcher; 物件形式使寬高同時變更只觸發一次)
+        canvasSize() {
+            return { width: this.widthInp, height: this.heightInp }
         },
         defConnCreatingStyle() {
             return {
