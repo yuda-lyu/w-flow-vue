@@ -3,7 +3,7 @@
 <head>
     
     <meta charset="utf-8">
-    <title>components/nodes/Handle.vue - Documentation</title>
+    <title>js/resolveOpt.mjs - Documentation</title>
     
     
     <script src="scripts/prettify/prettify.js"></script>
@@ -41,7 +41,7 @@
 
 <div id="main">
     
-    <h1 class="page-title">components/nodes/Handle.vue</h1>
+    <h1 class="page-title">js/resolveOpt.mjs</h1>
     
 
     
@@ -51,130 +51,199 @@
     
     <section>
         <article>
-            <pre class="prettyprint source linenums"><code>&lt;template>
-  &lt;div
-    v-if="!locked"
-    :class="classes"
-    :style="handleStyle"
-    :data-handle-position="position"
-    @mousedown.stop="onMouseDown"
-    @click.stop
-  />
-&lt;/template>
+            <pre class="prettyprint source linenums"><code>/**
+ * opt 解析 —— 單一來源。WFlowVue 之每個 opt 鍵對應一個 computed(名稱即鍵名, 由 OPT_SPEC 生成),
+ * 不再逐鍵手寫 fallback 樣板; 群組型(defNode / defConn / settingsText / menu)以具名解析函式提供。
+ *
+ * kind(回退規則, 依 JSDoc 契約逐鍵指定):
+ *   defined  : opt 值 !== undefined 即採用(布林/數值 0 為合法值)
+ *   truthy   : opt 值為 truthy 即採用(空字串/0/null 回退)
+ *   enum     : 值須在 values 內, 否則回退
+ *   nonneg   : 有限且 >= 0 之數值, 否則回退
+ *   notFalse : 只有明確 false 才關閉(預設開)
+ *   nullable : truthy 即採用, 否則 null
+ *   fn       : 須為函式, 否則 null
+ */
+import { NODE_DEFAULTS, CONN_DEFAULTS, SETTINGS_TRIGGERS } from './defaults.mjs'
 
-&lt;script>
-import { handlePlacementStyle } from '../../js/nodeStyle.mjs'
-import { gestureBlockedReason } from '../../js/domGesture.mjs'
+export const OPT_SPEC = {
+    //尺寸
+    widthInp: { key: 'width', kind: 'truthy', def: 800 },
+    heightInp: { key: 'height', kind: 'truthy', def: 600 },
+    //互動能力
+    nodesDraggable: { kind: 'defined', def: true },
+    nodesConnectable: { kind: 'defined', def: true },
+    nodesResizable: { kind: 'defined', def: true },
+    elementsSelectable: { kind: 'defined', def: true },
+    selectNodesOnDrag: { kind: 'defined', def: true },
+    multiSelectEnabled: { kind: 'defined', def: true },
+    boxSelectionKeyCode: { kind: 'truthy', def: 'Shift' },
+    multiSelectionKeyCode: { kind: 'truthy', def: 'Shift' },
+    deleteKeyEnabled: { kind: 'defined', def: false },
+    deleteKeyCode: { kind: 'truthy', def: 'Backspace' },
+    snapToGrid: { kind: 'defined', def: false },
+    snapGridSize: { kind: 'truthy', def: 20 },
+    //設定入口: 'hover' | 'click' | 'dblclick'(非法值回退 dblclick)
+    nodesSettingsEnabled: { kind: 'defined', def: true },
+    connsSettingsEnabled: { kind: 'defined', def: true },
+    nodesSettingsTrigger: { kind: 'enum', values: SETTINGS_TRIGGERS, def: 'dblclick' },
+    connsSettingsTrigger: { kind: 'enum', values: SETTINGS_TRIGGERS, def: 'dblclick' },
+    nodesSettingsExcludes: { kind: 'truthy', def: [] },
+    connsSettingsExcludes: { kind: 'truthy', def: [] },
+    //視口
+    zoomOnScroll: { kind: 'defined', def: true },
+    panOnDrag: { kind: 'defined', def: true },
+    zoomMin: { kind: 'defined', def: 0.5 },
+    zoomMax: { kind: 'defined', def: 2 },
+    zoom: { kind: 'defined', def: 1 },
+    center: { kind: 'truthy', def: [0, 0] },
+    panLimits: { kind: 'nullable' },
+    fitViewOnInit: { kind: 'notFalse' },
+    fitViewPadding: { kind: 'nonneg', def: 50 },
+    //建線預覽線
+    defConnCreatingType: { kind: 'truthy', def: 'bezier' },
+    defConnCreatingEdgeColor: { kind: 'truthy', def: CONN_DEFAULTS.edgeColor },
+    defConnCreatingEdgeWidth: { kind: 'defined', def: 1 },
+    defConnCreatingEdgeDasharray: { kind: 'truthy', def: '5 5' },
+    //畫布背景
+    platformBackgroundPatternType: { kind: 'truthy', def: 'dots' },
+    platformBackgroundPatternGap: { kind: 'defined', def: 20 },
+    platformBackgroundPatternSize: { kind: 'defined', def: 1 },
+    platformBackgroundPatternColor: { kind: 'truthy', def: '#81818a' },
+    platformBackgroundColor: { kind: 'truthy', def: '#fff' },
+    //popup 樣式
+    settingsPopupBackgroundColor: { kind: 'truthy', def: '#fff' },
+    settingsPopupTextColor: { kind: 'truthy', def: '#333' },
+    settingsPopupTextFontSize: { kind: 'truthy', def: '12px' },
+    inforPopupBackgroundColor: { kind: 'truthy', def: '#fff' },
+    inforPopupTitleTextColor: { kind: 'truthy', def: '#333' },
+    inforPopupTitleTextFontSize: { kind: 'truthy', def: '12px' },
+    inforPopupDescriptionTextColor: { kind: 'truthy', def: '#888' },
+    inforPopupDescriptionTextFontSize: { kind: 'truthy', def: '10px' },
+    //callback
+    funValidConnCreating: { kind: 'nullable' },
+    //刪除確認(async): 未提供即直接刪除, 提供則須回傳 true 才真的刪除
+    funConfirmDeleting: { kind: 'fn' },
+}
+
+/** 依 OPT_SPEC 解析單一鍵 */
+export function resolveOptValue(opt, name) {
+    const spec = OPT_SPEC[name]
+    if (!spec) throw new Error(`resolveOpt: unknown opt name '${name}'`)
+    const v = (opt || {})[spec.key || name]
+    switch (spec.kind) {
+    case 'defined': return v !== undefined ? v : spec.def
+    case 'truthy': return v || spec.def
+    case 'enum': return spec.values.indexOf(v) >= 0 ? v : spec.def
+    case 'nonneg': return (typeof v === 'number' &amp;&amp; isFinite(v) &amp;&amp; v >= 0) ? v : spec.def
+    case 'notFalse': return v !== false
+    case 'nullable': return v || null
+    case 'fn': return typeof v === 'function' ? v : null
+    default: throw new Error(`resolveOpt: unknown kind '${spec.kind}'`)
+    }
+}
+
+/** 全部純量鍵一次解析(測試/除錯用; 元件內以 optComputeds 逐鍵 computed, 避免整包失效) */
+export function resolveOpt(opt) {
+    const r = {}
+    for (const name of Object.keys(OPT_SPEC)) r[name] = resolveOptValue(opt, name)
+    return r
+}
+
+/** 供 Vue computed 展開: 每個 OPT_SPEC 鍵一個 computed(讀 this.opt) */
+export function optComputeds() {
+    const c = {}
+    for (const name of Object.keys(OPT_SPEC)) {
+        c[name] = function() {
+            return resolveOptValue(this.opt, name)
+        }
+    }
+    return c
+}
+
+/** 設定表單可改文字(非字串或空字串回退預設) */
+export function resolveSettingsText(opt) {
+    const o = opt || {}
+    const str = (v, d) => (typeof v === 'string' &amp;&amp; v !== '' ? v : d)
+    return {
+        nodeDelete: str(o.nodesSettingsDeleteText, 'Delete'),
+        connDelete: str(o.connsSettingsDeleteText, 'Delete'),
+        colorConfirm: str(o.settingsColorConfirmText, 'Confirm'),
+    }
+}
+
+/** 節點預設(opt.defNode* / opt.defHandle* → NODE_DEFAULTS); 數值型以 !== undefined 判斷(0 為合法之框線寬) */
+export function resolveDefNode(opt) {
+    const o = opt || {}
+    const d = NODE_DEFAULTS
+    return {
+        shape: o.defNodeShape || d.shape,
+        width: o.defNodeWidth || d.width,
+        height: o.defNodeHeight || d.height,
+        fontSize: o.defNodeFontSize || d.fontSize,
+        fontSizeMin: o.defNodeFontSizeMin || d.fontSizeMin,
+        fontSizeMax: o.defNodeFontSizeMax || d.fontSizeMax,
+        fontColor: o.defNodeFontColor || d.fontColor,
+        faceColor: o.defNodeFaceColor || d.faceColor,
+        edgeColor: o.defNodeEdgeColor || d.edgeColor,
+        edgeWidth: o.defNodeEdgeWidth !== undefined ? o.defNodeEdgeWidth : d.edgeWidth,
+        popupDirection: o.defNodePopupDirection || d.popupDirection,
+        //連接點(把手)樣式(四把手同一組)
+        handleFaceColor: o.defHandleFaceColor || d.handleFaceColor,
+        handleEdgeColor: o.defHandleEdgeColor || d.handleEdgeColor,
+        handleEdgeWidth: o.defHandleEdgeWidth !== undefined ? o.defHandleEdgeWidth : d.handleEdgeWidth,
+        handleSize: o.defHandleSize || d.handleSize,
+    }
+}
+
+/** 連線預設(opt.defConn* → CONN_DEFAULTS): 兩端方位/箭頭/animated/step offset 皆在此 */
+export function resolveDefConn(opt) {
+    const o = opt || {}
+    const d = CONN_DEFAULTS
+    return {
+        type: o.defConnType || d.type,
+        fontSize: o.defConnFontSize || d.fontSize,
+        fontSizeMin: o.defConnFontSizeMin || d.fontSizeMin,
+        fontSizeMax: o.defConnFontSizeMax || d.fontSizeMax,
+        fontColor: o.defConnFontColor || d.fontColor,
+        edgeColor: o.defConnEdgeColor || d.edgeColor,
+        edgeWidth: o.defConnEdgeWidth !== undefined ? o.defConnEdgeWidth : d.edgeWidth,
+        edgeDasharray: o.defConnEdgeDasharray || '',
+        fromPosition: o.defConnFromPosition || d.fromPosition,
+        toPosition: o.defConnToPosition || d.toPosition,
+        markerStart: o.defConnMarkerStart || d.markerStart,
+        markerStartSize: o.defConnMarkerStartSize || d.markerStartSize,
+        markerStartColor: o.defConnMarkerStartColor || d.markerStartColor,
+        markerEnd: o.defConnMarkerEnd || d.markerEnd,
+        markerEndSize: o.defConnMarkerEndSize || d.markerEndSize,
+        markerEndColor: o.defConnMarkerEndColor || d.markerEndColor,
+        animated: o.defConnAnimated !== undefined ? o.defConnAnimated : d.animated,
+        defOffset: o.defOffset != null ? o.defOffset : d.defOffset,
+    }
+}
 
 /**
- * 連接點(把手): 節點四邊各一, 無連出/連入之分——任一把手皆可作為建線出發點與落點(spec/流程_互動契約.md §3-§4)。
- * 幾何契約: 圓心落在節點外框盒上該邊之連接點(nodeStyle.handlePlacementStyle 與 geometry.getHandlePosition 同一 fraction);
- * 定位含節點外框寬之外推, translate(-50%,-50%) 置中, hover 放大時圓心不動。
- * 樣式(面色/框線色/框線寬/尺寸)由 opt.defHandle* 經 defNode 解析, NodePorts 算一次以 styleVars 下傳(單一組, 四把手相同)。
- * 建線期間之三態視覺由節點/把手之 data-connect-* 標記驅動。
- * @click.stop: 把手為建線手勢之出發/落點, 點擊(按下放開不拖)不得冒泡至 NodeWrapper 之 WPopup trigger
- * 誤開節點資訊 popup; mousedown 早已 .stop 故節點亦不發 node-click, 與之對稱
+ * 垂直選單設定: 自 opt 原樣透傳(不套預設)——各項未給或型別不符由 Controls.vue 之 menuDef 回退,
+ * 預設值單一來源在 Controls(icon 預設需 @mdi/js 常數), 本模組刻意不複製一份。
  */
-export default {
-    name: 'FlowHandle',
-    inject: {
-        //複選模式(縱深最早邊界): 模式中把手已隱藏(CSS pointer-events:none, 真實點擊到不了這裡),
-        //此守衛擋synthetic/程式化mousedown不啟動建線(模板@mousedown.stop仍生效, 僅阻手勢不改傳播語義)
-        getMultiSelectActive: { default: () => () => false },
-        //進行中手勢(一次一手勢): 已有手勢時不啟動建線
-        getActiveGesture: { default: () => () => null },
-    },
-    props: {
-        position: { type: String, required: true }, // 'top' | 'right' | 'bottom' | 'left'
-        shape: { type: String, default: 'rectangle' },
-        //把手樣式 CSS 變數(nodeStyle.handleStyleVars, 由 NodePorts 算一次下傳)
-        styleVars: { type: Object, default: () => ({}) },
-        connectable: { type: Boolean, default: true },
-        locked: { type: Boolean, default: false },
-        //所屬節點之外框寬(px): 定位外推量, 由節點元件以 nodeBorderWidth 解析後傳入
-        nodeEdgeWidth: { type: Number, default: 1 },
-    },
-    computed: {
-        handleStyle() {
-            return { ...this.styleVars, ...handlePlacementStyle(this.shape, this.position, this.nodeEdgeWidth) }
-        },
-        classes() {
-            return [
-                'vue-flow__handle',
-                `vue-flow__handle--${this.position}`,
-                { 'vue-flow__handle--not-connectable': !this.connectable },
-            ]
-        },
-    },
-    methods: {
-        onMouseDown(event) {
-            if (!this.connectable) return
-            //啟動守衛(domGesture.gestureBlockedReason 單一來源): 複選模式 / 進行中手勢 / 非主鍵皆不啟動(先於 preventDefault, 不吞事件語義)
-            if (gestureBlockedReason({ button: event.button, multiSelectActive: this.getMultiSelectActive(), activeGesture: this.getActiveGesture() })) return
-            //阻止文字選取隨拖線啟動(把手上按下拖曳屬建線手勢, 非選字)
-            event.preventDefault()
-            this.$emit('connect-start', { event, handlePosition: this.position })
-        },
-    },
+export const MENU_OPT_KEYS = [
+    'useMenu', 'menuPosition', 'menuYShift', 'useSetting',
+    'menuSettingIcon', 'menuSettingTooltip',
+    'useMenuItemZoomIn', 'menuZoomInIcon', 'menuZoomInTooltip',
+    'useMenuItemZoomOut', 'menuZoomOutIcon', 'menuZoomOutTooltip',
+    'useMenuItemFitView', 'menuFitViewIcon', 'menuFitViewTooltip',
+    'useMenuItemLock', 'menuLockIcon', 'menuLockTooltip', 'menuLockIconLocked', 'menuLockTooltipLocked',
+    'menuIconColor', 'menuIconColorHover', 'menuIconColorFocus', 'menuIconSize',
+    'menuBackgroundColor', 'menuBackgroundColorHover', 'menuBackgroundColorFocus',
+    'menuSeparatorColor', 'menuShadow',
+    'menuTooltipTextColor', 'menuTooltipTextFontSize', 'menuTooltipBackgroundColor',
+]
+export function pickMenuOpt(opt) {
+    const o = opt || {}
+    const r = {}
+    for (const k of MENU_OPT_KEYS) r[k] = o[k]
+    return r
 }
-&lt;/script>
-
-&lt;style scoped>
-/* 配色/尺寸全由 CSS 變數驅動(Handle 之 inline style 注入; 無變數時之 fallback 即預設):
-   --vf-hs 外徑(border-box, 含框線), --vf-hface 面色, --vf-hedge 框線色, --vf-hew 框線寬
-   定位(left/top/transform)由 inline style 給定(nodeStyle.handlePlacementStyle) */
-.vue-flow__handle {
-  position: absolute;
-  width: var(--vf-hs, 10px);
-  height: var(--vf-hs, 10px);
-  border-radius: 50%;
-  background: var(--vf-hface, #555);
-  border: var(--vf-hew, 1px) solid var(--vf-hedge, #fff);
-  box-sizing: border-box;
-  pointer-events: all;
-  cursor: crosshair;
-  z-index: 3;
-}
-/* 不可連把手: 無 affordance 亦不可 hit(設計限制, spec §8) */
-.vue-flow__handle--not-connectable {
-  cursor: default;
-  pointer-events: none;
-}
-/* hover 放大 2px, 圓心不動(translate 置中) */
-.vue-flow__handle:hover {
-  background: #0041d0;
-  width: calc(var(--vf-hs, 10px) + 2px);
-  height: calc(var(--vf-hs, 10px) + 2px);
-}
-
-/* ─── 手勢進行中(祖先 .vue-flow--connecting 或 .vue-flow--gesturing)通用 hover 抑制 ───
-   建線: 可連性只由精確判定之 data-connect-* 標記指示; 其他手勢(拖曳/縮放/轉折點/框選/平移): 途經之把手不反應 */
-.vue-flow--connecting .vue-flow__handle:hover,
-.vue-flow--gesturing .vue-flow__handle:hover {
-  background: var(--vf-hface, #555);
-  width: var(--vf-hs, 10px);
-  height: var(--vf-hs, 10px);
-}
-/* 建線期間永不可為落點者一律淡化(不需 hover 判定即刻正確, spec §4): 出發節點之其他把手(自我連線) */
-.vue-flow--connecting .vue-flow__node[data-connect-origin-node] .vue-flow__handle:not([data-connect-role="origin"]) {
-  opacity: 0.4;
-}
-/* 出發把手(origin): 保持強調, 標示線之來源 */
-.vue-flow__handle[data-connect-role="origin"] {
-  box-shadow: 0 0 0 3px rgba(0, 65, 208, 0.35);
-}
-/* 游標下之精確判定(僅建線期間由 adapter 標記): 合法=主題藍 ring, 不合法=danger ring
-   採 ring(box-shadow)不改 width/height, 避免尺寸變更造成 hit box 幾何抖動 */
-.vue-flow--connecting .vue-flow__handle[data-connect-status="valid"] {
-  background: #0041d0;
-  box-shadow: 0 0 0 4px rgba(0, 65, 208, 0.45);
-}
-.vue-flow--connecting .vue-flow__handle[data-connect-status="invalid"] {
-  background: #d14343;
-  box-shadow: 0 0 0 4px rgba(209, 67, 67, 0.45);
-  opacity: 1;
-}
-&lt;/style>
 </code></pre>
         </article>
     </section>
