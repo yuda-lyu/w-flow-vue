@@ -335,8 +335,9 @@ describe('fitView', () => {
         // fitView recalculates viewport — x,y should change from 999
         expect(w.vm.viewport.x).not.toBe(999)
         expect(w.vm.viewport.y).not.toBe(999)
-        // zoom should be finite (may be 0 if container has no size in jsdom)
+        // zoom finite and positive (jsdom 0-size rect falls back to opt width/height per axis)
         expect(isFinite(w.vm.viewport.zoom)).toBe(true)
+        expect(w.vm.viewport.zoom).toBeGreaterThan(0)
         w.destroy()
     })
     test('emits viewport-change', () => {

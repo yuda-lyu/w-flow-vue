@@ -7,11 +7,13 @@
  *   truthy   : opt 值為 truthy 即採用(空字串/0/null 回退)
  *   enum     : 值須在 values 內, 否則回退
  *   nonneg   : 有限且 >= 0 之數值, 否則回退
+ *   padding  : 非負數值或 { top,right,bottom,left } 物件, 逐邊正規化(非法之邊回退 def)
  *   notFalse : 只有明確 false 才關閉(預設開)
  *   nullable : truthy 即採用, 否則 null
  *   fn       : 須為函式, 否則 null
  */
 import { NODE_DEFAULTS, CONN_DEFAULTS, SETTINGS_TRIGGERS } from './defaults.mjs'
+import { resolvePadding } from './viewport.mjs'
 
 export const OPT_SPEC = {
     //尺寸
@@ -46,7 +48,7 @@ export const OPT_SPEC = {
     center: { kind: 'truthy', def: [0, 0] },
     panLimits: { kind: 'nullable' },
     fitViewOnInit: { kind: 'notFalse' },
-    fitViewPadding: { kind: 'nonneg', def: 50 },
+    fitViewPadding: { kind: 'padding', def: 50 },
     //建線預覽線
     defConnCreatingType: { kind: 'truthy', def: 'bezier' },
     defConnCreatingEdgeColor: { kind: 'truthy', def: CONN_DEFAULTS.edgeColor },
@@ -83,6 +85,7 @@ export function resolveOptValue(opt, name) {
     case 'truthy': return v || spec.def
     case 'enum': return spec.values.indexOf(v) >= 0 ? v : spec.def
     case 'nonneg': return (typeof v === 'number' && isFinite(v) && v >= 0) ? v : spec.def
+    case 'padding': return resolvePadding(v, spec.def)
     case 'notFalse': return v !== false
     case 'nullable': return v || null
     case 'fn': return typeof v === 'function' ? v : null

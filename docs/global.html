@@ -29,13 +29,7 @@
 <nav >
     
     
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-EdgeMarkerDefs.html">EdgeMarkerDefs</a></li><li><a href="module-Handle.html">Handle</a></li><li><a href="module-NodeBody.html">NodeBody</a></li><li><a href="module-NodePorts.html">NodePorts</a></li><li><a href="module-NodeSettingsForm.html">NodeSettingsForm</a></li></ul><h3>Events</h3><ul><li><a href="global.html#event:elements-deleted%25E6%2589%2580%25E6%259C%2589%25E5%2588%25AA%25E9%2599%25A4%25E8%25B7%25AF%25E5%25BE%2591%25E5%25AE%258C%25E6%2588%2590%25E5%25BE%258C%25E7%259A%2586%25E7%2599%25BC%25E5%2587%25BA(%25E6%2596%25BCupdate:*%25E4%25B9%258B%25E5%25BE%258C%25E3%2580%2581%25E6%259C%2580%25E5%25BE%258C%25E7%2599%25BC%25E5%2587%25BA),payload:%257Bfrom,requested:%257BnodeIds,connIds%257D,deleted:%257BnodeIds,connIds,nodes,conns%257D,cascades:%255B%257BnodeId,connIds%257D%255D,notFound:%257BnodeIds,connIds%257D,excluded:%257BnodeIds,connIds%257D%257D-deleted.nodes/conns%25E7%2582%25BA%25E8%25A2%25AB%25E5%2588%25AA%25E7%2595%25B6%25E4%25B8%258B%25E4%25B9%258B%25E6%25B7%25B1%25E8%25A4%2587%25E8%25A3%25BD%25E5%25BF%25AB%25E7%2585%25A7(JSON%25E5%25BE%2580%25E8%25BF%2594,%25E5%2590%258CgetFlowData);id%25E6%25B8%2585%25E5%2596%25AE%25E4%25BE%259B%25E8%25BC%2595%25E9%2587%258F%25E8%25A8%2598%25E5%25B8%25B3;-cascades%25E5%258F%25AA%25E6%258F%258F%25E8%25BF%25B0%25E5%259B%25A0%25E6%259E%259C(%25E5%2593%25AA%25E6%25A2%259D%25E9%2582%258A%25E5%259B%25A0%25E5%2593%25AA%25E5%2580%258B%25E7%25AF%2580%25E9%25BB%259E%25E8%2580%258C%25E5%2588%25AA),%25E8%25A8%2598%25E5%25B8%25B3%25E4%25BB%25A5deleted.*Ids%25E7%2582%25BA%25E6%25BA%2596(%25E5%25B7%25B2%25E5%258E%25BB%25E9%2587%258D);-%25E4%25B8%258D%25E5%2590%25AB%25E5%2588%25AA%25E5%25BE%258C%25E5%2585%25A8%25E9%2587%258F%25E5%25BF%25AB%25E7%2585%25A7(remain):%25E9%259C%2580%25E8%25A6%2581%25E8%2580%2585%25E5%2591%25BC%25E5%258F%25ABgetFlowData()%25E6%2588%2596%25E6%25B2%25BF%25E7%2594%25A8update:nodes/update:conns%25E3%2580%2582%25E5%2588%25AA%25E9%2599%25A4%25E5%258F%25AA%25E6%259C%2589%25E9%2580%2599%25E4%25B8%2580%25E5%2580%258B%25E5%25AE%258C%25E6%2588%2590%25E4%25BA%258B%25E4%25BB%25B6%25E3%2580%2582%25E6%2589%2580%25E6%259C%2589%25E5%2585%25A5%25E5%258F%25A3%25E5%2590%258C%25E4%25B8%2580%25E5%25BA%258F%25E5%2588%2597:(%25E5%2583%2585%25E5%25AF%25A6%25E9%259A%259B%25E8%25AE%258A%25E5%258B%2595%25E4%25B9%258B%25E9%259B%2586%25E5%2590%2588)update:nodes%25E2%2586%2592update:conns%25E2%2586%2592elements-deleted%25E3%2580%2582">elements-deleted 所有刪除路徑完成後皆發出(於 update:* 之後、最後發出),payload:
-  { from, requested:{nodeIds,connIds}, deleted:{nodeIds,connIds,nodes,conns}, cascades:[{nodeId,connIds}],
-    notFound:{nodeIds,connIds}, excluded:{nodeIds,connIds} }
-  - deleted.nodes/conns 為被刪當下之深複製快照(JSON 往返,同 getFlowData);id 清單供輕量記帳;
-  - cascades 只描述因果(哪條邊因哪個節點而刪),記帳以 deleted.*Ids 為準(已去重);
-  - 不含刪後全量快照(remain):需要者呼叫 getFlowData() 或沿用 update:nodes / update:conns。
-  刪除只有這一個完成事件。所有入口同一序列:(僅實際變動之集合)update:nodes → update:conns → elements-deleted。</a></li></ul><h3>Global</h3><ul><li><a href="global.html#CONN_SETTING_KEYS">CONN_SETTING_KEYS</a></li><li><a href="global.html#DRAG_THRESHOLD_PX">DRAG_THRESHOLD_PX</a></li><li><a href="global.html#EDGE_WIDTH_MAX">EDGE_WIDTH_MAX</a></li><li><a href="global.html#FIELD_POLICY">FIELD_POLICY</a></li><li><a href="global.html#GEAR_PATH">GEAR_PATH</a></li><li><a href="global.html#INFO_POPUP_DEFER_MS">INFO_POPUP_DEFER_MS</a></li><li><a href="global.html#MARKER_TYPES">MARKER_TYPES</a></li><li><a href="global.html#MENU_OPT_KEYS">MENU_OPT_KEYS</a></li><li><a href="global.html#NODE_DEFAULTS">NODE_DEFAULTS</a></li><li><a href="global.html#NODE_SETTING_KEYS">NODE_SETTING_KEYS</a></li><li><a href="global.html#RECT_FRACTION">RECT_FRACTION</a></li><li><a href="global.html#SETTINGS_TRIGGERS">SETTINGS_TRIGGERS</a></li><li><a href="global.html#SIDES">SIDES</a></li><li><a href="global.html#applyDelete">applyDelete</a></li><li><a href="global.html#assessConnection">assessConnection</a></li><li><a href="global.html#assessGraphConnection">assessGraphConnection</a></li><li><a href="global.html#buildConnectionCandidate">buildConnectionCandidate</a></li><li><a href="global.html#buildRoundedPath">buildRoundedPath</a></li><li><a href="global.html#canOpenPopup">canOpenPopup</a></li><li><a href="global.html#canOpenSettings">canOpenSettings</a></li><li><a href="global.html#clampPosition">clampPosition</a></li><li><a href="global.html#clampZoom">clampZoom</a></li><li><a href="global.html#classifyHit">classifyHit</a></li><li><a href="global.html#clientToLocal">clientToLocal</a></li><li><a href="global.html#computeCenterView">computeCenterView</a></li><li><a href="global.html#computeConnStyle">computeConnStyle</a></li><li><a href="global.html#computeEdgeClasses">computeEdgeClasses</a></li><li><a href="global.html#computeFitView">computeFitView</a></li><li><a href="global.html#computeLabelStyle">computeLabelStyle</a></li><li><a href="global.html#computeResize">computeResize</a></li><li><a href="global.html#connSourceSide">connSourceSide</a></li><li><a href="global.html#connTargetSide">connTargetSide</a></li><li><a href="global.html#crossedThreshold">crossedThreshold</a></li><li><a href="global.html#darkenColor">darkenColor</a></li><li><a href="global.html#describeHandleEndpoint">describeHandleEndpoint</a></li><li><a href="global.html#easeInOutCubic">easeInOutCubic</a></li><li><a href="global.html#effectiveAnimated">effectiveAnimated</a></li><li><a href="global.html#effectiveEdgeType">effectiveEdgeType</a></li><li><a href="global.html#findDuplicateIds">findDuplicateIds</a></li><li><a href="global.html#findHandleElAt">findHandleElAt</a></li><li><a href="global.html#fixSvgNs">fixSvgNs</a></li><li><a href="global.html#flowToScreen">flowToScreen</a></li><li><a href="global.html#gearVisible">gearVisible</a></li><li><a href="global.html#generateId">generateId</a></li><li><a href="global.html#gestureBlockedReason">gestureBlockedReason</a></li><li><a href="global.html#getBezierPath">getBezierPath</a></li><li><a href="global.html#getControlOffset">getControlOffset</a></li><li><a href="global.html#getHandlePosition">getHandlePosition</a></li><li><a href="global.html#getOverlappingNodes">getOverlappingNodes</a></li><li><a href="global.html#getPathFunction">getPathFunction</a></li><li><a href="global.html#getSmoothStepPath">getSmoothStepPath</a></li><li><a href="global.html#getStepPath">getStepPath</a></li><li><a href="global.html#getStraightPath">getStraightPath</a></li><li><a href="global.html#handlePlacementStyle">handlePlacementStyle</a></li><li><a href="global.html#handleStyleVars">handleStyleVars</a></li><li><a href="global.html#infoOpenPlan">infoOpenPlan</a></li><li><a href="global.html#installGlobalCursor">installGlobalCursor</a></li><li><a href="global.html#isAffordanceHit">isAffordanceHit</a></li><li><a href="global.html#isCanvasBlank">isCanvasBlank</a></li><li><a href="global.html#isSide">isSide</a></li><li><a href="global.html#labelAtHalfLength">labelAtHalfLength</a></li><li><a href="global.html#labelOffsetStyle">labelOffsetStyle</a></li><li><a href="global.html#lookupRoute">lookupRoute</a></li><li><a href="global.html#markerDef">markerDef</a></li><li><a href="global.html#markerId">markerId</a></li><li><a href="global.html#markerUrl">markerUrl</a></li><li><a href="global.html#nodeBorderWidth">nodeBorderWidth</a></li><li><a href="global.html#nodeShape">nodeShape</a></li><li><a href="global.html#nodesBounds">nodesBounds</a></li><li><a href="global.html#oppositeSide">oppositeSide</a></li><li><a href="global.html#optComputeds">optComputeds</a></li><li><a href="global.html#orthogonalizeThroughPoints">orthogonalizeThroughPoints</a></li><li><a href="global.html#pairEndpoints">pairEndpoints</a></li><li><a href="global.html#parseWaypoints">parseWaypoints</a></li><li><a href="global.html#pickMenuValue">pickMenuValue</a></li><li><a href="global.html#previewDelete">previewDelete</a></li><li><a href="global.html#recenterForResize">recenterForResize</a></li><li><a href="global.html#rectsOverlap">rectsOverlap</a></li><li><a href="global.html#resolveContainerSize">resolveContainerSize</a></li><li><a href="global.html#resolveDefConn">resolveDefConn</a></li><li><a href="global.html#resolveDefNode">resolveDefNode</a></li><li><a href="global.html#resolveLineStyle">resolveLineStyle</a></li><li><a href="global.html#resolveMarker">resolveMarker</a></li><li><a href="global.html#resolveNodeSize">resolveNodeSize</a></li><li><a href="global.html#resolveOpt">resolveOpt</a></li><li><a href="global.html#resolveOptValue">resolveOptValue</a></li><li><a href="global.html#resolveSettingsText">resolveSettingsText</a></li><li><a href="global.html#screenToFlow">screenToFlow</a></li><li><a href="global.html#segmentFallback">segmentFallback</a></li><li><a href="global.html#setDomFlag">setDomFlag</a></li><li><a href="global.html#setHandleConnectRole">setHandleConnectRole</a></li><li><a href="global.html#setHandleConnectStatus">setHandleConnectStatus</a></li><li><a href="global.html#settingsOpensOn">settingsOpensOn</a></li><li><a href="global.html#sideAnchorFraction">sideAnchorFraction</a></li><li><a href="global.html#sideNormal">sideNormal</a></li><li><a href="global.html#snapPosition">snapPosition</a></li><li><a href="global.html#snapshotDeep">snapshotDeep</a></li><li><a href="global.html#startDocumentGesture">startDocumentGesture</a></li><li><a href="global.html#stubFallback">stubFallback</a></li><li><a href="global.html#uniq">uniq</a></li><li><a href="global.html#zoomAroundPoint">zoomAroundPoint</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-EdgeMarkerDefs.html">EdgeMarkerDefs</a></li><li><a href="module-Handle.html">Handle</a></li><li><a href="module-NodeBody.html">NodeBody</a></li><li><a href="module-NodePorts.html">NodePorts</a></li><li><a href="module-NodeSettingsForm.html">NodeSettingsForm</a></li></ul><h3>Events</h3><ul><li><a href="global.html#event:elements-deleted%25E6%2589%2580%25E6%259C%2589%25E5%2588%25AA%25E9%2599%25A4%25E8%25B7%25AF%25E5%25BE%2591%25E5%25AE%258C%25E6%2588%2590%25E5%25BE%258C%25E7%259A%2586%25E7%2599%25BC%25E5%2587%25BA(%25E6%2596%25BCupdate:*%25E4%25B9%258B%25E5%25BE%258C%25E3%2580%2581%25E6%259C%2580%25E5%25BE%258C%25E7%2599%25BC%25E5%2587%25BA),payload:%257Bfrom,requested:%257BnodeIds,connIds%257D,deleted:%257BnodeIds,connIds,nodes,conns%257D,cascades:%255B%257BnodeId,connIds%257D%255D,notFound:%257BnodeIds,connIds%257D,excluded:%257BnodeIds,connIds%257D%257D-deleted.nodes/conns%25E7%2582%25BA%25E8%25A2%25AB%25E5%2588%25AA%25E7%2595%25B6%25E4%25B8%258B%25E4%25B9%258B%25E6%25B7%25B1%25E8%25A4%2587%25E8%25A3%25BD%25E5%25BF%25AB%25E7%2585%25A7(JSON%25E5%25BE%2580%25E8%25BF%2594,%25E5%2590%258CgetFlowData);id%25E6%25B8%2585%25E5%2596%25AE%25E4%25BE%259B%25E8%25BC%2595%25E9%2587%258F%25E8%25A8%2598%25E5%25B8%25B3;-cascades%25E5%258F%25AA%25E6%258F%258F%25E8%25BF%25B0%25E5%259B%25A0%25E6%259E%259C(%25E5%2593%25AA%25E6%25A2%259D%25E9%2582%258A%25E5%259B%25A0%25E5%2593%25AA%25E5%2580%258B%25E7%25AF%2580%25E9%25BB%259E%25E8%2580%258C%25E5%2588%25AA),%25E8%25A8%2598%25E5%25B8%25B3%25E4%25BB%25A5deleted.*Ids%25E7%2582%25BA%25E6%25BA%2596(%25E5%25B7%25B2%25E5%258E%25BB%25E9%2587%258D);-%25E4%25B8%258D%25E5%2590%25AB%25E5%2588%25AA%25E5%25BE%258C%25E5%2585%25A8%25E9%2587%258F%25E5%25BF%25AB%25E7%2585%25A7(remain):%25E9%259C%2580%25E8%25A6%2581%25E8%2580%2585%25E5%2591%25BC%25E5%258F%25ABgetFlowData()%25E6%2588%2596%25E6%25B2%25BF%25E7%2594%25A8update:nodes/update:conns%25E3%2580%2582%25E5%2588%25AA%25E9%2599%25A4%25E5%258F%25AA%25E6%259C%2589%25E9%2580%2599%25E4%25B8%2580%25E5%2580%258B%25E5%25AE%258C%25E6%2588%2590%25E4%25BA%258B%25E4%25BB%25B6%25E3%2580%2582%25E6%2589%2580%25E6%259C%2589%25E5%2585%25A5%25E5%258F%25A3%25E5%2590%258C%25E4%25B8%2580%25E5%25BA%258F%25E5%2588%2597:(%25E5%2583%2585%25E5%25AF%25A6%25E9%259A%259B%25E8%25AE%258A%25E5%258B%2595%25E4%25B9%258B%25E9%259B%2586%25E5%2590%2588)update:nodes%25E2%2586%2592update:conns%25E2%2586%2592elements-deleted%25E3%2580%2582">elements-deleted 所有刪除路徑完成後皆發出(於 update:* 之後、最後發出),payload:  { from, requested:{nodeIds,connIds}, deleted:{nodeIds,connIds,nodes,conns}, cascades:[{nodeId,connIds}],    notFound:{nodeIds,connIds}, excluded:{nodeIds,connIds} }  - deleted.nodes/conns 為被刪當下之深複製快照(JSON 往返,同 getFlowData);id 清單供輕量記帳;  - cascades 只描述因果(哪條邊因哪個節點而刪),記帳以 deleted.*Ids 為準(已去重);  - 不含刪後全量快照(remain):需要者呼叫 getFlowData() 或沿用 update:nodes / update:conns。  刪除只有這一個完成事件。所有入口同一序列:(僅實際變動之集合)update:nodes → update:conns → elements-deleted。</a></li></ul><h3>Global</h3><ul><li><a href="global.html#CONN_SETTING_KEYS">CONN_SETTING_KEYS</a></li><li><a href="global.html#DRAG_THRESHOLD_PX">DRAG_THRESHOLD_PX</a></li><li><a href="global.html#EDGE_WIDTH_MAX">EDGE_WIDTH_MAX</a></li><li><a href="global.html#FIELD_POLICY">FIELD_POLICY</a></li><li><a href="global.html#GEAR_PATH">GEAR_PATH</a></li><li><a href="global.html#INFO_POPUP_DEFER_MS">INFO_POPUP_DEFER_MS</a></li><li><a href="global.html#MARKER_TYPES">MARKER_TYPES</a></li><li><a href="global.html#MENU_OPT_KEYS">MENU_OPT_KEYS</a></li><li><a href="global.html#NODE_DEFAULTS">NODE_DEFAULTS</a></li><li><a href="global.html#NODE_SETTING_KEYS">NODE_SETTING_KEYS</a></li><li><a href="global.html#RECT_FRACTION">RECT_FRACTION</a></li><li><a href="global.html#SETTINGS_TRIGGERS">SETTINGS_TRIGGERS</a></li><li><a href="global.html#SIDES">SIDES</a></li><li><a href="global.html#applyDelete">applyDelete</a></li><li><a href="global.html#assessConnection">assessConnection</a></li><li><a href="global.html#assessGraphConnection">assessGraphConnection</a></li><li><a href="global.html#buildConnectionCandidate">buildConnectionCandidate</a></li><li><a href="global.html#buildRoundedPath">buildRoundedPath</a></li><li><a href="global.html#canOpenPopup">canOpenPopup</a></li><li><a href="global.html#canOpenSettings">canOpenSettings</a></li><li><a href="global.html#clampInsets">clampInsets</a></li><li><a href="global.html#clampPosition">clampPosition</a></li><li><a href="global.html#clampZoom">clampZoom</a></li><li><a href="global.html#classifyHit">classifyHit</a></li><li><a href="global.html#clientToLocal">clientToLocal</a></li><li><a href="global.html#computeCenterView">computeCenterView</a></li><li><a href="global.html#computeConnStyle">computeConnStyle</a></li><li><a href="global.html#computeEdgeClasses">computeEdgeClasses</a></li><li><a href="global.html#computeFitView">computeFitView</a></li><li><a href="global.html#computeLabelStyle">computeLabelStyle</a></li><li><a href="global.html#computeResize">computeResize</a></li><li><a href="global.html#connSourceSide">connSourceSide</a></li><li><a href="global.html#connTargetSide">connTargetSide</a></li><li><a href="global.html#crossedThreshold">crossedThreshold</a></li><li><a href="global.html#darkenColor">darkenColor</a></li><li><a href="global.html#describeHandleEndpoint">describeHandleEndpoint</a></li><li><a href="global.html#easeInOutCubic">easeInOutCubic</a></li><li><a href="global.html#effectiveAnimated">effectiveAnimated</a></li><li><a href="global.html#effectiveEdgeType">effectiveEdgeType</a></li><li><a href="global.html#findDuplicateIds">findDuplicateIds</a></li><li><a href="global.html#findHandleElAt">findHandleElAt</a></li><li><a href="global.html#fixSvgNs">fixSvgNs</a></li><li><a href="global.html#flowToScreen">flowToScreen</a></li><li><a href="global.html#gearVisible">gearVisible</a></li><li><a href="global.html#generateId">generateId</a></li><li><a href="global.html#gestureBlockedReason">gestureBlockedReason</a></li><li><a href="global.html#getBezierPath">getBezierPath</a></li><li><a href="global.html#getControlOffset">getControlOffset</a></li><li><a href="global.html#getHandlePosition">getHandlePosition</a></li><li><a href="global.html#getOverlappingNodes">getOverlappingNodes</a></li><li><a href="global.html#getPathFunction">getPathFunction</a></li><li><a href="global.html#getSmoothStepPath">getSmoothStepPath</a></li><li><a href="global.html#getStepPath">getStepPath</a></li><li><a href="global.html#getStraightPath">getStraightPath</a></li><li><a href="global.html#handlePlacementStyle">handlePlacementStyle</a></li><li><a href="global.html#handleStyleVars">handleStyleVars</a></li><li><a href="global.html#infoOpenPlan">infoOpenPlan</a></li><li><a href="global.html#installGlobalCursor">installGlobalCursor</a></li><li><a href="global.html#isAffordanceHit">isAffordanceHit</a></li><li><a href="global.html#isCanvasBlank">isCanvasBlank</a></li><li><a href="global.html#isSide">isSide</a></li><li><a href="global.html#labelAtHalfLength">labelAtHalfLength</a></li><li><a href="global.html#labelOffsetStyle">labelOffsetStyle</a></li><li><a href="global.html#lookupRoute">lookupRoute</a></li><li><a href="global.html#markerDef">markerDef</a></li><li><a href="global.html#markerId">markerId</a></li><li><a href="global.html#markerUrl">markerUrl</a></li><li><a href="global.html#nodeBorderWidth">nodeBorderWidth</a></li><li><a href="global.html#nodeShape">nodeShape</a></li><li><a href="global.html#nodesBounds">nodesBounds</a></li><li><a href="global.html#oppositeSide">oppositeSide</a></li><li><a href="global.html#optComputeds">optComputeds</a></li><li><a href="global.html#orthogonalizeThroughPoints">orthogonalizeThroughPoints</a></li><li><a href="global.html#pairEndpoints">pairEndpoints</a></li><li><a href="global.html#parseWaypoints">parseWaypoints</a></li><li><a href="global.html#pickMenuValue">pickMenuValue</a></li><li><a href="global.html#previewDelete">previewDelete</a></li><li><a href="global.html#recenterForResize">recenterForResize</a></li><li><a href="global.html#rectsOverlap">rectsOverlap</a></li><li><a href="global.html#resolveContainerSize">resolveContainerSize</a></li><li><a href="global.html#resolveDefConn">resolveDefConn</a></li><li><a href="global.html#resolveDefNode">resolveDefNode</a></li><li><a href="global.html#resolveLineStyle">resolveLineStyle</a></li><li><a href="global.html#resolveMarker">resolveMarker</a></li><li><a href="global.html#resolveNodeSize">resolveNodeSize</a></li><li><a href="global.html#resolveOpt">resolveOpt</a></li><li><a href="global.html#resolveOptValue">resolveOptValue</a></li><li><a href="global.html#resolvePadding">resolvePadding</a></li><li><a href="global.html#resolveSettingsText">resolveSettingsText</a></li><li><a href="global.html#screenToFlow">screenToFlow</a></li><li><a href="global.html#segmentFallback">segmentFallback</a></li><li><a href="global.html#setDomFlag">setDomFlag</a></li><li><a href="global.html#setHandleConnectRole">setHandleConnectRole</a></li><li><a href="global.html#setHandleConnectStatus">setHandleConnectStatus</a></li><li><a href="global.html#settingsOpensOn">settingsOpensOn</a></li><li><a href="global.html#sideAnchorFraction">sideAnchorFraction</a></li><li><a href="global.html#sideNormal">sideNormal</a></li><li><a href="global.html#snapPosition">snapPosition</a></li><li><a href="global.html#snapshotDeep">snapshotDeep</a></li><li><a href="global.html#startDocumentGesture">startDocumentGesture</a></li><li><a href="global.html#stubFallback">stubFallback</a></li><li><a href="global.html#uniq">uniq</a></li><li><a href="global.html#zoomAroundPoint">zoomAroundPoint</a></li></ul>
     
 </nav>
 
@@ -642,7 +636,7 @@ type ∈ '' | 'arrow'(線式, 無填充) | 'arrowclosed'(實心)</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="js_resolveOpt.mjs.html">js/resolveOpt.mjs</a>, <a href="js_resolveOpt.mjs.html#line176">line 176</a>
+        <a href="js_resolveOpt.mjs.html">js/resolveOpt.mjs</a>, <a href="js_resolveOpt.mjs.html#line179">line 179</a>
     </li></ul></dd>
     
 
@@ -1855,6 +1849,92 @@ HTML元素因而無排版盒(0x0不可見)。</p>
 
     
 
+    <h4 class="name" id="clampInsets"><span class="type-signature"></span>clampInsets<span class="signature">()</span><span class="type-signature"></span></h4>
+
+    
+
+
+
+
+<dl class="details">
+    
+    <dt class="tag-description">Description:</dt>
+    <dd class="tag-description"><ul class="dummy"><li><p>不可行 padding 之縮限: 單軸兩側和超過「軸長-1」時等比縮至「軸長-1」(保底 1px 可視區,
+且可視區必落於容器內 → 內容不會被推出畫面), 其餘原樣不動——只在真不可行時介入, 無魔法比例。</p></li></ul></dd>
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="js_viewport.mjs.html">js/viewport.mjs</a>, <a href="js_viewport.mjs.html#line99">line 99</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+            
+
+    
+
     <h4 class="name" id="clampPosition"><span class="type-signature"></span>clampPosition<span class="signature">()</span><span class="type-signature"></span></h4>
 
     
@@ -1956,7 +2036,7 @@ HTML元素因而無排版盒(0x0不可見)。</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="js_viewport.mjs.html">js/viewport.mjs</a>, <a href="js_viewport.mjs.html#line100">line 100</a>
+        <a href="js_viewport.mjs.html">js/viewport.mjs</a>, <a href="js_viewport.mjs.html#line142">line 142</a>
     </li></ul></dd>
     
 
@@ -2266,7 +2346,7 @@ HTML元素因而無排版盒(0x0不可見)。</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="js_viewport.mjs.html">js/viewport.mjs</a>, <a href="js_viewport.mjs.html#line81">line 81</a>
+        <a href="js_viewport.mjs.html">js/viewport.mjs</a>, <a href="js_viewport.mjs.html#line123">line 123</a>
     </li></ul></dd>
     
 
@@ -2351,7 +2431,7 @@ HTML元素因而無排版盒(0x0不可見)。</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="js_viewport.mjs.html">js/viewport.mjs</a>, <a href="js_viewport.mjs.html#line106">line 106</a>
+        <a href="js_viewport.mjs.html">js/viewport.mjs</a>, <a href="js_viewport.mjs.html#line148">line 148</a>
     </li></ul></dd>
     
 
@@ -2600,14 +2680,17 @@ HTML元素因而無排版盒(0x0不可見)。</p>
 <dl class="details">
     
     <dt class="tag-description">Description:</dt>
-    <dd class="tag-description"><ul class="dummy"><li><p>使包絡矩形(含 padding)恰好落入容器並置中之 viewport。
-zoom 上限 maxZoom(不設下限: 大圖可低於 zoomMin, 滾輪縮放再以當前值為下界——既有契約)。</p></li></ul></dd>
+    <dd class="tag-description"><ul class="dummy"><li><p>使包絡矩形置中於「容器扣除 padding 後之可視區」之 viewport。
+padding 為<strong>CSS 像素</strong>(不隨 zoom 縮放; 零人為留白 = 貼邊——受限軸邊距恰為該邊 padding,
+但小圖被 maxZoom 夾住時仍居中而留有更大邊距, 屬 zoomMax 行為非 padding 行為)。
+zoom 上限 maxZoom(不設下限: 大圖可低於 zoomMin, 滾輪縮放再以當前值為下界——既有契約)。
+不可行 padding(單軸兩側和 &gt; 軸長-1)依 clampInsets 等比縮限, 保底 1px 可視區於容器內。</p></li></ul></dd>
     
 
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="js_viewport.mjs.html">js/viewport.mjs</a>, <a href="js_viewport.mjs.html#line51">line 51</a>
+        <a href="js_viewport.mjs.html">js/viewport.mjs</a>, <a href="js_viewport.mjs.html#line72">line 72</a>
     </li></ul></dd>
     
 
@@ -3548,7 +3631,7 @@ elementFromPoint 可能撿到他 flow 之把手; 以最近之 [data-flow-id] 祖
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="js_viewport.mjs.html">js/viewport.mjs</a>, <a href="js_viewport.mjs.html#line111">line 111</a>
+        <a href="js_viewport.mjs.html">js/viewport.mjs</a>, <a href="js_viewport.mjs.html#line153">line 153</a>
     </li></ul></dd>
     
 
@@ -4046,7 +4129,7 @@ elementFromPoint 可能撿到他 flow 之把手; 以最近之 [data-flow-id] 祖
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="js_viewport.mjs.html">js/viewport.mjs</a>, <a href="js_viewport.mjs.html#line76">line 76</a>
+        <a href="js_viewport.mjs.html">js/viewport.mjs</a>, <a href="js_viewport.mjs.html#line118">line 118</a>
     </li></ul></dd>
     
 
@@ -6814,7 +6897,7 @@ Returns waypoint array or null (fallback needed).</p></li></ul></dd>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="js_resolveOpt.mjs.html">js/resolveOpt.mjs</a>, <a href="js_resolveOpt.mjs.html#line101">line 101</a>
+        <a href="js_resolveOpt.mjs.html">js/resolveOpt.mjs</a>, <a href="js_resolveOpt.mjs.html#line104">line 104</a>
     </li></ul></dd>
     
 
@@ -7524,7 +7607,7 @@ empty: Boolean                          requested 為空</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="js_viewport.mjs.html">js/viewport.mjs</a>, <a href="js_viewport.mjs.html#line119">line 119</a>
+        <a href="js_viewport.mjs.html">js/viewport.mjs</a>, <a href="js_viewport.mjs.html#line161">line 161</a>
     </li></ul></dd>
     
 
@@ -7779,7 +7862,7 @@ empty: Boolean                          requested 為空</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="js_resolveOpt.mjs.html">js/resolveOpt.mjs</a>, <a href="js_resolveOpt.mjs.html#line147">line 147</a>
+        <a href="js_resolveOpt.mjs.html">js/resolveOpt.mjs</a>, <a href="js_resolveOpt.mjs.html#line150">line 150</a>
     </li></ul></dd>
     
 
@@ -7864,7 +7947,7 @@ empty: Boolean                          requested 為空</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="js_resolveOpt.mjs.html">js/resolveOpt.mjs</a>, <a href="js_resolveOpt.mjs.html#line123">line 123</a>
+        <a href="js_resolveOpt.mjs.html">js/resolveOpt.mjs</a>, <a href="js_resolveOpt.mjs.html#line126">line 126</a>
     </li></ul></dd>
     
 
@@ -8479,7 +8562,7 @@ empty: Boolean                          requested 為空</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="js_resolveOpt.mjs.html">js/resolveOpt.mjs</a>, <a href="js_resolveOpt.mjs.html#line94">line 94</a>
+        <a href="js_resolveOpt.mjs.html">js/resolveOpt.mjs</a>, <a href="js_resolveOpt.mjs.html#line97">line 97</a>
     </li></ul></dd>
     
 
@@ -8564,7 +8647,7 @@ empty: Boolean                          requested 為空</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="js_resolveOpt.mjs.html">js/resolveOpt.mjs</a>, <a href="js_resolveOpt.mjs.html#line77">line 77</a>
+        <a href="js_resolveOpt.mjs.html">js/resolveOpt.mjs</a>, <a href="js_resolveOpt.mjs.html#line79">line 79</a>
     </li></ul></dd>
     
 
@@ -8633,6 +8716,195 @@ empty: Boolean                          requested 為空</p>
 
     
 
+    <h4 class="name" id="resolvePadding"><span class="type-signature"></span>resolvePadding<span class="signature">(padding, fallback<span class="signature-attributes">opt</span>)</span><span class="type-signature"></span></h4>
+
+    
+
+
+
+
+<dl class="details">
+    
+    <dt class="tag-description">Description:</dt>
+    <dd class="tag-description"><ul class="dummy"><li><p>padding 正規化為四邊(單位一律為<strong>螢幕像素</strong>, 同 Leaflet fitBounds padding 與 OpenLayers View.fit padding)。
+輸入可為數值(四邊同值)或 { top, right, bottom, left }(缺漏/非法之邊逐一回退 fallback 之同一邊)。</p></li></ul></dd>
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="js_viewport.mjs.html">js/viewport.mjs</a>, <a href="js_viewport.mjs.html#line49">line 49</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <h5 class="h5-parameters">Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+        <th>Attributes</th>
+        
+
+        
+        <th>Default</th>
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>padding</code></td>
+            
+
+            <td class="type">
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                </td>
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>fallback</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">number</span>
+|
+
+<span class="param-type">object</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>0</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>同型輸入; 其自身非法者再回退 0</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+            
+
+    
+
     <h4 class="name" id="resolveSettingsText"><span class="type-signature"></span>resolveSettingsText<span class="signature">()</span><span class="type-signature"></span></h4>
 
     
@@ -8649,7 +8921,7 @@ empty: Boolean                          requested 為空</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="js_resolveOpt.mjs.html">js/resolveOpt.mjs</a>, <a href="js_resolveOpt.mjs.html#line112">line 112</a>
+        <a href="js_resolveOpt.mjs.html">js/resolveOpt.mjs</a>, <a href="js_resolveOpt.mjs.html#line115">line 115</a>
     </li></ul></dd>
     
 
@@ -8734,7 +9006,7 @@ empty: Boolean                          requested 為空</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="js_viewport.mjs.html">js/viewport.mjs</a>, <a href="js_viewport.mjs.html#line71">line 71</a>
+        <a href="js_viewport.mjs.html">js/viewport.mjs</a>, <a href="js_viewport.mjs.html#line113">line 113</a>
     </li></ul></dd>
     
 
@@ -10144,7 +10416,7 @@ value 為空即移除。</p></li></ul></dd>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="js_viewport.mjs.html">js/viewport.mjs</a>, <a href="js_viewport.mjs.html#line88">line 88</a>
+        <a href="js_viewport.mjs.html">js/viewport.mjs</a>, <a href="js_viewport.mjs.html#line130">line 130</a>
     </li></ul></dd>
     
 
@@ -10221,13 +10493,7 @@ value 為空即移除。</p></li></ul></dd>
 
     
 
-    <h4 class="name" id="event:elements-deleted%E6%89%80%E6%9C%89%E5%88%AA%E9%99%A4%E8%B7%AF%E5%BE%91%E5%AE%8C%E6%88%90%E5%BE%8C%E7%9A%86%E7%99%BC%E5%87%BA(%E6%96%BCupdate:*%E4%B9%8B%E5%BE%8C%E3%80%81%E6%9C%80%E5%BE%8C%E7%99%BC%E5%87%BA),payload:%7Bfrom,requested:%7BnodeIds,connIds%7D,deleted:%7BnodeIds,connIds,nodes,conns%7D,cascades:%5B%7BnodeId,connIds%7D%5D,notFound:%7BnodeIds,connIds%7D,excluded:%7BnodeIds,connIds%7D%7D-deleted.nodes/conns%E7%82%BA%E8%A2%AB%E5%88%AA%E7%95%B6%E4%B8%8B%E4%B9%8B%E6%B7%B1%E8%A4%87%E8%A3%BD%E5%BF%AB%E7%85%A7(JSON%E5%BE%80%E8%BF%94,%E5%90%8CgetFlowData);id%E6%B8%85%E5%96%AE%E4%BE%9B%E8%BC%95%E9%87%8F%E8%A8%98%E5%B8%B3;-cascades%E5%8F%AA%E6%8F%8F%E8%BF%B0%E5%9B%A0%E6%9E%9C(%E5%93%AA%E6%A2%9D%E9%82%8A%E5%9B%A0%E5%93%AA%E5%80%8B%E7%AF%80%E9%BB%9E%E8%80%8C%E5%88%AA),%E8%A8%98%E5%B8%B3%E4%BB%A5deleted.*Ids%E7%82%BA%E6%BA%96(%E5%B7%B2%E5%8E%BB%E9%87%8D);-%E4%B8%8D%E5%90%AB%E5%88%AA%E5%BE%8C%E5%85%A8%E9%87%8F%E5%BF%AB%E7%85%A7(remain):%E9%9C%80%E8%A6%81%E8%80%85%E5%91%BC%E5%8F%ABgetFlowData()%E6%88%96%E6%B2%BF%E7%94%A8update:nodes/update:conns%E3%80%82%E5%88%AA%E9%99%A4%E5%8F%AA%E6%9C%89%E9%80%99%E4%B8%80%E5%80%8B%E5%AE%8C%E6%88%90%E4%BA%8B%E4%BB%B6%E3%80%82%E6%89%80%E6%9C%89%E5%85%A5%E5%8F%A3%E5%90%8C%E4%B8%80%E5%BA%8F%E5%88%97:(%E5%83%85%E5%AF%A6%E9%9A%9B%E8%AE%8A%E5%8B%95%E4%B9%8B%E9%9B%86%E5%90%88)update:nodes%E2%86%92update:conns%E2%86%92elements-deleted%E3%80%82">elements-deleted 所有刪除路徑完成後皆發出(於 update:* 之後、最後發出),payload:
-  { from, requested:{nodeIds,connIds}, deleted:{nodeIds,connIds,nodes,conns}, cascades:[{nodeId,connIds}],
-    notFound:{nodeIds,connIds}, excluded:{nodeIds,connIds} }
-  - deleted.nodes/conns 為被刪當下之深複製快照(JSON 往返,同 getFlowData);id 清單供輕量記帳;
-  - cascades 只描述因果(哪條邊因哪個節點而刪),記帳以 deleted.*Ids 為準(已去重);
-  - 不含刪後全量快照(remain):需要者呼叫 getFlowData() 或沿用 update:nodes / update:conns。
-  刪除只有這一個完成事件。所有入口同一序列:(僅實際變動之集合)update:nodes → update:conns → elements-deleted。</h4>
+    <h4 class="name" id="event:elements-deleted%E6%89%80%E6%9C%89%E5%88%AA%E9%99%A4%E8%B7%AF%E5%BE%91%E5%AE%8C%E6%88%90%E5%BE%8C%E7%9A%86%E7%99%BC%E5%87%BA(%E6%96%BCupdate:*%E4%B9%8B%E5%BE%8C%E3%80%81%E6%9C%80%E5%BE%8C%E7%99%BC%E5%87%BA),payload:%7Bfrom,requested:%7BnodeIds,connIds%7D,deleted:%7BnodeIds,connIds,nodes,conns%7D,cascades:%5B%7BnodeId,connIds%7D%5D,notFound:%7BnodeIds,connIds%7D,excluded:%7BnodeIds,connIds%7D%7D-deleted.nodes/conns%E7%82%BA%E8%A2%AB%E5%88%AA%E7%95%B6%E4%B8%8B%E4%B9%8B%E6%B7%B1%E8%A4%87%E8%A3%BD%E5%BF%AB%E7%85%A7(JSON%E5%BE%80%E8%BF%94,%E5%90%8CgetFlowData);id%E6%B8%85%E5%96%AE%E4%BE%9B%E8%BC%95%E9%87%8F%E8%A8%98%E5%B8%B3;-cascades%E5%8F%AA%E6%8F%8F%E8%BF%B0%E5%9B%A0%E6%9E%9C(%E5%93%AA%E6%A2%9D%E9%82%8A%E5%9B%A0%E5%93%AA%E5%80%8B%E7%AF%80%E9%BB%9E%E8%80%8C%E5%88%AA),%E8%A8%98%E5%B8%B3%E4%BB%A5deleted.*Ids%E7%82%BA%E6%BA%96(%E5%B7%B2%E5%8E%BB%E9%87%8D);-%E4%B8%8D%E5%90%AB%E5%88%AA%E5%BE%8C%E5%85%A8%E9%87%8F%E5%BF%AB%E7%85%A7(remain):%E9%9C%80%E8%A6%81%E8%80%85%E5%91%BC%E5%8F%ABgetFlowData()%E6%88%96%E6%B2%BF%E7%94%A8update:nodes/update:conns%E3%80%82%E5%88%AA%E9%99%A4%E5%8F%AA%E6%9C%89%E9%80%99%E4%B8%80%E5%80%8B%E5%AE%8C%E6%88%90%E4%BA%8B%E4%BB%B6%E3%80%82%E6%89%80%E6%9C%89%E5%85%A5%E5%8F%A3%E5%90%8C%E4%B8%80%E5%BA%8F%E5%88%97:(%E5%83%85%E5%AF%A6%E9%9A%9B%E8%AE%8A%E5%8B%95%E4%B9%8B%E9%9B%86%E5%90%88)update:nodes%E2%86%92update:conns%E2%86%92elements-deleted%E3%80%82">elements-deleted 所有刪除路徑完成後皆發出(於 update:* 之後、最後發出),payload:  { from, requested:{nodeIds,connIds}, deleted:{nodeIds,connIds,nodes,conns}, cascades:[{nodeId,connIds}],    notFound:{nodeIds,connIds}, excluded:{nodeIds,connIds} }  - deleted.nodes/conns 為被刪當下之深複製快照(JSON 往返,同 getFlowData);id 清單供輕量記帳;  - cascades 只描述因果(哪條邊因哪個節點而刪),記帳以 deleted.*Ids 為準(已去重);  - 不含刪後全量快照(remain):需要者呼叫 getFlowData() 或沿用 update:nodes / update:conns。  刪除只有這一個完成事件。所有入口同一序列:(僅實際變動之集合)update:nodes → update:conns → elements-deleted。</h4>
 
     
 
@@ -11269,6 +11535,9 @@ the initial viewport is settled and the flow is interactive.</p></td>
             
                 
 <span class="param-type">number</span>
+|
+
+<span class="param-type">object</span>
 
 
 
@@ -11293,7 +11562,15 @@ the initial viewport is settled and the flow is interactive.</p></td>
                 </td>
             
 
-            <td class="description last"><p>Padding (px) used by the initial fit and by fitView() when no padding is passed (0 allowed)</p></td>
+            <td class="description last"><p>Fit whitespace in <strong>CSS pixels</strong>, independent of zoom (same as Leaflet
+fitBounds padding / OpenLayers View.fit padding). Used by the initial fit and by fitView() when no padding is passed.
+Either a number (all four sides) or an asymmetric object <code>{ top, right, bottom, left }</code> whose missing/invalid sides fall back to 50.
+0 is legal and means flush to the edges — nodes may then sit under the Controls menu; fit never reserves space for the menu
+automatically (matching Leaflet/OpenLayers/React Flow, where padding is the caller's tool for that). The default 50 keeps the
+default menu (right edge at 40px) clear of nodes. If you enlarge the menu (menuIconSize etc.), reserve its side yourself,
+e.g. <code>{ left: 60 }</code>. An object passed to fitView(padding) is a per-side patch on top of the resolved opt value. On the
+constrained axis the margin equals the padding exactly, unless zoomMax caps the zoom (small graphs stay centered with
+larger margins). Infeasible padding (opposite sides summing past the container axis) is scaled down proportionally.</p></td>
         </tr>
 
     
@@ -15012,7 +15289,7 @@ reason ∈ 'no-endpoint'|'unknown-handle'|'self'|'not-connectable'|'missing-node
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 4.0.5</a> on Fri Aug 28 2026 16:13:35 GMT+0800 (台北標準時間) using the <a href="https://github.com/clenemt/docdash">docdash</a> theme.
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 4.0.5</a> on Sat Aug 29 2026 23:14:38 GMT+0800 (台北標準時間) using the <a href="https://github.com/clenemt/docdash">docdash</a> theme.
 </footer>
 
 <script>prettyPrint();</script>

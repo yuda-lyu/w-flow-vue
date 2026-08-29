@@ -41,30 +41,72 @@ export function resolveContainerSize(rect, fallback) {
 }
 
 /**
- * 使包絡矩形(含 padding)恰好落入容器並置中之 viewport。
+ * padding 正規化為四邊(單位一律為**螢幕像素**, 同 Leaflet fitBounds padding 與 OpenLayers View.fit padding)。
+ * 輸入可為數值(四邊同值)或 { top, right, bottom, left }(缺漏/非法之邊逐一回退 fallback 之同一邊)。
+ * @param {number|{top?:number,right?:number,bottom?:number,left?:number}} padding
+ * @param {number|object} [fallback=0] 同型輸入; 其自身非法者再回退 0
+ */
+export function resolvePadding(padding, fallback) {
+    const toSides = (v, fb) => {
+        const num = (x, d) => (typeof x === 'number' && isFinite(x) && x >= 0) ? x : d
+        if (v && typeof v === 'object') {
+            return { top: num(v.top, fb.top), right: num(v.right, fb.right), bottom: num(v.bottom, fb.bottom), left: num(v.left, fb.left) }
+        }
+        return { top: num(v, fb.top), right: num(v, fb.right), bottom: num(v, fb.bottom), left: num(v, fb.left) }
+    }
+    const zero = { top: 0, right: 0, bottom: 0, left: 0 }
+    return toSides(padding, toSides(fallback, zero))
+}
+
+/**
+ * 使包絡矩形置中於「容器扣除 padding 後之可視區」之 viewport。
+ * padding 為**CSS 像素**(不隨 zoom 縮放; 零人為留白 = 貼邊——受限軸邊距恰為該邊 padding,
+ * 但小圖被 maxZoom 夾住時仍居中而留有更大邊距, 屬 zoomMax 行為非 padding 行為)。
  * zoom 上限 maxZoom(不設下限: 大圖可低於 zoomMin, 滾輪縮放再以當前值為下界——既有契約)。
+ * 不可行 padding(單軸兩側和 > 軸長-1)依 clampInsets 等比縮限, 保底 1px 可視區於容器內。
  * @param {{minX,minY,maxX,maxY}} bounds
  * @param {{width,height}} container
- * @param {{padding?:number, maxZoom?:number}} [opt]
+ * @param {{padding?:number|object, maxZoom?:number}} [opt]
  * @returns {{x:number,y:number,zoom:number}|null}
  */
 export function computeFitView(bounds, container, opt) {
     if (!bounds || !container) return null
     const o = opt || {}
-    const padding = (typeof o.padding === 'number' && o.padding >= 0) ? o.padding : 0
     const maxZoom = (typeof o.maxZoom === 'number' && o.maxZoom > 0) ? o.maxZoom : Infinity
     const cw = container.width
     const ch = container.height
     if (!(cw > 0) || !(ch > 0)) return null
-    const gw = Math.max(bounds.maxX - bounds.minX + padding * 2, 1)
-    const gh = Math.max(bounds.maxY - bounds.minY + padding * 2, 1)
-    const zoom = Math.min(cw / gw, ch / gh, maxZoom)
+    const pad = clampInsets(resolvePadding(o.padding, 0), cw, ch)
+    //可視區(容器扣四邊 padding); 保底 1 使極端 padding 不產生 0/負 zoom
+    const aw = Math.max(cw - pad.left - pad.right, 1)
+    const ah = Math.max(ch - pad.top - pad.bottom, 1)
+    const gw = Math.max(bounds.maxX - bounds.minX, 1)
+    const gh = Math.max(bounds.maxY - bounds.minY, 1)
+    const zoom = Math.min(aw / gw, ah / gh, maxZoom)
     if (!isFinite(zoom) || zoom <= 0) return null
+    //包絡中心對齊可視區中心
     return {
-        x: (cw - (bounds.maxX + bounds.minX) * zoom) / 2,
-        y: (ch - (bounds.maxY + bounds.minY) * zoom) / 2,
+        x: pad.left + aw / 2 - (bounds.minX + bounds.maxX) / 2 * zoom,
+        y: pad.top + ah / 2 - (bounds.minY + bounds.maxY) / 2 * zoom,
         zoom,
     }
+}
+
+/**
+ * 不可行 padding 之縮限: 單軸兩側和超過「軸長-1」時等比縮至「軸長-1」(保底 1px 可視區,
+ * 且可視區必落於容器內 → 內容不會被推出畫面), 其餘原樣不動——只在真不可行時介入, 無魔法比例。
+ */
+function clampInsets(pad, cw, ch) {
+    const axis = (a, b, total) => {
+        const sum = a + b
+        const cap = Math.max(total - 1, 0)
+        if (sum <= cap) return [a, b]
+        const k = cap / sum
+        return [a * k, b * k]
+    }
+    const [left, right] = axis(pad.left, pad.right, cw)
+    const [top, bottom] = axis(pad.top, pad.bottom, ch)
+    return { top, right, bottom, left }
 }
 
 /** 螢幕座標(相對容器左上)→ 畫布座標 */

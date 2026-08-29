@@ -137,9 +137,9 @@
 </template>
 
 <script>
-import { getPathFunction, parseWaypoints } from '../../js/edgePath'
+import { getPathFunction, parseWaypoints } from '../../js/edgePath.mjs'
 import { effectiveEdgeType, effectiveAnimated, computeConnStyle, computeLabelStyle, computeEdgeClasses } from '../../js/edgeStyle.mjs'
-import { getHandlePosition } from '../../js/geometry'
+import { getHandlePosition } from '../../js/geometry.mjs'
 import { connSourceSide, connTargetSide } from '../../js/anchorPolicy.mjs'
 import { resolveMarker, markerUrl } from '../../js/edgeMarker.mjs'
 import { classifyHit, isAffordanceHit } from '../../js/hitTest.mjs'

@@ -1,5 +1,5 @@
 /**
- * E2E 圖台互動測試(Playwright)—— 單檔雙模式,對應 spec/流程_圖台互動.md 之 E2E-001 ~ E2E-039。
+ * E2E 圖台互動測試(Playwright)—— 單檔雙模式,對應 spec/流程_圖台互動.md 之 E2E-001 ~ E2E-040。
  *
  * 前置: npm run serve(dev server 須在 127.0.0.1:8080)
  *
@@ -177,7 +177,6 @@ const getContainerRect = (page) => page.evaluate(() => {
     const r = el.getBoundingClientRect()
     return { left: r.left, top: r.top, width: r.width, height: r.height }
 })
-
 function clipAround(box, pad) {
     const x = Math.max(0, Math.floor(box.x - pad))
     const y = Math.max(0, Math.floor(box.y - pad))
@@ -1283,6 +1282,7 @@ const CASES = [
                 defNode: JSON.parse(JSON.stringify(vm.defNode)), container: { width: rect.width, height: rect.height }, zoomMax: vm.zoomMax,
                 pending: vm.viewPending, hasPendingClass: vm.$el.classList.contains('vue-flow--pending') }
         `)
+        //padding = 預設 50(CSS 像素, 不為選單讓位)
         const exp = computeFitView(nodesBounds(st.nodes, st.internals, st.defNode), st.container, { padding: 50, maxZoom: st.zoomMax })
         const near = (a, b) => Math.abs(a - b) < 1e-6
         expectOk('E2E-038 viewport 等於 fit 計算結果', !!exp && near(st.viewport.zoom, exp.zoom) && near(st.viewport.x, exp.x) && near(st.viewport.y, exp.y), `vp=${JSON.stringify(st.viewport)} exp=${JSON.stringify(exp)}`)
@@ -1332,6 +1332,57 @@ const CASES = [
         const rect = await getContainerRect(page)
         expectOk('E2E-039 容器尺寸已為 300×300', Math.round(rect.width) === 300 && Math.round(rect.height) === 300, `rect=${rect.width}x${rect.height}`)
         await shot(page, 'flow-E2E-039-canvas-resize', { clip: await getCanvasClip(page) })
+    }),
+
+    mkCase('E2E-040', 'fit-padding', async (page) => {
+        //spec: fit 留白由 fitViewPadding 全權決定(CSS 像素): 預設 50 使預設工具區(右緣 40px)不遮節點且有間隙;
+        //      0 = 貼邊, 節點可進入工具區底下(明確選擇, 不自動讓位——同 Leaflet/OpenLayers/React Flow)
+        //setup(非 act): 塞入寬受限網格(2920×1544 vs 容器 800×600), 受限軸(左右)之邊距恰為 padding
+        await evalVm(page, `
+            const ns = []
+            for (let r = 0; r < 6; r++) for (let c = 0; c < 8; c++) {
+                ns.push({ id: 'g' + (r * 8 + c), name: 'N', position: { x: c * 400, y: r * 300 }, width: 120, height: 44 })
+            }
+            vm.opt.nodes = ns
+            vm.opt.conns = []
+            return true
+        `)
+        await page.waitForTimeout(400)
+        const measure = () => page.evaluate(() => {
+            const c = document.querySelector('.vue-flow').getBoundingClientRect()
+            const p = document.querySelector('.vue-flow__panel').getBoundingClientRect()
+            let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity
+            let hit = 0
+            for (const n of document.querySelectorAll('.vue-flow__node')) {
+                const b = n.getBoundingClientRect()
+                minX = Math.min(minX, b.left); minY = Math.min(minY, b.top)
+                maxX = Math.max(maxX, b.right); maxY = Math.max(maxY, b.bottom)
+                if (b.left < p.right && b.right > p.left && b.top < p.bottom && b.bottom > p.top) hit++
+            }
+            return {
+                hit,
+                panelRight: p.right - c.left,
+                margins: { left: minX - c.left, top: minY - c.top, right: c.right - maxX, bottom: c.bottom - maxY },
+            }
+        })
+        //act: 真實點擊工具區之 fitView 鈕(自上而下第 4 個, 各鈕等高) → 預設 padding 50
+        await clickMenu(page, 'fitView')
+        await page.waitForTimeout(500)
+        let geo = await measure()
+        expectOk('E2E-040 預設 50: 無任何節點被工具區遮蔽', geo.hit === 0, `overlapped=${geo.hit} margins=${JSON.stringify(geo.margins)}`)
+        expectOk('E2E-040 預設 50: 受限軸兩側邊距皆為 50', Math.abs(geo.margins.left - 50) < 1 && Math.abs(geo.margins.right - 50) < 1, `margins=${JSON.stringify(geo.margins)}`)
+        expectOk('E2E-040 預設 50: 節點與工具區有間隙', geo.margins.left - geo.panelRight > 5, `gap=${geo.margins.left - geo.panelRight}`)
+        //CSS 像素語義: 邊距不隨 zoom 縮水(舊畫布座標語義於此 zoom≈0.24 會縮成 ~12px)
+        expectOk('E2E-040 邊距不隨 zoom 縮水', geo.margins.right > 40, `right=${geo.margins.right}`)
+        await shot(page, 'flow-E2E-040-fit-padding', { clip: await getCanvasClip(page) })
+        //setup(非 act): 改 fitViewPadding=0 → act: 再真實點擊 fitView 鈕 → 貼邊
+        await evalVm(page, `vm.$set(vm.opt, 'fitViewPadding', 0); return true`)
+        await page.waitForTimeout(200)
+        await clickMenu(page, 'fitView')
+        await page.waitForTimeout(500)
+        geo = await measure()
+        expectOk('E2E-040 padding 0: 受限軸貼邊(邊距 0)', Math.abs(geo.margins.left) < 1 && Math.abs(geo.margins.right) < 1, `margins=${JSON.stringify(geo.margins)}`)
+        expectOk('E2E-040 padding 0: 節點可進入工具區下(明確選擇, 不自動讓位)', geo.hit >= 1, `overlapped=${geo.hit}`)
     }),
 
 ]

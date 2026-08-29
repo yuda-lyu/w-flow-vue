@@ -8,7 +8,7 @@
  */
 import { mount } from '@vue/test-utils'
 import ConnectionLine from '../src/components/edges/ConnectionLine.vue'
-import { getBezierPath, getStraightPath, getStepPath, getSmoothStepPath } from '../src/js/edgePath'
+import { getBezierPath, getStraightPath, getStepPath, getSmoothStepPath } from '../src/js/edgePath.mjs'
 
 const fns = { bezier: getBezierPath, straight: getStraightPath, step: getStepPath, smoothstep: getSmoothStepPath }
 const mk = (state, type, extra = {}) => mount(ConnectionLine, { propsData: { state: { active: true, dropStatus: 'none', ...state }, type, ...extra } })

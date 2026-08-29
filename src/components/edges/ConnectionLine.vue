@@ -5,7 +5,7 @@
 </template>
 
 <script>
-import { getPathFunction } from '../../js/edgePath'
+import { getPathFunction } from '../../js/edgePath.mjs'
 
 export default {
     name: 'ConnectionLine',

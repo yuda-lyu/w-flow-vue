@@ -3,7 +3,7 @@
 import {
     getHandlePosition,
     getOverlappingNodes,
-    clampPosition, snapPosition, resolveNodeSize } from '../src/js/geometry'
+    clampPosition, snapPosition, resolveNodeSize } from '../src/js/geometry.mjs'
 
 describe('resolveNodeSize(D4 單一尺寸來源)', () => {
     test('優先序: live > node 明確數值 > defNode > NODE_DEFAULTS; 非正數/非數值跳過', () => {

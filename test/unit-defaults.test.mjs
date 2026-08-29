@@ -1,4 +1,4 @@
-import { NODE_DEFAULTS, CONN_DEFAULTS } from '../src/js/defaults'
+import { NODE_DEFAULTS, CONN_DEFAULTS } from '../src/js/defaults.mjs'
 
 describe('defaults', () => {
     describe('NODE_DEFAULTS', () => {

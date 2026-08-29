@@ -1,4 +1,4 @@
-import { calculateStepPoints } from '../src/js/stepRouting'
+import { calculateStepPoints } from '../src/js/stepRouting.mjs'
 
 describe('step-routing', () => {
     beforeEach(() => {

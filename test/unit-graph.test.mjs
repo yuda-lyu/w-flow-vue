@@ -1,6 +1,6 @@
 //resetIdCounter 已自 graph.mjs 移除; generateId 以 Date.now()+內部counter+random 組成,
 //唯一性不依賴 counter 歸零, 故原斷言仍有效, 僅移除該前置
-import { generateId } from '../src/js/graph'
+import { generateId } from '../src/js/graph.mjs'
 import { assessGraphConnection } from '../src/js/connectPolicy.mjs'
 
 //圖層級連線判定之單一來源為 connectPolicy.assessGraphConnection(graph.mjs 不再另設委派層)

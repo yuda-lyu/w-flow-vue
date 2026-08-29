@@ -147,14 +147,14 @@ import NodeRenderer from './nodes/NodeRenderer.vue'
 import EdgeRenderer from './edges/EdgeRenderer.vue'
 import ConnectionLine from './edges/ConnectionLine.vue'
 import Controls from './ui/Controls.vue'
-import { getHandlePosition, getOverlappingNodes, snapPosition, clampPosition, resolveNodeSize } from '../js/geometry'
-import { generateId } from '../js/graph'
+import { getHandlePosition, getOverlappingNodes, snapPosition, clampPosition, resolveNodeSize } from '../js/geometry.mjs'
+import { generateId } from '../js/graph.mjs'
 import { crossedThreshold } from '../js/domGesture.mjs'
-import { nodesBounds, resolveContainerSize, computeFitView, screenToFlow, clientToLocal, zoomAroundPoint, clampZoom, computeCenterView, recenterForResize, easeInOutCubic } from '../js/viewport.mjs'
+import { nodesBounds, resolveContainerSize, computeFitView, resolvePadding, screenToFlow, clientToLocal, zoomAroundPoint, clampZoom, computeCenterView, recenterForResize, easeInOutCubic } from '../js/viewport.mjs'
 import { assessConnection } from '../js/connectPolicy.mjs'
 import { findHandleElAt, describeHandleEndpoint, setHandleConnectStatus, setHandleConnectRole, setDomFlag } from '../js/handleDom.mjs'
 import { isSide, oppositeSide, SOURCE_FALLBACK, TARGET_FALLBACK } from '../js/anchorPolicy.mjs'
-import { NODE_SETTING_KEYS, CONN_SETTING_KEYS } from '../js/defaults'
+import { NODE_SETTING_KEYS, CONN_SETTING_KEYS } from '../js/defaults.mjs'
 import { optComputeds, pickMenuOpt, resolveSettingsText, resolveDefNode, resolveDefConn } from '../js/resolveOpt.mjs'
 import { previewDelete, applyDelete, findDuplicateIds, snapshotDeep } from '../js/graphMutation.mjs'
 
@@ -223,7 +223,15 @@ import { previewDelete, applyDelete, findDuplicateIds, snapshotDeep } from '../j
  *   (no pre-fit frame). While true, opt.center / opt.zoom do not take part in the initial viewport. If nodes are empty at init,
  *   the first non-empty population is fitted once (unless the viewport was already changed). `init` is emitted only after
  *   the initial viewport is settled and the flow is interactive.
- * @prop {number}   [opt.fitViewPadding=50]               Padding (px) used by the initial fit and by fitView() when no padding is passed (0 allowed)
+ * @prop {number|object} [opt.fitViewPadding=50]          Fit whitespace in **CSS pixels**, independent of zoom (same as Leaflet
+ *   fitBounds padding / OpenLayers View.fit padding). Used by the initial fit and by fitView() when no padding is passed.
+ *   Either a number (all four sides) or an asymmetric object `{ top, right, bottom, left }` whose missing/invalid sides fall back to 50.
+ *   0 is legal and means flush to the edges — nodes may then sit under the Controls menu; fit never reserves space for the menu
+ *   automatically (matching Leaflet/OpenLayers/React Flow, where padding is the caller's tool for that). The default 50 keeps the
+ *   default menu (right edge at 40px) clear of nodes. If you enlarge the menu (menuIconSize etc.), reserve its side yourself,
+ *   e.g. `{ left: 60 }`. An object passed to fitView(padding) is a per-side patch on top of the resolved opt value. On the
+ *   constrained axis the margin equals the padding exactly, unless zoomMax caps the zoom (small graphs stay centered with
+ *   larger margins). Infeasible padding (opposite sides summing past the container axis) is scaled down proportionally.
  * @prop {number}   [opt.zoom=1]                  Initial viewport zoom level (only when fitViewOnInit is false)
  * @prop {number}   [opt.zoomMin=0.5]                     Minimum zoom level (fitView may go below it; wheel zoom then keeps the current level as its lower bound instead of jumping back)
  * @prop {number}   [opt.zoomMax=2]                       Maximum zoom level
@@ -1695,12 +1703,16 @@ export default {
         },
 
         // --- Public API ---
-        //padding 未給時用 opt.fitViewPadding(0 為合法值); 無可見節點不改 viewport; zoom 上限 zoomMax(下限不設, 見 clampZoom)
+        //padding(CSS 像素; 數值或 { top,right,bottom,left } 物件, 物件為對 opt 解析值之逐邊 patch)
+        //未給/非法之邊回退 opt.fitViewPadding; 0 為合法值 = 貼邊, 節點可進入工具區選單底下——
+        //留白一律由 padding 決定, 不為選單自動讓位(同 Leaflet fitBounds / OpenLayers View.fit / React Flow fitView);
+        //無可見節點不改 viewport; zoom 上限 zoomMax(下限不設, 見 clampZoom)
         fitView(padding) {
-            const p = (typeof padding === 'number' && isFinite(padding) && padding >= 0) ? padding : this.fitViewPadding
             const bounds = nodesBounds(this.nodes, this.nodeInternals, this.defNode)
             if (!bounds) return
-            const vp = computeFitView(bounds, this.containerSize(), { padding: p, maxZoom: this.zoomMax })
+            this.cancelViewportAnimation()
+            const pad = resolvePadding(padding, this.fitViewPadding)
+            const vp = computeFitView(bounds, this.containerSize(), { padding: pad, maxZoom: this.zoomMax })
             if (!vp) return
             this.setViewport(vp)
             this.emitViewportChange()
@@ -1711,6 +1723,7 @@ export default {
             return resolveContainerSize(rect, { width: this.widthInp, height: this.heightInp })
         },
         zoomAtCenter(factor) {
+            this.cancelViewportAnimation()
             const vp = this.viewport
             const newZoom = clampZoom(vp.zoom * factor, this.zoomMin, this.zoomMax, vp.zoom)
             const c = this.containerSize()

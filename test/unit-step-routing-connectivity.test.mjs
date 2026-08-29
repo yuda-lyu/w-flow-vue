@@ -8,7 +8,7 @@
  * To regenerate snapshots after intentional changes:
  *   node --experimental-vm-modules test/generate-routing-snapshots.mjs
  */
-import { calculateStepPoints } from '../src/js/stepRouting'
+import { calculateStepPoints } from '../src/js/stepRouting.mjs'
 import snapshots from './jsons/routing-snapshots.json'
 
 const NODE_W = 100

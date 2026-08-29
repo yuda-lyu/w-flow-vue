@@ -1,4 +1,4 @@
-import { getBezierPath, getStraightPath, getStepPath, getSmoothStepPath } from '../src/js/edgePath'
+import { getBezierPath, getStraightPath, getStepPath, getSmoothStepPath } from '../src/js/edgePath.mjs'
 
 describe('edge-path', () => {
     const source = { sourceX: 100, sourceY: 50 }
