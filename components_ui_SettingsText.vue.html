@@ -3,7 +3,7 @@
 <head>
     
     <meta charset="utf-8">
-    <title>components/nodes/NodeBody.vue - Documentation</title>
+    <title>components/ui/SettingsText.vue - Documentation</title>
     
     
     <script src="scripts/prettify/prettify.js"></script>
@@ -35,7 +35,7 @@
 
 <div id="main">
     
-    <h1 class="page-title">components/nodes/NodeBody.vue</h1>
+    <h1 class="page-title">components/ui/SettingsText.vue</h1>
     
 
     
@@ -46,123 +46,58 @@
     <section>
         <article>
             <pre class="prettyprint source linenums"><code>&lt;template>
-  &lt;div class="vue-flow__node-body" :style="bodyStyle">
-    &lt;NodeFace :node="node" :def-node="defNode" :shape="shape" :lastW="lastW" :lastH="lastH" />
-    &lt;div class="vue-flow__node-content">
-      &lt;div class="vue-flow__node-label" :style="labelStyle">{{ node.name }}&lt;/div>
-    &lt;/div>
-    &lt;NodePorts
-      :node="node"
-      :def-node="defNode"
-      :shape="shape"
-      :connectable="connectable"
-      :locked="locked"
-      @connect-start="$emit('connect-start', $event)"
-    />
-    &lt;!-- Corner resize handles (4 corners only) -->
-    &lt;transition name="vue-flow__fade">
-      &lt;div v-if="resizable &amp;&amp; !locked &amp;&amp; (selected || hovered)" class="vue-flow__resize-group">
-        &lt;div class="vue-flow__resize vue-flow__resize--top-left" @mousedown.stop="onResizeMouseDown($event, 'top-left')">&lt;/div>
-        &lt;div class="vue-flow__resize vue-flow__resize--top-right" @mousedown.stop="onResizeMouseDown($event, 'top-right')">&lt;/div>
-        &lt;div class="vue-flow__resize vue-flow__resize--bottom-left" @mousedown.stop="onResizeMouseDown($event, 'bottom-left')">&lt;/div>
-        &lt;div class="vue-flow__resize vue-flow__resize--bottom-right" @mousedown.stop="onResizeMouseDown($event, 'bottom-right')">&lt;/div>
-      &lt;/div>
-    &lt;/transition>
-  &lt;/div>
+  &lt;WText
+    class="vue-flow__settings-text"
+    :value="value"
+    :textFontSize="fontSize"
+    textColor="inherit"
+    :height="14"
+    :borderRadius="3"
+    :shadow="false"
+    :paddingStyle="{ v: 1, h: 4 }"
+    backgroundColor="#fff"
+    backgroundColorHover="#fff"
+    backgroundColorFocus="#fff"
+    borderColor="#ccc"
+    borderColorHover="#666"
+    borderColorFocus="#666"
+    :bottomLineBorderWidth="0"
+    :bottomLineBorderWidthHover="0"
+    :bottomLineBorderWidthFocus="0"
+    @input="onInput"
+  />
 &lt;/template>
 
 &lt;script>
-import NodeFace from './NodeFace.vue'
-import NodePorts from './NodePorts.vue'
-import { labelOffsetStyle } from '../../js/nodeStyle.mjs'
+import WText from 'w-component-vue/src/components/WText.vue'
 
 /**
- * 節點本體: 形狀面(NodeFace)+ 文字 + 四連接點(NodePorts)+ 四角縮放。
- * 節點無型別: 所有節點同一結構, 差異只在資料(形狀/尺寸/色彩)。
+ * 設定表單專用之文字輸入框(薄封裝 w-component-vue 之 WText)。
+ *
+ * 存在理由同 SettingsSelect: 外觀 props 集中一處(表單有 4 個文字欄), 且把 WText 之
+ * `@input(value, err, event)` 三參數簽章收斂成只送值。
+ *
+ * WText 預設為「底線」外觀(bottomLine* 系列), 此處關掉底線改用四邊框線, 以對齊表單既有之
+ * 原生控制項樣式(1px #ccc / 圓角 3 / 白底)。
+ *
+ * height 給 14 而非 18: 該 prop 指的是**內容區**高度, 外框尚須加上 padding(1+1)與 border(1+1),
+ * 故 14 + 2 + 2 = 18px, 恰與同表單之原生 number input 等高(給 20 會得到 24px 而比鄰列高出一截)。
  */
 export default {
-    name: 'NodeBody',
-    components: { NodeFace, NodePorts },
+    name: 'SettingsText',
+    components: { WText },
     props: {
-        node: { type: Object, required: true },
-        //由 NodeWrapper 算一次後下傳(shape 單一解析; 子元件不再各自 inject 重算)
-        defNode: { type: Object, default: () => ({}) },
-        shape: { type: String, default: 'rectangle' },
-        connectable: { type: Boolean, default: true },
-        selected: { type: Boolean, default: false },
-        resizable: { type: Boolean, default: true },
-        locked: { type: Boolean, default: false },
-        hovered: { type: Boolean, default: false },
-        lastW: { type: Number, default: 0 },
-        lastH: { type: Number, default: 0 },
+        value: { type: [String, Number], default: '' },
+        fontSize: { type: String, default: '12px' },
     },
     methods: {
-        //僅主鍵啟動縮放(判準與把手/節點拖曳/畫布平移一致, spec/流程_互動契約.md §3): 右鍵/中鍵按在四角不得啟動縮放手勢
-        onResizeMouseDown(event, edge) {
-            if (event.button !== 0) return
-            this.$emit('resize-start', { event, edge })
-        },
-    },
-    computed: {
-        labelStyle() {
-            return labelOffsetStyle(this.node, this.defNode)
-        },
-        bodyStyle() {
-            const w = this.lastW || this.node.width
-            const h = this.lastH || this.node.height
-            const s = {}
-            if (w) s.width = (typeof w === 'number' ? w + 'px' : w)
-            if (h) s.height = (typeof h === 'number' ? h + 'px' : h)
-            return s
+        onInput(v) {
+            //WText 送出 (value, err, event); 對外只送值
+            this.$emit('input', v)
         },
     },
 }
 &lt;/script>
-
-&lt;style scoped>
-.vue-flow__node-body {
-  box-sizing: border-box;
-}
-.vue-flow__node-content {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-sizing: border-box;
-  padding: 10px 20px;
-}
-.vue-flow__resize {
-  position: absolute;
-  pointer-events: all;
-}
-.vue-flow__resize--top-left,
-.vue-flow__resize--top-right,
-.vue-flow__resize--bottom-left,
-.vue-flow__resize--bottom-right {
-  width: 10px;
-  height: 10px;
-  z-index: 1;
-  border-radius: 2px;
-  background: #fff;
-  border: 1.5px solid #bbb;
-  transition: border-color 0.15s ease;
-}
-.vue-flow__resize--top-left:hover,
-.vue-flow__resize--top-right:hover,
-.vue-flow__resize--bottom-left:hover,
-.vue-flow__resize--bottom-right:hover {
-  border-color: #0041d0;
-  background: #e8f0fe;
-}
-.vue-flow__resize--top-left { top: -5px; left: -5px; cursor: nwse-resize; }
-.vue-flow__resize--top-right { top: -5px; right: -5px; cursor: nesw-resize; }
-.vue-flow__resize--bottom-left { bottom: -5px; left: -5px; cursor: nesw-resize; }
-.vue-flow__resize--bottom-right { bottom: -5px; right: -5px; cursor: nwse-resize; }
-&lt;/style>
 </code></pre>
         </article>
     </section>

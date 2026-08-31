@@ -3,7 +3,7 @@
 <head>
     
     <meta charset="utf-8">
-    <title>components/nodes/NodeBody.vue - Documentation</title>
+    <title>js/settingsGroups.mjs - Documentation</title>
     
     
     <script src="scripts/prettify/prettify.js"></script>
@@ -35,7 +35,7 @@
 
 <div id="main">
     
-    <h1 class="page-title">components/nodes/NodeBody.vue</h1>
+    <h1 class="page-title">js/settingsGroups.mjs</h1>
     
 
     
@@ -45,124 +45,56 @@
     
     <section>
         <article>
-            <pre class="prettyprint source linenums"><code>&lt;template>
-  &lt;div class="vue-flow__node-body" :style="bodyStyle">
-    &lt;NodeFace :node="node" :def-node="defNode" :shape="shape" :lastW="lastW" :lastH="lastH" />
-    &lt;div class="vue-flow__node-content">
-      &lt;div class="vue-flow__node-label" :style="labelStyle">{{ node.name }}&lt;/div>
-    &lt;/div>
-    &lt;NodePorts
-      :node="node"
-      :def-node="defNode"
-      :shape="shape"
-      :connectable="connectable"
-      :locked="locked"
-      @connect-start="$emit('connect-start', $event)"
-    />
-    &lt;!-- Corner resize handles (4 corners only) -->
-    &lt;transition name="vue-flow__fade">
-      &lt;div v-if="resizable &amp;&amp; !locked &amp;&amp; (selected || hovered)" class="vue-flow__resize-group">
-        &lt;div class="vue-flow__resize vue-flow__resize--top-left" @mousedown.stop="onResizeMouseDown($event, 'top-left')">&lt;/div>
-        &lt;div class="vue-flow__resize vue-flow__resize--top-right" @mousedown.stop="onResizeMouseDown($event, 'top-right')">&lt;/div>
-        &lt;div class="vue-flow__resize vue-flow__resize--bottom-left" @mousedown.stop="onResizeMouseDown($event, 'bottom-left')">&lt;/div>
-        &lt;div class="vue-flow__resize vue-flow__resize--bottom-right" @mousedown.stop="onResizeMouseDown($event, 'bottom-right')">&lt;/div>
-      &lt;/div>
-    &lt;/transition>
-  &lt;/div>
-&lt;/template>
-
-&lt;script>
-import NodeFace from './NodeFace.vue'
-import NodePorts from './NodePorts.vue'
-import { labelOffsetStyle } from '../../js/nodeStyle.mjs'
+            <pre class="prettyprint source linenums"><code>/**
+ * 設定表單之屬性分群定義(節點 / 連線)。
+ *
+ * 分群依據(同類成熟產品之通用作法):
+ *   draw.io Format panel — 頂層先分 Style / Text / Arrange, 文字自成一群;
+ *                          連線再細分 Waypoints、Line style、Line start / Line end(兩端箭頭獨立成段)
+ *   Figma  Design panel  — 由上而下 識別 → 幾何/版位 → 外觀(Fill/Stroke) → Typography, 每段各自摺疊
+ *   分群判準           — 依欄位語義關聯與使用頻率(progressive disclosure), 罕用者置末。
+ *                         刻意不以固定欄位數為門檻: Miller 7±2 講的是即時記憶容量, 不是可見表單的欄位上限
+ *
+ * 每群: { key, title, fields }
+ *   key    — 展開態之識別鍵(表單內部用)
+ *   title  — 群標題(英文, 與表單內既有欄位標籤同語彙)
+ *   fields — 該群所含之欄位鍵, 與 opt.nodesSettingsExcludes / connsSettingsExcludes 同一組鍵。
+ *            排除後該群若無任何可見欄位, 表單不渲染該群(不留空群)。
+ *
+ * 陣列順序即呈現順序。外部進階開發可 import 本表以自組表單, 或據以決定要排除哪些欄位。
+ */
 
 /**
- * 節點本體: 形狀面(NodeFace)+ 文字 + 四連接點(NodePorts)+ 四角縮放。
- * 節點無型別: 所有節點同一結構, 差異只在資料(形狀/尺寸/色彩)。
+ * 節點設定分群(對應 NodeSettingsForm 之欄位)。
+ * shape 與填色/框線同屬「長什麼樣」故併於 appearance —— 單獨成群時群標題(Shape)與其唯一欄位標籤(Shape)重複。
  */
-export default {
-    name: 'NodeBody',
-    components: { NodeFace, NodePorts },
-    props: {
-        node: { type: Object, required: true },
-        //由 NodeWrapper 算一次後下傳(shape 單一解析; 子元件不再各自 inject 重算)
-        defNode: { type: Object, default: () => ({}) },
-        shape: { type: String, default: 'rectangle' },
-        connectable: { type: Boolean, default: true },
-        selected: { type: Boolean, default: false },
-        resizable: { type: Boolean, default: true },
-        locked: { type: Boolean, default: false },
-        hovered: { type: Boolean, default: false },
-        lastW: { type: Number, default: 0 },
-        lastH: { type: Number, default: 0 },
-    },
-    methods: {
-        //僅主鍵啟動縮放(判準與把手/節點拖曳/畫布平移一致, spec/流程_互動契約.md §3): 右鍵/中鍵按在四角不得啟動縮放手勢
-        onResizeMouseDown(event, edge) {
-            if (event.button !== 0) return
-            this.$emit('resize-start', { event, edge })
-        },
-    },
-    computed: {
-        labelStyle() {
-            return labelOffsetStyle(this.node, this.defNode)
-        },
-        bodyStyle() {
-            const w = this.lastW || this.node.width
-            const h = this.lastH || this.node.height
-            const s = {}
-            if (w) s.width = (typeof w === 'number' ? w + 'px' : w)
-            if (h) s.height = (typeof h === 'number' ? h + 'px' : h)
-            return s
-        },
-    },
-}
-&lt;/script>
+export const NODE_SETTING_GROUPS = [
+    { key: 'basic', title: 'Basic', fields: ['name', 'description'] },
+    { key: 'appearance', title: 'Appearance', fields: ['shape', 'faceColor', 'edgeColor', 'edgeWidth'] },
+    { key: 'text', title: 'Text', fields: ['fontSize', 'fontColor'] },
+    { key: 'advanced', title: 'Advanced', fields: ['popupDirection'] },
+]
 
-&lt;style scoped>
-.vue-flow__node-body {
-  box-sizing: border-box;
+/**
+ * 連線設定分群(對應 ConnSettingsForm 之欄位; points 為轉折點區塊, 與路徑同群)。
+ * appearance 之群鍵/標題與節點一致(成員依元素型別而異), 使兩個 popup 之語彙對稱。
+ */
+export const CONN_SETTING_GROUPS = [
+    { key: 'basic', title: 'Basic', fields: ['name', 'description'] },
+    { key: 'path', title: 'Path', fields: ['type', 'fromPosition', 'toPosition', 'points'] },
+    { key: 'appearance', title: 'Appearance', fields: ['edgeColor', 'edgeWidth', 'animated'] },
+    { key: 'arrows', title: 'Arrows', fields: ['markerFrom', 'markerFromSize', 'markerFromFaceColor', 'markerFromEdgeColor', 'markerTo', 'markerToSize', 'markerToFaceColor', 'markerToEdgeColor'] },
+    { key: 'text', title: 'Text', fields: ['fontSize', 'fontColor'] },
+]
+
+/** 預設展開之群(其餘收合): 取首群, 使 popup 一開即可改最常用欄位, 又不致全部攤開 */
+export const DEFAULT_OPEN_GROUPS = ['basic']
+
+/** 依排除清單過濾: 回傳仍有可見欄位之群(順序不變) */
+export function visibleGroups(groups, excludes) {
+    const ex = Array.isArray(excludes) ? excludes : []
+    return groups.filter(g => g.fields.some(f => ex.indexOf(f) &lt; 0))
 }
-.vue-flow__node-content {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-sizing: border-box;
-  padding: 10px 20px;
-}
-.vue-flow__resize {
-  position: absolute;
-  pointer-events: all;
-}
-.vue-flow__resize--top-left,
-.vue-flow__resize--top-right,
-.vue-flow__resize--bottom-left,
-.vue-flow__resize--bottom-right {
-  width: 10px;
-  height: 10px;
-  z-index: 1;
-  border-radius: 2px;
-  background: #fff;
-  border: 1.5px solid #bbb;
-  transition: border-color 0.15s ease;
-}
-.vue-flow__resize--top-left:hover,
-.vue-flow__resize--top-right:hover,
-.vue-flow__resize--bottom-left:hover,
-.vue-flow__resize--bottom-right:hover {
-  border-color: #0041d0;
-  background: #e8f0fe;
-}
-.vue-flow__resize--top-left { top: -5px; left: -5px; cursor: nwse-resize; }
-.vue-flow__resize--top-right { top: -5px; right: -5px; cursor: nesw-resize; }
-.vue-flow__resize--bottom-left { bottom: -5px; left: -5px; cursor: nesw-resize; }
-.vue-flow__resize--bottom-right { bottom: -5px; right: -5px; cursor: nwse-resize; }
-&lt;/style>
 </code></pre>
         </article>
     </section>

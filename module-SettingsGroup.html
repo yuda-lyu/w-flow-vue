@@ -3,7 +3,7 @@
 <head>
     
     <meta charset="utf-8">
-    <title>components/nodes/NodeBody.vue - Documentation</title>
+    <title>SettingsGroup - Documentation</title>
     
     
     <script src="scripts/prettify/prettify.js"></script>
@@ -35,137 +35,160 @@
 
 <div id="main">
     
-    <h1 class="page-title">components/nodes/NodeBody.vue</h1>
+    <h1 class="page-title">SettingsGroup</h1>
     
 
     
 
 
 
+
+<section>
+
+<header>
     
-    <section>
-        <article>
-            <pre class="prettyprint source linenums"><code>&lt;template>
-  &lt;div class="vue-flow__node-body" :style="bodyStyle">
-    &lt;NodeFace :node="node" :def-node="defNode" :shape="shape" :lastW="lastW" :lastH="lastH" />
-    &lt;div class="vue-flow__node-content">
-      &lt;div class="vue-flow__node-label" :style="labelStyle">{{ node.name }}&lt;/div>
-    &lt;/div>
-    &lt;NodePorts
-      :node="node"
-      :def-node="defNode"
-      :shape="shape"
-      :connectable="connectable"
-      :locked="locked"
-      @connect-start="$emit('connect-start', $event)"
-    />
-    &lt;!-- Corner resize handles (4 corners only) -->
-    &lt;transition name="vue-flow__fade">
-      &lt;div v-if="resizable &amp;&amp; !locked &amp;&amp; (selected || hovered)" class="vue-flow__resize-group">
-        &lt;div class="vue-flow__resize vue-flow__resize--top-left" @mousedown.stop="onResizeMouseDown($event, 'top-left')">&lt;/div>
-        &lt;div class="vue-flow__resize vue-flow__resize--top-right" @mousedown.stop="onResizeMouseDown($event, 'top-right')">&lt;/div>
-        &lt;div class="vue-flow__resize vue-flow__resize--bottom-left" @mousedown.stop="onResizeMouseDown($event, 'bottom-left')">&lt;/div>
-        &lt;div class="vue-flow__resize vue-flow__resize--bottom-right" @mousedown.stop="onResizeMouseDown($event, 'bottom-right')">&lt;/div>
-      &lt;/div>
-    &lt;/transition>
-  &lt;/div>
-&lt;/template>
+        
+            
+        
+    
+</header>
 
-&lt;script>
-import NodeFace from './NodeFace.vue'
-import NodePorts from './NodePorts.vue'
-import { labelOffsetStyle } from '../../js/nodeStyle.mjs'
+<article>
+    
+        <div class="container-overview">
+        
+            
+                <div class="description usertext"><p>設定表單之可顯隱群組(節點/連線設定 popup 共用)。</p>
+<p>互動契約(同類產品之通用作法, 見 https://en.wikipedia.org/wiki/Disclosure_widget):
+三角形朝右 = 收合、朝下 = 展開 —— 符號表示「目前狀態」而非「按下去會怎樣」(macOS / Finder / Xcode 一路的
+disclosure triangle 語義); 展開時以 rotate(90deg) 由朝右轉為朝下, 狀態切換有連續性。
+整條標題列(三角形 + 標題)皆為可點區, 非只有三角形。</p>
+<p>無障礙結構依 W3C ARIA APG accordion pattern(https://www.w3.org/WAI/ARIA/apg/patterns/accordion/):
+標題按鈕包在 role=&quot;heading&quot;(aria-level 由 headingLevel 指定)內, 按鈕帶 aria-expanded / aria-controls,
+內容區帶 role=&quot;region&quot; 與 aria-labelledby。button 原生即可被 Tab 聚焦、Enter/Space 觸發, 不需另掛鍵盤處理。</p>
+<p>收合以「height:0 + visibility:hidden」而非 display:none: 內容仍參與寬度計算, popup 寬度不隨展開/收合跳動;
+visibility:hidden 同時使收合內容不可被 Tab 聚焦。刻意不做高度過場動畫 —— popup 由 popper 定位,
+高度逐幀變動會讓整個 popup 在動畫期間持續位移; 狀態連續性改由三角形旋轉表達。</p>
+<p>展開態由呼叫端持有(:open + @update:open, 即 :open.sync), 使宿主可決定預設展開哪幾群、是否記憶。</p></div>
+            
 
-/**
- * 節點本體: 形狀面(NodeFace)+ 文字 + 四連接點(NodePorts)+ 四角縮放。
- * 節點無型別: 所有節點同一結構, 差異只在資料(形狀/尺寸/色彩)。
- */
-export default {
-    name: 'NodeBody',
-    components: { NodeFace, NodePorts },
-    props: {
-        node: { type: Object, required: true },
-        //由 NodeWrapper 算一次後下傳(shape 單一解析; 子元件不再各自 inject 重算)
-        defNode: { type: Object, default: () => ({}) },
-        shape: { type: String, default: 'rectangle' },
-        connectable: { type: Boolean, default: true },
-        selected: { type: Boolean, default: false },
-        resizable: { type: Boolean, default: true },
-        locked: { type: Boolean, default: false },
-        hovered: { type: Boolean, default: false },
-        lastW: { type: Number, default: 0 },
-        lastH: { type: Number, default: 0 },
-    },
-    methods: {
-        //僅主鍵啟動縮放(判準與把手/節點拖曳/畫布平移一致, spec/流程_互動契約.md §3): 右鍵/中鍵按在四角不得啟動縮放手勢
-        onResizeMouseDown(event, edge) {
-            if (event.button !== 0) return
-            this.$emit('resize-start', { event, edge })
-        },
-    },
-    computed: {
-        labelStyle() {
-            return labelOffsetStyle(this.node, this.defNode)
-        },
-        bodyStyle() {
-            const w = this.lastW || this.node.width
-            const h = this.lastH || this.node.height
-            const s = {}
-            if (w) s.width = (typeof w === 'number' ? w + 'px' : w)
-            if (h) s.height = (typeof h === 'number' ? h + 'px' : h)
-            return s
-        },
-    },
-}
-&lt;/script>
+            
+                
 
-&lt;style scoped>
-.vue-flow__node-body {
-  box-sizing: border-box;
-}
-.vue-flow__node-content {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-sizing: border-box;
-  padding: 10px 20px;
-}
-.vue-flow__resize {
-  position: absolute;
-  pointer-events: all;
-}
-.vue-flow__resize--top-left,
-.vue-flow__resize--top-right,
-.vue-flow__resize--bottom-left,
-.vue-flow__resize--bottom-right {
-  width: 10px;
-  height: 10px;
-  z-index: 1;
-  border-radius: 2px;
-  background: #fff;
-  border: 1.5px solid #bbb;
-  transition: border-color 0.15s ease;
-}
-.vue-flow__resize--top-left:hover,
-.vue-flow__resize--top-right:hover,
-.vue-flow__resize--bottom-left:hover,
-.vue-flow__resize--bottom-right:hover {
-  border-color: #0041d0;
-  background: #e8f0fe;
-}
-.vue-flow__resize--top-left { top: -5px; left: -5px; cursor: nwse-resize; }
-.vue-flow__resize--top-right { top: -5px; right: -5px; cursor: nesw-resize; }
-.vue-flow__resize--bottom-left { bottom: -5px; left: -5px; cursor: nesw-resize; }
-.vue-flow__resize--bottom-right { bottom: -5px; right: -5px; cursor: nwse-resize; }
-&lt;/style>
-</code></pre>
-        </article>
-    </section>
+
+
+
+<dl class="details">
+    
+    <dt class="tag-description">Description:</dt>
+    <dd class="tag-description"><ul class="dummy"><li><p>設定表單之可顯隱群組(節點/連線設定 popup 共用)。</p>
+<p>互動契約(同類產品之通用作法, 見 https://en.wikipedia.org/wiki/Disclosure_widget):
+三角形朝右 = 收合、朝下 = 展開 —— 符號表示「目前狀態」而非「按下去會怎樣」(macOS / Finder / Xcode 一路的
+disclosure triangle 語義); 展開時以 rotate(90deg) 由朝右轉為朝下, 狀態切換有連續性。
+整條標題列(三角形 + 標題)皆為可點區, 非只有三角形。</p>
+<p>無障礙結構依 W3C ARIA APG accordion pattern(https://www.w3.org/WAI/ARIA/apg/patterns/accordion/):
+標題按鈕包在 role=&quot;heading&quot;(aria-level 由 headingLevel 指定)內, 按鈕帶 aria-expanded / aria-controls,
+內容區帶 role=&quot;region&quot; 與 aria-labelledby。button 原生即可被 Tab 聚焦、Enter/Space 觸發, 不需另掛鍵盤處理。</p>
+<p>收合以「height:0 + visibility:hidden」而非 display:none: 內容仍參與寬度計算, popup 寬度不隨展開/收合跳動;
+visibility:hidden 同時使收合內容不可被 Tab 聚焦。刻意不做高度過場動畫 —— popup 由 popper 定位,
+高度逐幀變動會讓整個 popup 在動畫期間持續位移; 狀態連續性改由三角形旋轉表達。</p>
+<p>展開態由呼叫端持有(:open + @update:open, 即 :open.sync), 使宿主可決定預設展開哪幾群、是否記憶。</p></li></ul></dd>
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="components_ui_SettingsGroup.vue.html">components/ui/SettingsGroup.vue</a>, <a href="components_ui_SettingsGroup.vue.html#line22">line 22</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+            
+        
+        </div>
+    
+
+    
+
+    
+
+    
+    
+    
+
+     
+
+    
+
+    
+
+    
+
+    
+
+    
+</article>
+
+</section>
 
 
 
