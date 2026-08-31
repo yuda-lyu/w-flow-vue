@@ -16,6 +16,7 @@
       :settings-popup-background-color="settingsPopupBackgroundColor"
       :settings-popup-text-color="settingsPopupTextColor"
       :settings-popup-text-font-size="settingsPopupTextFontSize"
+      :settings-popup-max-height="settingsPopupMaxHeight"
       :infor-popup-background-color="inforPopupBackgroundColor"
       :infor-popup-title-text-color="inforPopupTitleTextColor"
       :infor-popup-title-text-font-size="inforPopupTitleTextFontSize"
@@ -69,6 +70,7 @@ export default {
         settingsPopupBackgroundColor: { type: String, default: '#fff' },
         settingsPopupTextColor: { type: String, default: '#333' },
         settingsPopupTextFontSize: { type: String, default: '12px' },
+        settingsPopupMaxHeight: { type: String, default: '400px' },
         inforPopupBackgroundColor: { type: String, default: '#fff' },
         inforPopupTitleTextColor: { type: String, default: '#333' },
         inforPopupTitleTextFontSize: { type: String, default: '12px' },

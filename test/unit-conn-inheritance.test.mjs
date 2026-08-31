@@ -8,6 +8,7 @@ import { mount } from '@vue/test-utils'
 import WFlowVue from '../src/components/WFlowVue.vue'
 import ConnectionLine from '../src/components/edges/ConnectionLine.vue'
 import ConnSettingsForm from '../src/components/ui/ConnSettingsForm.vue'
+import SettingsSelect from '../src/components/ui/SettingsSelect.vue'
 import { getStepPath } from '../src/js/edgePath.mjs'
 import { CONN_DEFAULTS } from '../src/js/defaults.mjs'
 import { MARKER_TYPES } from '../src/js/edgeMarker.mjs'
@@ -69,8 +70,9 @@ describe('H2 預覽線 offset 與正式一致', () => {
 describe('H3 marker 選項單一來源', () => {
     test('下拉選項值 = MARKER_TYPES', () => {
         const f = mount(ConnSettingsForm, { propsData: { conn: { id: 'e', from: 'a', to: 'b' }, defConn: {} } })
-        const opts = f.findAll('select').wrappers
-            .map(s => s.findAll('option').wrappers.map(o => o.attributes('value')))
+        //下拉已改用 SettingsSelect, 選項為 { value, text } 物件陣列; 取含 arrowclosed 的那一組
+        const opts = f.findAllComponents(SettingsSelect).wrappers
+            .map(s => s.props('items').map(o => o.value))
             .find(vals => vals.includes('arrowclosed'))
         expect(opts).toEqual(MARKER_TYPES)
         f.destroy()

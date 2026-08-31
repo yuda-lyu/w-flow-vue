@@ -49,6 +49,7 @@
         :settings-popup-background-color="settingsPopupBackgroundColor"
         :settings-popup-text-color="settingsPopupTextColor"
         :settings-popup-text-font-size="settingsPopupTextFontSize"
+        :settings-popup-max-height="settingsPopupMaxHeight"
         :infor-popup-background-color="inforPopupBackgroundColor"
         :infor-popup-title-text-color="inforPopupTitleTextColor"
         :infor-popup-title-text-font-size="inforPopupTitleTextFontSize"
@@ -84,6 +85,7 @@
         :settings-popup-background-color="settingsPopupBackgroundColor"
         :settings-popup-text-color="settingsPopupTextColor"
         :settings-popup-text-font-size="settingsPopupTextFontSize"
+        :settings-popup-max-height="settingsPopupMaxHeight"
         :infor-popup-background-color="inforPopupBackgroundColor"
         :infor-popup-title-text-color="inforPopupTitleTextColor"
         :infor-popup-title-text-font-size="inforPopupTitleTextFontSize"
@@ -301,6 +303,7 @@ import { previewDelete, applyDelete, findDuplicateIds, snapshotDeep } from '../j
  * @prop {string}   [opt.settingsPopupBackgroundColor='#fff'] Settings popup background
  * @prop {string}   [opt.settingsPopupTextColor='#333']       Settings popup text color
  * @prop {string}   [opt.settingsPopupTextFontSize='12px']    Settings popup font size
+ * @prop {string}   [opt.settingsPopupMaxHeight='400px']      Settings form max height (CSS length); scrolls inside the form when exceeded
  * @prop {string}   [opt.nodesSettingsDeleteText='Delete']    Node settings form delete-button text
  * @prop {string}   [opt.connsSettingsDeleteText='Delete']    Connection settings form delete-button text
  * @prop {string}   [opt.settingsColorConfirmText='Confirm']  Confirm-button text of the color pickers inside settings forms
@@ -313,7 +316,7 @@ import { previewDelete, applyDelete, findDuplicateIds, snapshotDeep } from '../j
  * @prop {string}   [opt.inforPopupDescriptionTextFontSize='10px']     Info popup description font size
  *
  * ─── Default Node ──────────────────────────────────────────
- * @prop {string}   [opt.defNodeShape='rectangle']        Default shape: 'rectangle' | 'diamond' | 'ellipse' | 'triangle' | ...
+ * @prop {string}   [opt.defNodeShape='rectangle']        Default shape: 'rectangle' | 'diamond' | 'ellipse' | 'triangle-up' | ...
  * @prop {number}   [opt.defNodeWidth=100]                Default node width (px)
  * @prop {number}   [opt.defNodeHeight=40]                Default node height (px)
  * @prop {number}   [opt.defNodeFontSize=12]              Default node font size (px)
@@ -398,12 +401,14 @@ import { previewDelete, applyDelete, findDuplicateIds, snapshotDeep } from '../j
  * @prop {string}   [opt.defConnEdgeDasharray='']         Default conn dash pattern ('' for solid, '5 5' for dashed)
  * @prop {string}   [opt.defConnFromPosition='bottom']   Default from-end side when conn.fromPosition is absent: 'top' | 'right' | 'bottom' | 'left'
  * @prop {string}   [opt.defConnToPosition='top']        Default to-end side when conn.toPosition is absent
- * @prop {string}   [opt.defConnMarkerStart='']          Default start arrow: '' (none) | 'arrow' (open) | 'arrowclosed' (filled)
- * @prop {number}   [opt.defConnMarkerStartSize=10]      Default start arrow size (px, absolute; clamped 4–40)
- * @prop {string}   [opt.defConnMarkerStartColor='']     Default start arrow fill (arrowclosed only; '' = line color darkened 20%)
- * @prop {string}   [opt.defConnMarkerEnd='']            Default end arrow: '' | 'arrow' | 'arrowclosed'
- * @prop {number}   [opt.defConnMarkerEndSize=10]        Default end arrow size (px)
- * @prop {string}   [opt.defConnMarkerEndColor='']       Default end arrow fill (arrowclosed only; '' = line color darkened 20%)
+ * @prop {string}   [opt.defConnMarkerFrom='']          Default start arrow: '' (none) | 'arrow' (open) | 'arrowclosed' (filled)
+ * @prop {number}   [opt.defConnMarkerFromSize=10]      Default start arrow size (px, absolute; clamped 4–40)
+ * @prop {string}   [opt.defConnMarkerFromFaceColor=''] Default start arrow fill (arrowclosed only; '' = line color darkened 20%)
+ * @prop {string}   [opt.defConnMarkerFromEdgeColor=''] Default start arrow outline colour (arrow and arrowclosed; '' = follows line colour)
+ * @prop {string}   [opt.defConnMarkerTo='']            Default end arrow: '' | 'arrow' | 'arrowclosed'
+ * @prop {number}   [opt.defConnMarkerToSize=10]        Default end arrow size (px)
+ * @prop {string}   [opt.defConnMarkerToFaceColor='']   Default end arrow fill (arrowclosed only; '' = line color darkened 20%)
+ * @prop {string}   [opt.defConnMarkerToEdgeColor='']   Default end arrow outline colour (arrow and arrowclosed; '' = follows line colour)
  * @prop {boolean}  [opt.defConnAnimated=false]           Default conn animation (dashed flow)
  * @prop {number}   [opt.defOffset=24]                    Step/smoothstep routing buffer (px)
  */
@@ -1231,7 +1236,7 @@ export default {
                         const conn = {
                             id: this.connById(connId) ? generateId() : connId,
                             ...connection,
-                            markerEnd: 'arrowclosed',
+                            markerTo: 'arrowclosed',
                         }
                         this.addConn(conn)
                         this.emitConnsUpdate()
@@ -1835,67 +1840,8 @@ export default {
      一律錨定於根 class .vue-flow--connecting 之下, 只影響建線中的 flow 實例,
      取代原 document.head 注入之 * 全域選擇器(污染整頁與其他 flow 實例, 且拋錯時殘留) -->
 <style>
-/* 設定表單(節點/連線共用版面; 表單掛於 Teleport popup, 故為全域樣式) */
-.vue-flow__settings-form {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  min-width: 180px;
-}
-.vue-flow__settings-form label {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 8px;
-  font-size: 12px;
-}
-.vue-flow__settings-form select,
-.vue-flow__settings-form input[type="number"],
-.vue-flow__settings-form input[type="text"] {
-  width: 100px;
-  font-size: 12px;
-  padding: 1px 4px;
-  border: 1px solid #ccc;
-  border-radius: 3px;
-}
-.vue-flow__settings-form input[type="color"] {
-  width: 32px;
-  height: 24px;
-  padding: 0;
-  border: 1px solid #ccc;
-  cursor: pointer;
-  flex-shrink: 0;
-}
-.vue-flow__delete-area {
-  margin-top: 4px;
-  padding-top: 8px;
-  border-top: 1px solid #eee;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-}
-.vue-flow__delete-btn {
-  padding: 3px 10px;
-  font-size: 11px;
-  border: 1px solid #dc2626;
-  border-radius: 3px;
-  color: #fff;
-  background: #dc2626;
-  cursor: pointer;
-}
-.vue-flow__delete-btn:hover {
-  background: #b91c1c;
-  border-color: #b91c1c;
-}
-/* 等待宿主確認期間: 淡化且不可再點(尺寸與文字不變, 不造成版面跳動) */
-.vue-flow__delete-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-.vue-flow__delete-btn:disabled:hover {
-  background: #dc2626;
-  border-color: #dc2626;
-}
+/* 設定表單(節點/連線)之共用版面樣式已移至 components/ui/settingsForm.css,
+   由兩個表單元件各自 import —— 使表單被外部單獨引用時亦自帶完整版面。 */
 /* 元素 affordance 之淡入淡出(節點四角/齒輪/連線齒輪共用) */
 .vue-flow__fade-enter-active,
 .vue-flow__fade-leave-active {

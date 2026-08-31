@@ -9,7 +9,7 @@ const sampleNodes = [
 
 const sampleConns = [
     { id: 'e1-2', from: '1', to: '2', animated: true },
-    { id: 'e1-3', from: '1', to: '3', name: 'edge with arrowhead', markerEnd: 'arrowclosed' },
+    { id: 'e1-3', from: '1', to: '3', name: 'edge with arrowhead', markerTo: 'arrowclosed' },
 ]
 
 function createWrapper(optOverrides = {}) {

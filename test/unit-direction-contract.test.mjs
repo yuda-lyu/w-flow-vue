@@ -24,9 +24,9 @@ const nodesAB = [
 
 describe('R1 defNodeShape 單一來源', () => {
     test('node 無 shape + defNodeShape=triangle: 把手在斜邊中點、節點面為三角形、邊端點同一 fraction', async () => {
-        const w = mountFlow({ defNodeShape: 'triangle', nodes: nodesAB, conns: [{ id: 'e', from: 'a', to: 'b', fromPosition: 'right', toPosition: 'left' }] })
+        const w = mountFlow({ defNodeShape: 'triangle-up', nodes: nodesAB, conns: [{ id: 'e', from: 'a', to: 'b', fromPosition: 'right', toPosition: 'left' }] })
         await w.vm.$nextTick()
-        expect(nodeShape({}, w.vm.defNode)).toBe('triangle')
+        expect(nodeShape({}, w.vm.defNode)).toBe('triangle-up')
         const h = w.find('.vue-flow__node[data-id="a"] .vue-flow__handle--right').element
         expect(h.getAttribute('style')).toContain('left: 75%')
         expect(w.find('.vue-flow__node[data-id="a"] polygon').exists()).toBe(true)
@@ -125,8 +125,8 @@ describe('R6 設定更新 allowlist', () => {
         expect(w.vm.conns[0].bogus).toBeUndefined()
         expect(w.emitted('conn-settings-update')).toBeUndefined()
         w.vm.onConnSettingsUpdate({ conn: { id: 'e' }, key: 'fromPosition', value: 'left' })
-        w.vm.onConnSettingsUpdate({ conn: { id: 'e' }, key: 'markerEndSize', value: 14 })
-        expect(w.vm.conns[0]).toMatchObject({ fromPosition: 'left', markerEndSize: 14 })
+        w.vm.onConnSettingsUpdate({ conn: { id: 'e' }, key: 'markerToSize', value: 14 })
+        expect(w.vm.conns[0]).toMatchObject({ fromPosition: 'left', markerToSize: 14 })
         expect(w.emitted('conn-settings-update')).toHaveLength(2)
         warn.mockRestore()
         w.destroy()

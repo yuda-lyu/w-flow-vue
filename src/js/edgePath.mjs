@@ -309,6 +309,9 @@ const PATH_FUNCTIONS = {
     smoothstep: getSmoothStepPath,
 }
 
+/** 支援之邊型值域(設定表單之 Type 下拉即由此衍生, 不另抄一份; 新增路徑函式時選項自動跟上) */
+export const EDGE_TYPES = Object.keys(PATH_FUNCTIONS)
+
 /** 邊型 → 路徑函式(未知邊型回 bezier); EdgeWrapper 與 ConnectionLine 共用同一對照表 */
 export function getPathFunction(type) {
     return PATH_FUNCTIONS[type] || PATH_FUNCTIONS.bezier

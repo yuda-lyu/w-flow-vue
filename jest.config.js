@@ -15,6 +15,8 @@ module.exports = {
     ],
     moduleNameMapper: {
         '^@/(.*)$': '<rootDir>/src/$1',
+        //元件自帶之 CSS(webpack 可處理, jest 無 CSS transform): 單元測試驗結構與行為, 樣式歸 e2e pixel baseline
+        '\\.(css|less|scss|sass)$': '<rootDir>/test/styleMock.cjs',
     },
     collectCoverageFrom: [
         'src/**/*.{mjs,vue}',

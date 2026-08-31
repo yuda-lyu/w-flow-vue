@@ -29,7 +29,7 @@
 <nav >
     
     
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-EdgeMarkerDefs.html">EdgeMarkerDefs</a></li><li><a href="module-Handle.html">Handle</a></li><li><a href="module-NodeBody.html">NodeBody</a></li><li><a href="module-NodePorts.html">NodePorts</a></li><li><a href="module-NodeSettingsForm.html">NodeSettingsForm</a></li></ul><h3>Events</h3><ul><li><a href="global.html#event:elements-deleted%25E6%2589%2580%25E6%259C%2589%25E5%2588%25AA%25E9%2599%25A4%25E8%25B7%25AF%25E5%25BE%2591%25E5%25AE%258C%25E6%2588%2590%25E5%25BE%258C%25E7%259A%2586%25E7%2599%25BC%25E5%2587%25BA(%25E6%2596%25BCupdate:*%25E4%25B9%258B%25E5%25BE%258C%25E3%2580%2581%25E6%259C%2580%25E5%25BE%258C%25E7%2599%25BC%25E5%2587%25BA),payload:%257Bfrom,requested:%257BnodeIds,connIds%257D,deleted:%257BnodeIds,connIds,nodes,conns%257D,cascades:%255B%257BnodeId,connIds%257D%255D,notFound:%257BnodeIds,connIds%257D,excluded:%257BnodeIds,connIds%257D%257D-deleted.nodes/conns%25E7%2582%25BA%25E8%25A2%25AB%25E5%2588%25AA%25E7%2595%25B6%25E4%25B8%258B%25E4%25B9%258B%25E6%25B7%25B1%25E8%25A4%2587%25E8%25A3%25BD%25E5%25BF%25AB%25E7%2585%25A7(JSON%25E5%25BE%2580%25E8%25BF%2594,%25E5%2590%258CgetFlowData);id%25E6%25B8%2585%25E5%2596%25AE%25E4%25BE%259B%25E8%25BC%2595%25E9%2587%258F%25E8%25A8%2598%25E5%25B8%25B3;-cascades%25E5%258F%25AA%25E6%258F%258F%25E8%25BF%25B0%25E5%259B%25A0%25E6%259E%259C(%25E5%2593%25AA%25E6%25A2%259D%25E9%2582%258A%25E5%259B%25A0%25E5%2593%25AA%25E5%2580%258B%25E7%25AF%2580%25E9%25BB%259E%25E8%2580%258C%25E5%2588%25AA),%25E8%25A8%2598%25E5%25B8%25B3%25E4%25BB%25A5deleted.*Ids%25E7%2582%25BA%25E6%25BA%2596(%25E5%25B7%25B2%25E5%258E%25BB%25E9%2587%258D);-%25E4%25B8%258D%25E5%2590%25AB%25E5%2588%25AA%25E5%25BE%258C%25E5%2585%25A8%25E9%2587%258F%25E5%25BF%25AB%25E7%2585%25A7(remain):%25E9%259C%2580%25E8%25A6%2581%25E8%2580%2585%25E5%2591%25BC%25E5%258F%25ABgetFlowData()%25E6%2588%2596%25E6%25B2%25BF%25E7%2594%25A8update:nodes/update:conns%25E3%2580%2582%25E5%2588%25AA%25E9%2599%25A4%25E5%258F%25AA%25E6%259C%2589%25E9%2580%2599%25E4%25B8%2580%25E5%2580%258B%25E5%25AE%258C%25E6%2588%2590%25E4%25BA%258B%25E4%25BB%25B6%25E3%2580%2582%25E6%2589%2580%25E6%259C%2589%25E5%2585%25A5%25E5%258F%25A3%25E5%2590%258C%25E4%25B8%2580%25E5%25BA%258F%25E5%2588%2597:(%25E5%2583%2585%25E5%25AF%25A6%25E9%259A%259B%25E8%25AE%258A%25E5%258B%2595%25E4%25B9%258B%25E9%259B%2586%25E5%2590%2588)update:nodes%25E2%2586%2592update:conns%25E2%2586%2592elements-deleted%25E3%2580%2582">elements-deleted 所有刪除路徑完成後皆發出(於 update:* 之後、最後發出),payload:  { from, requested:{nodeIds,connIds}, deleted:{nodeIds,connIds,nodes,conns}, cascades:[{nodeId,connIds}],    notFound:{nodeIds,connIds}, excluded:{nodeIds,connIds} }  - deleted.nodes/conns 為被刪當下之深複製快照(JSON 往返,同 getFlowData);id 清單供輕量記帳;  - cascades 只描述因果(哪條邊因哪個節點而刪),記帳以 deleted.*Ids 為準(已去重);  - 不含刪後全量快照(remain):需要者呼叫 getFlowData() 或沿用 update:nodes / update:conns。  刪除只有這一個完成事件。所有入口同一序列:(僅實際變動之集合)update:nodes → update:conns → elements-deleted。</a></li></ul><h3>Global</h3><ul><li><a href="global.html#CONN_SETTING_KEYS">CONN_SETTING_KEYS</a></li><li><a href="global.html#DRAG_THRESHOLD_PX">DRAG_THRESHOLD_PX</a></li><li><a href="global.html#EDGE_WIDTH_MAX">EDGE_WIDTH_MAX</a></li><li><a href="global.html#FIELD_POLICY">FIELD_POLICY</a></li><li><a href="global.html#GEAR_PATH">GEAR_PATH</a></li><li><a href="global.html#INFO_POPUP_DEFER_MS">INFO_POPUP_DEFER_MS</a></li><li><a href="global.html#MARKER_TYPES">MARKER_TYPES</a></li><li><a href="global.html#MENU_OPT_KEYS">MENU_OPT_KEYS</a></li><li><a href="global.html#NODE_DEFAULTS">NODE_DEFAULTS</a></li><li><a href="global.html#NODE_SETTING_KEYS">NODE_SETTING_KEYS</a></li><li><a href="global.html#RECT_FRACTION">RECT_FRACTION</a></li><li><a href="global.html#SETTINGS_TRIGGERS">SETTINGS_TRIGGERS</a></li><li><a href="global.html#SIDES">SIDES</a></li><li><a href="global.html#applyDelete">applyDelete</a></li><li><a href="global.html#assessConnection">assessConnection</a></li><li><a href="global.html#assessGraphConnection">assessGraphConnection</a></li><li><a href="global.html#buildConnectionCandidate">buildConnectionCandidate</a></li><li><a href="global.html#buildRoundedPath">buildRoundedPath</a></li><li><a href="global.html#canOpenPopup">canOpenPopup</a></li><li><a href="global.html#canOpenSettings">canOpenSettings</a></li><li><a href="global.html#clampInsets">clampInsets</a></li><li><a href="global.html#clampPosition">clampPosition</a></li><li><a href="global.html#clampZoom">clampZoom</a></li><li><a href="global.html#classifyHit">classifyHit</a></li><li><a href="global.html#clientToLocal">clientToLocal</a></li><li><a href="global.html#computeCenterView">computeCenterView</a></li><li><a href="global.html#computeConnStyle">computeConnStyle</a></li><li><a href="global.html#computeEdgeClasses">computeEdgeClasses</a></li><li><a href="global.html#computeFitView">computeFitView</a></li><li><a href="global.html#computeLabelStyle">computeLabelStyle</a></li><li><a href="global.html#computeResize">computeResize</a></li><li><a href="global.html#connSourceSide">connSourceSide</a></li><li><a href="global.html#connTargetSide">connTargetSide</a></li><li><a href="global.html#crossedThreshold">crossedThreshold</a></li><li><a href="global.html#darkenColor">darkenColor</a></li><li><a href="global.html#describeHandleEndpoint">describeHandleEndpoint</a></li><li><a href="global.html#easeInOutCubic">easeInOutCubic</a></li><li><a href="global.html#effectiveAnimated">effectiveAnimated</a></li><li><a href="global.html#effectiveEdgeType">effectiveEdgeType</a></li><li><a href="global.html#findDuplicateIds">findDuplicateIds</a></li><li><a href="global.html#findHandleElAt">findHandleElAt</a></li><li><a href="global.html#fixSvgNs">fixSvgNs</a></li><li><a href="global.html#flowToScreen">flowToScreen</a></li><li><a href="global.html#gearVisible">gearVisible</a></li><li><a href="global.html#generateId">generateId</a></li><li><a href="global.html#gestureBlockedReason">gestureBlockedReason</a></li><li><a href="global.html#getBezierPath">getBezierPath</a></li><li><a href="global.html#getControlOffset">getControlOffset</a></li><li><a href="global.html#getHandlePosition">getHandlePosition</a></li><li><a href="global.html#getOverlappingNodes">getOverlappingNodes</a></li><li><a href="global.html#getPathFunction">getPathFunction</a></li><li><a href="global.html#getSmoothStepPath">getSmoothStepPath</a></li><li><a href="global.html#getStepPath">getStepPath</a></li><li><a href="global.html#getStraightPath">getStraightPath</a></li><li><a href="global.html#handlePlacementStyle">handlePlacementStyle</a></li><li><a href="global.html#handleStyleVars">handleStyleVars</a></li><li><a href="global.html#infoOpenPlan">infoOpenPlan</a></li><li><a href="global.html#installGlobalCursor">installGlobalCursor</a></li><li><a href="global.html#isAffordanceHit">isAffordanceHit</a></li><li><a href="global.html#isCanvasBlank">isCanvasBlank</a></li><li><a href="global.html#isSide">isSide</a></li><li><a href="global.html#labelAtHalfLength">labelAtHalfLength</a></li><li><a href="global.html#labelOffsetStyle">labelOffsetStyle</a></li><li><a href="global.html#lookupRoute">lookupRoute</a></li><li><a href="global.html#markerDef">markerDef</a></li><li><a href="global.html#markerId">markerId</a></li><li><a href="global.html#markerUrl">markerUrl</a></li><li><a href="global.html#nodeBorderWidth">nodeBorderWidth</a></li><li><a href="global.html#nodeShape">nodeShape</a></li><li><a href="global.html#nodesBounds">nodesBounds</a></li><li><a href="global.html#oppositeSide">oppositeSide</a></li><li><a href="global.html#optComputeds">optComputeds</a></li><li><a href="global.html#orthogonalizeThroughPoints">orthogonalizeThroughPoints</a></li><li><a href="global.html#pairEndpoints">pairEndpoints</a></li><li><a href="global.html#parseWaypoints">parseWaypoints</a></li><li><a href="global.html#pickMenuValue">pickMenuValue</a></li><li><a href="global.html#previewDelete">previewDelete</a></li><li><a href="global.html#recenterForResize">recenterForResize</a></li><li><a href="global.html#rectsOverlap">rectsOverlap</a></li><li><a href="global.html#resolveContainerSize">resolveContainerSize</a></li><li><a href="global.html#resolveDefConn">resolveDefConn</a></li><li><a href="global.html#resolveDefNode">resolveDefNode</a></li><li><a href="global.html#resolveLineStyle">resolveLineStyle</a></li><li><a href="global.html#resolveMarker">resolveMarker</a></li><li><a href="global.html#resolveNodeSize">resolveNodeSize</a></li><li><a href="global.html#resolveOpt">resolveOpt</a></li><li><a href="global.html#resolveOptValue">resolveOptValue</a></li><li><a href="global.html#resolvePadding">resolvePadding</a></li><li><a href="global.html#resolveSettingsText">resolveSettingsText</a></li><li><a href="global.html#screenToFlow">screenToFlow</a></li><li><a href="global.html#segmentFallback">segmentFallback</a></li><li><a href="global.html#setDomFlag">setDomFlag</a></li><li><a href="global.html#setHandleConnectRole">setHandleConnectRole</a></li><li><a href="global.html#setHandleConnectStatus">setHandleConnectStatus</a></li><li><a href="global.html#settingsOpensOn">settingsOpensOn</a></li><li><a href="global.html#sideAnchorFraction">sideAnchorFraction</a></li><li><a href="global.html#sideNormal">sideNormal</a></li><li><a href="global.html#snapPosition">snapPosition</a></li><li><a href="global.html#snapshotDeep">snapshotDeep</a></li><li><a href="global.html#startDocumentGesture">startDocumentGesture</a></li><li><a href="global.html#stubFallback">stubFallback</a></li><li><a href="global.html#uniq">uniq</a></li><li><a href="global.html#zoomAroundPoint">zoomAroundPoint</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-EdgeMarkerDefs.html">EdgeMarkerDefs</a></li><li><a href="module-Handle.html">Handle</a></li><li><a href="module-NodeBody.html">NodeBody</a></li><li><a href="module-NodePorts.html">NodePorts</a></li><li><a href="module-NodeSettingsForm.html">NodeSettingsForm</a></li><li><a href="module-SettingsGroup.html">SettingsGroup</a></li><li><a href="module-SettingsSelect.html">SettingsSelect</a></li><li><a href="module-SettingsText.html">SettingsText</a></li></ul><h3>Events</h3><ul><li><a href="global.html#event:elements-deleted%25E6%2589%2580%25E6%259C%2589%25E5%2588%25AA%25E9%2599%25A4%25E8%25B7%25AF%25E5%25BE%2591%25E5%25AE%258C%25E6%2588%2590%25E5%25BE%258C%25E7%259A%2586%25E7%2599%25BC%25E5%2587%25BA(%25E6%2596%25BCupdate:*%25E4%25B9%258B%25E5%25BE%258C%25E3%2580%2581%25E6%259C%2580%25E5%25BE%258C%25E7%2599%25BC%25E5%2587%25BA),payload:%257Bfrom,requested:%257BnodeIds,connIds%257D,deleted:%257BnodeIds,connIds,nodes,conns%257D,cascades:%255B%257BnodeId,connIds%257D%255D,notFound:%257BnodeIds,connIds%257D,excluded:%257BnodeIds,connIds%257D%257D-deleted.nodes/conns%25E7%2582%25BA%25E8%25A2%25AB%25E5%2588%25AA%25E7%2595%25B6%25E4%25B8%258B%25E4%25B9%258B%25E6%25B7%25B1%25E8%25A4%2587%25E8%25A3%25BD%25E5%25BF%25AB%25E7%2585%25A7(JSON%25E5%25BE%2580%25E8%25BF%2594,%25E5%2590%258CgetFlowData);id%25E6%25B8%2585%25E5%2596%25AE%25E4%25BE%259B%25E8%25BC%2595%25E9%2587%258F%25E8%25A8%2598%25E5%25B8%25B3;-cascades%25E5%258F%25AA%25E6%258F%258F%25E8%25BF%25B0%25E5%259B%25A0%25E6%259E%259C(%25E5%2593%25AA%25E6%25A2%259D%25E9%2582%258A%25E5%259B%25A0%25E5%2593%25AA%25E5%2580%258B%25E7%25AF%2580%25E9%25BB%259E%25E8%2580%258C%25E5%2588%25AA),%25E8%25A8%2598%25E5%25B8%25B3%25E4%25BB%25A5deleted.*Ids%25E7%2582%25BA%25E6%25BA%2596(%25E5%25B7%25B2%25E5%258E%25BB%25E9%2587%258D);-%25E4%25B8%258D%25E5%2590%25AB%25E5%2588%25AA%25E5%25BE%258C%25E5%2585%25A8%25E9%2587%258F%25E5%25BF%25AB%25E7%2585%25A7(remain):%25E9%259C%2580%25E8%25A6%2581%25E8%2580%2585%25E5%2591%25BC%25E5%258F%25ABgetFlowData()%25E6%2588%2596%25E6%25B2%25BF%25E7%2594%25A8update:nodes/update:conns%25E3%2580%2582%25E5%2588%25AA%25E9%2599%25A4%25E5%258F%25AA%25E6%259C%2589%25E9%2580%2599%25E4%25B8%2580%25E5%2580%258B%25E5%25AE%258C%25E6%2588%2590%25E4%25BA%258B%25E4%25BB%25B6%25E3%2580%2582%25E6%2589%2580%25E6%259C%2589%25E5%2585%25A5%25E5%258F%25A3%25E5%2590%258C%25E4%25B8%2580%25E5%25BA%258F%25E5%2588%2597:(%25E5%2583%2585%25E5%25AF%25A6%25E9%259A%259B%25E8%25AE%258A%25E5%258B%2595%25E4%25B9%258B%25E9%259B%2586%25E5%2590%2588)update:nodes%25E2%2586%2592update:conns%25E2%2586%2592elements-deleted%25E3%2580%2582">elements-deleted 所有刪除路徑完成後皆發出(於 update:* 之後、最後發出),payload:  { from, requested:{nodeIds,connIds}, deleted:{nodeIds,connIds,nodes,conns}, cascades:[{nodeId,connIds}],    notFound:{nodeIds,connIds}, excluded:{nodeIds,connIds} }  - deleted.nodes/conns 為被刪當下之深複製快照(JSON 往返,同 getFlowData);id 清單供輕量記帳;  - cascades 只描述因果(哪條邊因哪個節點而刪),記帳以 deleted.*Ids 為準(已去重);  - 不含刪後全量快照(remain):需要者呼叫 getFlowData() 或沿用 update:nodes / update:conns。  刪除只有這一個完成事件。所有入口同一序列:(僅實際變動之集合)update:nodes → update:conns → elements-deleted。</a></li></ul><h3>Global</h3><ul><li><a href="global.html#CARET_PATH">CARET_PATH</a></li><li><a href="global.html#CONN_SETTING_GROUPS">CONN_SETTING_GROUPS</a></li><li><a href="global.html#CONN_SETTING_KEYS">CONN_SETTING_KEYS</a></li><li><a href="global.html#DEFAULT_OPEN_GROUPS">DEFAULT_OPEN_GROUPS</a></li><li><a href="global.html#DRAG_THRESHOLD_PX">DRAG_THRESHOLD_PX</a></li><li><a href="global.html#EDGE_TYPES">EDGE_TYPES</a></li><li><a href="global.html#EDGE_WIDTH_MAX">EDGE_WIDTH_MAX</a></li><li><a href="global.html#FIELD_POLICY">FIELD_POLICY</a></li><li><a href="global.html#GEAR_PATH">GEAR_PATH</a></li><li><a href="global.html#INFO_POPUP_DEFER_MS">INFO_POPUP_DEFER_MS</a></li><li><a href="global.html#MARKER_TYPES">MARKER_TYPES</a></li><li><a href="global.html#MENU_OPT_KEYS">MENU_OPT_KEYS</a></li><li><a href="global.html#NODE_DEFAULTS">NODE_DEFAULTS</a></li><li><a href="global.html#NODE_SETTING_GROUPS">NODE_SETTING_GROUPS</a></li><li><a href="global.html#NODE_SETTING_KEYS">NODE_SETTING_KEYS</a></li><li><a href="global.html#RECT_FRACTION">RECT_FRACTION</a></li><li><a href="global.html#SETTINGS_TRIGGERS">SETTINGS_TRIGGERS</a></li><li><a href="global.html#SIDES">SIDES</a></li><li><a href="global.html#applyDelete">applyDelete</a></li><li><a href="global.html#assessConnection">assessConnection</a></li><li><a href="global.html#assessGraphConnection">assessGraphConnection</a></li><li><a href="global.html#buildConnectionCandidate">buildConnectionCandidate</a></li><li><a href="global.html#buildRoundedPath">buildRoundedPath</a></li><li><a href="global.html#canOpenPopup">canOpenPopup</a></li><li><a href="global.html#canOpenSettings">canOpenSettings</a></li><li><a href="global.html#clampInsets">clampInsets</a></li><li><a href="global.html#clampPosition">clampPosition</a></li><li><a href="global.html#clampZoom">clampZoom</a></li><li><a href="global.html#classifyHit">classifyHit</a></li><li><a href="global.html#clientToLocal">clientToLocal</a></li><li><a href="global.html#computeCenterView">computeCenterView</a></li><li><a href="global.html#computeConnStyle">computeConnStyle</a></li><li><a href="global.html#computeEdgeClasses">computeEdgeClasses</a></li><li><a href="global.html#computeFitView">computeFitView</a></li><li><a href="global.html#computeLabelStyle">computeLabelStyle</a></li><li><a href="global.html#computeResize">computeResize</a></li><li><a href="global.html#connSourceSide">connSourceSide</a></li><li><a href="global.html#connTargetSide">connTargetSide</a></li><li><a href="global.html#crossedThreshold">crossedThreshold</a></li><li><a href="global.html#darkenColor">darkenColor</a></li><li><a href="global.html#describeHandleEndpoint">describeHandleEndpoint</a></li><li><a href="global.html#easeInOutCubic">easeInOutCubic</a></li><li><a href="global.html#effectiveAnimated">effectiveAnimated</a></li><li><a href="global.html#effectiveEdgeType">effectiveEdgeType</a></li><li><a href="global.html#findDuplicateIds">findDuplicateIds</a></li><li><a href="global.html#findHandleElAt">findHandleElAt</a></li><li><a href="global.html#fixSvgNs">fixSvgNs</a></li><li><a href="global.html#flowToScreen">flowToScreen</a></li><li><a href="global.html#gearVisible">gearVisible</a></li><li><a href="global.html#generateId">generateId</a></li><li><a href="global.html#gestureBlockedReason">gestureBlockedReason</a></li><li><a href="global.html#getBezierPath">getBezierPath</a></li><li><a href="global.html#getControlOffset">getControlOffset</a></li><li><a href="global.html#getHandlePosition">getHandlePosition</a></li><li><a href="global.html#getOverlappingNodes">getOverlappingNodes</a></li><li><a href="global.html#getPathFunction">getPathFunction</a></li><li><a href="global.html#getSmoothStepPath">getSmoothStepPath</a></li><li><a href="global.html#getStepPath">getStepPath</a></li><li><a href="global.html#getStraightPath">getStraightPath</a></li><li><a href="global.html#handlePlacementStyle">handlePlacementStyle</a></li><li><a href="global.html#handleStyleVars">handleStyleVars</a></li><li><a href="global.html#infoOpenPlan">infoOpenPlan</a></li><li><a href="global.html#installGlobalCursor">installGlobalCursor</a></li><li><a href="global.html#isAffordanceHit">isAffordanceHit</a></li><li><a href="global.html#isCanvasBlank">isCanvasBlank</a></li><li><a href="global.html#isDarkColor">isDarkColor</a></li><li><a href="global.html#isSide">isSide</a></li><li><a href="global.html#labelAtHalfLength">labelAtHalfLength</a></li><li><a href="global.html#labelOffsetStyle">labelOffsetStyle</a></li><li><a href="global.html#lookupRoute">lookupRoute</a></li><li><a href="global.html#markerDef">markerDef</a></li><li><a href="global.html#markerId">markerId</a></li><li><a href="global.html#markerUrl">markerUrl</a></li><li><a href="global.html#nodeBorderWidth">nodeBorderWidth</a></li><li><a href="global.html#nodeShape">nodeShape</a></li><li><a href="global.html#nodesBounds">nodesBounds</a></li><li><a href="global.html#oppositeSide">oppositeSide</a></li><li><a href="global.html#optComputeds">optComputeds</a></li><li><a href="global.html#orthogonalizeThroughPoints">orthogonalizeThroughPoints</a></li><li><a href="global.html#pairEndpoints">pairEndpoints</a></li><li><a href="global.html#parseWaypoints">parseWaypoints</a></li><li><a href="global.html#pickMenuValue">pickMenuValue</a></li><li><a href="global.html#previewDelete">previewDelete</a></li><li><a href="global.html#recenterForResize">recenterForResize</a></li><li><a href="global.html#rectsOverlap">rectsOverlap</a></li><li><a href="global.html#resolveContainerSize">resolveContainerSize</a></li><li><a href="global.html#resolveDefConn">resolveDefConn</a></li><li><a href="global.html#resolveDefNode">resolveDefNode</a></li><li><a href="global.html#resolveLineStyle">resolveLineStyle</a></li><li><a href="global.html#resolveMarker">resolveMarker</a></li><li><a href="global.html#resolveNodeSize">resolveNodeSize</a></li><li><a href="global.html#resolveOpt">resolveOpt</a></li><li><a href="global.html#resolveOptValue">resolveOptValue</a></li><li><a href="global.html#resolvePadding">resolvePadding</a></li><li><a href="global.html#resolveSettingsText">resolveSettingsText</a></li><li><a href="global.html#screenToFlow">screenToFlow</a></li><li><a href="global.html#segmentFallback">segmentFallback</a></li><li><a href="global.html#setDomFlag">setDomFlag</a></li><li><a href="global.html#setHandleConnectRole">setHandleConnectRole</a></li><li><a href="global.html#setHandleConnectStatus">setHandleConnectStatus</a></li><li><a href="global.html#settingsOpensOn">settingsOpensOn</a></li><li><a href="global.html#sideAnchorFraction">sideAnchorFraction</a></li><li><a href="global.html#sideNormal">sideNormal</a></li><li><a href="global.html#snapPosition">snapPosition</a></li><li><a href="global.html#snapshotDeep">snapshotDeep</a></li><li><a href="global.html#startDocumentGesture">startDocumentGesture</a></li><li><a href="global.html#stubFallback">stubFallback</a></li><li><a href="global.html#titleCase">titleCase</a></li><li><a href="global.html#uniq">uniq</a></li><li><a href="global.html#visibleGroups">visibleGroups</a></li><li><a href="global.html#zoomAroundPoint">zoomAroundPoint</a></li></ul>
     
 </nav>
 
@@ -125,6 +125,144 @@
 
         
             
+<h4 class="name" id="CARET_PATH"><span class="type-signature type-signature-constant">(constant) </span>CARET_PATH<span class="type-signature"></span></h4>
+
+
+
+
+
+<dl class="details">
+    
+    <dt class="tag-description">Description:</dt>
+    <dd class="tag-description"><ul class="dummy"><li><p>設定表單群組之 disclosure 三角形(viewBox 0 0 10 10, 預設朝右 = 收合; 展開時由 CSS 轉 90 度朝下)。
+頂點與底邊取正三角形比例(底 6.4 / 高 5.54), 外接框中心恰為 (5,5) —— 旋轉不偏移。</p></li></ul></dd>
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="js_icons.mjs.html">js/icons.mjs</a>, <a href="js_icons.mjs.html#line5">line 5</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+<div class="description usertext">
+    <p>設定表單群組之 disclosure 三角形(viewBox 0 0 10 10, 預設朝右 = 收合; 展開時由 CSS 轉 90 度朝下)。
+頂點與底邊取正三角形比例(底 6.4 / 高 5.54), 外接框中心恰為 (5,5) —— 旋轉不偏移。</p>
+</div>
+
+
+
+
+
+
+
+
+        
+            
+<h4 class="name" id="CONN_SETTING_GROUPS"><span class="type-signature type-signature-constant">(constant) </span>CONN_SETTING_GROUPS<span class="type-signature"></span></h4>
+
+
+
+
+
+<dl class="details">
+    
+    <dt class="tag-description">Description:</dt>
+    <dd class="tag-description"><ul class="dummy"><li><p>連線設定分群(對應 ConnSettingsForm 之欄位; points 為轉折點區塊, 與路徑同群)。
+appearance 之群鍵/標題與節點一致(成員依元素型別而異), 使兩個 popup 之語彙對稱。</p></li></ul></dd>
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="js_settingsGroups.mjs.html">js/settingsGroups.mjs</a>, <a href="js_settingsGroups.mjs.html#line35">line 35</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+<div class="description usertext">
+    <p>連線設定分群(對應 ConnSettingsForm 之欄位; points 為轉折點區塊, 與路徑同群)。
+appearance 之群鍵/標題與節點一致(成員依元素型別而異), 使兩個 popup 之語彙對稱。</p>
+</div>
+
+
+
+
+
+
+
+
+        
+            
 <h4 class="name" id="CONN_SETTING_KEYS"><span class="type-signature type-signature-constant">(constant) </span>CONN_SETTING_KEYS<span class="type-signature"></span></h4>
 
 
@@ -140,7 +278,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="js_defaults.mjs.html">js/defaults.mjs</a>, <a href="js_defaults.mjs.html#line63">line 63</a>
+        <a href="js_defaults.mjs.html">js/defaults.mjs</a>, <a href="js_defaults.mjs.html#line68">line 68</a>
     </li></ul></dd>
     
 
@@ -181,6 +319,73 @@
 
 <div class="description usertext">
     <p>連線設定更新入口受理之欄位(schema allowlist)</p>
+</div>
+
+
+
+
+
+
+
+
+        
+            
+<h4 class="name" id="DEFAULT_OPEN_GROUPS"><span class="type-signature type-signature-constant">(constant) </span>DEFAULT_OPEN_GROUPS<span class="type-signature"></span></h4>
+
+
+
+
+
+<dl class="details">
+    
+    <dt class="tag-description">Description:</dt>
+    <dd class="tag-description"><ul class="dummy"><li><p>預設展開之群(其餘收合): 取首群, 使 popup 一開即可改最常用欄位, 又不致全部攤開</p></li></ul></dd>
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="js_settingsGroups.mjs.html">js/settingsGroups.mjs</a>, <a href="js_settingsGroups.mjs.html#line44">line 44</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+<div class="description usertext">
+    <p>預設展開之群(其餘收合): 取首群, 使 popup 一開即可改最常用欄位, 又不致全部攤開</p>
 </div>
 
 
@@ -259,6 +464,73 @@
 
         
             
+<h4 class="name" id="EDGE_TYPES"><span class="type-signature type-signature-constant">(constant) </span>EDGE_TYPES<span class="type-signature"></span></h4>
+
+
+
+
+
+<dl class="details">
+    
+    <dt class="tag-description">Description:</dt>
+    <dd class="tag-description"><ul class="dummy"><li><p>支援之邊型值域(設定表單之 Type 下拉即由此衍生, 不另抄一份; 新增路徑函式時選項自動跟上)</p></li></ul></dd>
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="js_edgePath.mjs.html">js/edgePath.mjs</a>, <a href="js_edgePath.mjs.html#line313">line 313</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+<div class="description usertext">
+    <p>支援之邊型值域(設定表單之 Type 下拉即由此衍生, 不另抄一份; 新增路徑函式時選項自動跟上)</p>
+</div>
+
+
+
+
+
+
+
+
+        
+            
 <h4 class="name" id="EDGE_WIDTH_MAX"><span class="type-signature type-signature-constant">(constant) </span>EDGE_WIDTH_MAX<span class="type-signature"></span></h4>
 
 
@@ -274,7 +546,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="js_defaults.mjs.html">js/defaults.mjs</a>, <a href="js_defaults.mjs.html#line54">line 54</a>
+        <a href="js_defaults.mjs.html">js/defaults.mjs</a>, <a href="js_defaults.mjs.html#line59">line 59</a>
     </li></ul></dd>
     
 
@@ -338,14 +610,14 @@
     <dd class="tag-description"><ul class="dummy"><li><p>每欄位之有效值(item → defaults)回退政策(不同欄位之「空值」語義不同, 不用通用規則抹平):
 raw            : 只取 item 自身(name/description 之空字串為有效值, 不繼承)
 defined        : item 非 undefined/null 即採用(edgeWidth 0、animated false 皆為明確值)
-explicit-empty : item 非 undefined/null 即採用, 含 ''(markerStart/End 之 '' 為明確「無」, 不落回 defaults——與 edgeMarker 同一規則)
+explicit-empty : item 非 undefined/null 即採用, 含 ''(markerFrom/End 之 '' 為明確「無」, 不落回 defaults——與 edgeMarker 同一規則)
 truthy(預設)   : item 為 truthy 才採用, '' 視為未給 → defaults</p></li></ul></dd>
     
 
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="components_mixins_settingsForm.mjs.html">components/mixins/settingsForm.mjs</a>, <a href="components_mixins_settingsForm.mjs.html#line17">line 17</a>
+        <a href="components_mixins_settingsForm.mjs.html">components/mixins/settingsForm.mjs</a>, <a href="components_mixins_settingsForm.mjs.html#line20">line 20</a>
     </li></ul></dd>
     
 
@@ -388,7 +660,7 @@ truthy(預設)   : item 為 truthy 才採用, '' 視為未給 → defaults</p></
     <p>每欄位之有效值(item → defaults)回退政策(不同欄位之「空值」語義不同, 不用通用規則抹平):
 raw            : 只取 item 自身(name/description 之空字串為有效值, 不繼承)
 defined        : item 非 undefined/null 即採用(edgeWidth 0、animated false 皆為明確值)
-explicit-empty : item 非 undefined/null 即採用, 含 ''(markerStart/End 之 '' 為明確「無」, 不落回 defaults——與 edgeMarker 同一規則)
+explicit-empty : item 非 undefined/null 即採用, 含 ''(markerFrom/End 之 '' 為明確「無」, 不落回 defaults——與 edgeMarker 同一規則)
 truthy(預設)   : item 為 truthy 才採用, '' 視為未給 → defaults</p>
 </div>
 
@@ -416,7 +688,7 @@ truthy(預設)   : item 為 truthy 才採用, '' 視為未給 → defaults</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="js_icons.mjs.html">js/icons.mjs</a>, <a href="js_icons.mjs.html#line2">line 2</a>
+        <a href="js_icons.mjs.html">js/icons.mjs</a>, <a href="js_icons.mjs.html#line8">line 8</a>
     </li></ul></dd>
     
 
@@ -483,7 +755,7 @@ truthy(預設)   : item 為 truthy 才採用, '' 視為未給 → defaults</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="js_defaults.mjs.html">js/defaults.mjs</a>, <a href="js_defaults.mjs.html#line51">line 51</a>
+        <a href="js_defaults.mjs.html">js/defaults.mjs</a>, <a href="js_defaults.mjs.html#line56">line 56</a>
     </li></ul></dd>
     
 
@@ -549,9 +821,10 @@ id 由同一函式產生, 兩端不可能分家。</p>
 <p>契約(spec/流程_互動契約.md §4.3):
 type:  conn.marker{End|Start}      → defConn.marker{End|Start}      → ''(無); conn 明確給 '' 即為無(不落回 defConn)
 size:  conn.marker{End|Start}Size  → defConn.marker{End|Start}Size  → 10   (圖面 px, 隨 zoom 同比縮放; 不隨線寬)
-fill:  conn.marker{End|Start}Color → defConn.marker{End|Start}Color → 線色加深 20%(僅 arrowclosed 使用, 三角形填色; arrow 無填充)
+fill:  conn.marker{End|Start}FaceColor → defConn.同鍵 → 線色加深 20%(僅 arrowclosed 使用, 三角形填色; arrow 無填充)
 why 加深: 預設填色與線同色時箭頭與線融成一片, 方向不易辨識; 加深由線色推導, 宿主改線色即跟隨
-stroke = 線色
+stroke: conn.marker{End|Start}EdgeColor → defConn.同鍵 → 線色(箭頭外框色; arrow 與 arrowclosed 皆適用)
+未給時跟隨線色即為既有行為, 故本欄為向後相容之 opt-in 擴充
 strokeWidth = 線寬(箭頭外框與線同粗)
 type ∈ '' | 'arrow'(線式, 無填充) | 'arrowclosed'(實心)</p></li></ul></dd>
     
@@ -559,7 +832,7 @@ type ∈ '' | 'arrow'(線式, 無填充) | 'arrowclosed'(實心)</p></li></ul></
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="js_edgeMarker.mjs.html">js/edgeMarker.mjs</a>, <a href="js_edgeMarker.mjs.html#line15">line 15</a>
+        <a href="js_edgeMarker.mjs.html">js/edgeMarker.mjs</a>, <a href="js_edgeMarker.mjs.html#line16">line 16</a>
     </li></ul></dd>
     
 
@@ -604,9 +877,10 @@ id 由同一函式產生, 兩端不可能分家。</p>
 <p>契約(spec/流程_互動契約.md §4.3):
 type:  conn.marker{End|Start}      → defConn.marker{End|Start}      → ''(無); conn 明確給 '' 即為無(不落回 defConn)
 size:  conn.marker{End|Start}Size  → defConn.marker{End|Start}Size  → 10   (圖面 px, 隨 zoom 同比縮放; 不隨線寬)
-fill:  conn.marker{End|Start}Color → defConn.marker{End|Start}Color → 線色加深 20%(僅 arrowclosed 使用, 三角形填色; arrow 無填充)
+fill:  conn.marker{End|Start}FaceColor → defConn.同鍵 → 線色加深 20%(僅 arrowclosed 使用, 三角形填色; arrow 無填充)
 why 加深: 預設填色與線同色時箭頭與線融成一片, 方向不易辨識; 加深由線色推導, 宿主改線色即跟隨
-stroke = 線色
+stroke: conn.marker{End|Start}EdgeColor → defConn.同鍵 → 線色(箭頭外框色; arrow 與 arrowclosed 皆適用)
+未給時跟隨線色即為既有行為, 故本欄為向後相容之 opt-in 擴充
 strokeWidth = 線寬(箭頭外框與線同粗)
 type ∈ '' | 'arrow'(線式, 無填充) | 'arrowclosed'(實心)</p>
 </div>
@@ -636,7 +910,7 @@ type ∈ '' | 'arrow'(線式, 無填充) | 'arrowclosed'(實心)</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="js_resolveOpt.mjs.html">js/resolveOpt.mjs</a>, <a href="js_resolveOpt.mjs.html#line179">line 179</a>
+        <a href="js_resolveOpt.mjs.html">js/resolveOpt.mjs</a>, <a href="js_resolveOpt.mjs.html#line184">line 184</a>
     </li></ul></dd>
     
 
@@ -756,6 +1030,75 @@ type ∈ '' | 'arrow'(線式, 無填充) | 'arrowclosed'(實心)</p>
 
         
             
+<h4 class="name" id="NODE_SETTING_GROUPS"><span class="type-signature type-signature-constant">(constant) </span>NODE_SETTING_GROUPS<span class="type-signature"></span></h4>
+
+
+
+
+
+<dl class="details">
+    
+    <dt class="tag-description">Description:</dt>
+    <dd class="tag-description"><ul class="dummy"><li><p>節點設定分群(對應 NodeSettingsForm 之欄位)。
+shape 與填色/框線同屬「長什麼樣」故併於 appearance —— 單獨成群時群標題(Shape)與其唯一欄位標籤(Shape)重複。</p></li></ul></dd>
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="js_settingsGroups.mjs.html">js/settingsGroups.mjs</a>, <a href="js_settingsGroups.mjs.html#line24">line 24</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+<div class="description usertext">
+    <p>節點設定分群(對應 NodeSettingsForm 之欄位)。
+shape 與填色/框線同屬「長什麼樣」故併於 appearance —— 單獨成群時群標題(Shape)與其唯一欄位標籤(Shape)重複。</p>
+</div>
+
+
+
+
+
+
+
+
+        
+            
 <h4 class="name" id="NODE_SETTING_KEYS"><span class="type-signature type-signature-constant">(constant) </span>NODE_SETTING_KEYS<span class="type-signature"></span></h4>
 
 
@@ -771,7 +1114,7 @@ type ∈ '' | 'arrow'(線式, 無填充) | 'arrowclosed'(實心)</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="js_defaults.mjs.html">js/defaults.mjs</a>, <a href="js_defaults.mjs.html#line57">line 57</a>
+        <a href="js_defaults.mjs.html">js/defaults.mjs</a>, <a href="js_defaults.mjs.html#line62">line 62</a>
     </li></ul></dd>
     
 
@@ -913,7 +1256,7 @@ type ∈ '' | 'arrow'(線式, 無填充) | 'arrowclosed'(實心)</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="js_defaults.mjs.html">js/defaults.mjs</a>, <a href="js_defaults.mjs.html#line48">line 48</a>
+        <a href="js_defaults.mjs.html">js/defaults.mjs</a>, <a href="js_defaults.mjs.html#line53">line 53</a>
     </li></ul></dd>
     
 
@@ -3458,7 +3801,7 @@ zoom 上限 maxZoom(不設下限: 大圖可低於 zoomMin, 滾輪縮放再以當
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="js_edgeMarker.mjs.html">js/edgeMarker.mjs</a>, <a href="js_edgeMarker.mjs.html#line36">line 36</a>
+        <a href="js_edgeMarker.mjs.html">js/edgeMarker.mjs</a>, <a href="js_edgeMarker.mjs.html#line37">line 37</a>
     </li></ul></dd>
     
 
@@ -5014,7 +5357,7 @@ elementFromPoint 可能撿到他 flow 之把手; 以最近之 [data-flow-id] 祖
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="js_edgePath.mjs.html">js/edgePath.mjs</a>, <a href="js_edgePath.mjs.html#line313">line 313</a>
+        <a href="js_edgePath.mjs.html">js/edgePath.mjs</a>, <a href="js_edgePath.mjs.html#line316">line 316</a>
     </li></ul></dd>
     
 
@@ -5912,6 +6255,94 @@ translate(-50%,-50%) 置中, 故 hover 放大時圓心不動。</p></li></ul></d
 
     
 
+    <h4 class="name" id="isDarkColor"><span class="type-signature"></span>isDarkColor<span class="signature">()</span><span class="type-signature"></span></h4>
+
+    
+
+
+
+
+<dl class="details">
+    
+    <dt class="tag-description">Description:</dt>
+    <dd class="tag-description"><ul class="dummy"><li><p>判斷一個 CSS 色字串是否為深色(相對亮度 &lt; 0.5)。支援 #rgb / #rrggbb / rgb(a)();
+認不得的字串(具名色、hsl、漸層…)一律回 false —— 寧可維持淺色預設, 不亂猜。</p>
+<p>用途: 群標題之底色/三角形色須隨 popup 底色走。淺色底以「疊黑」加深、深色底須改為「疊白」加亮,
+否則深色 popup 上的標題帶會比背景更暗、三角形直接看不見。</p></li></ul></dd>
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="components_mixins_settingsForm.mjs.html">components/mixins/settingsForm.mjs</a>, <a href="components_mixins_settingsForm.mjs.html#line36">line 36</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+            
+
+    
+
     <h4 class="name" id="isSide"><span class="type-signature"></span>isSide<span class="signature">()</span><span class="type-signature"></span></h4>
 
     
@@ -6272,7 +6703,7 @@ Returns waypoint array or null (fallback needed).</p></li></ul></dd>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="js_edgeMarker.mjs.html">js/edgeMarker.mjs</a>, <a href="js_edgeMarker.mjs.html#line98">line 98</a>
+        <a href="js_edgeMarker.mjs.html">js/edgeMarker.mjs</a>, <a href="js_edgeMarker.mjs.html#line101">line 101</a>
     </li></ul></dd>
     
 
@@ -6359,7 +6790,7 @@ Returns waypoint array or null (fallback needed).</p></li></ul></dd>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="js_edgeMarker.mjs.html">js/edgeMarker.mjs</a>, <a href="js_edgeMarker.mjs.html#line88">line 88</a>
+        <a href="js_edgeMarker.mjs.html">js/edgeMarker.mjs</a>, <a href="js_edgeMarker.mjs.html#line91">line 91</a>
     </li></ul></dd>
     
 
@@ -6444,7 +6875,7 @@ Returns waypoint array or null (fallback needed).</p></li></ul></dd>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="js_edgeMarker.mjs.html">js/edgeMarker.mjs</a>, <a href="js_edgeMarker.mjs.html#line117">line 117</a>
+        <a href="js_edgeMarker.mjs.html">js/edgeMarker.mjs</a>, <a href="js_edgeMarker.mjs.html#line120">line 120</a>
     </li></ul></dd>
     
 
@@ -6897,7 +7328,7 @@ Returns waypoint array or null (fallback needed).</p></li></ul></dd>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="js_resolveOpt.mjs.html">js/resolveOpt.mjs</a>, <a href="js_resolveOpt.mjs.html#line104">line 104</a>
+        <a href="js_resolveOpt.mjs.html">js/resolveOpt.mjs</a>, <a href="js_resolveOpt.mjs.html#line107">line 107</a>
     </li></ul></dd>
     
 
@@ -7862,7 +8293,7 @@ empty: Boolean                          requested 為空</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="js_resolveOpt.mjs.html">js/resolveOpt.mjs</a>, <a href="js_resolveOpt.mjs.html#line150">line 150</a>
+        <a href="js_resolveOpt.mjs.html">js/resolveOpt.mjs</a>, <a href="js_resolveOpt.mjs.html#line153">line 153</a>
     </li></ul></dd>
     
 
@@ -7947,7 +8378,7 @@ empty: Boolean                          requested 為空</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="js_resolveOpt.mjs.html">js/resolveOpt.mjs</a>, <a href="js_resolveOpt.mjs.html#line126">line 126</a>
+        <a href="js_resolveOpt.mjs.html">js/resolveOpt.mjs</a>, <a href="js_resolveOpt.mjs.html#line129">line 129</a>
     </li></ul></dd>
     
 
@@ -8032,7 +8463,7 @@ empty: Boolean                          requested 為空</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="js_edgeMarker.mjs.html">js/edgeMarker.mjs</a>, <a href="js_edgeMarker.mjs.html#line21">line 21</a>
+        <a href="js_edgeMarker.mjs.html">js/edgeMarker.mjs</a>, <a href="js_edgeMarker.mjs.html#line22">line 22</a>
     </li></ul></dd>
     
 
@@ -8117,7 +8548,7 @@ empty: Boolean                          requested 為空</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="js_edgeMarker.mjs.html">js/edgeMarker.mjs</a>, <a href="js_edgeMarker.mjs.html#line68">line 68</a>
+        <a href="js_edgeMarker.mjs.html">js/edgeMarker.mjs</a>, <a href="js_edgeMarker.mjs.html#line69">line 69</a>
     </li></ul></dd>
     
 
@@ -8243,10 +8674,10 @@ empty: Boolean                          requested 為空</p>
             <td class="type">
             
                 
-<span class="param-type">'start'</span>
+<span class="param-type">'from'</span>
 |
 
-<span class="param-type">'end'</span>
+<span class="param-type">'to'</span>
 
 
 
@@ -8562,7 +8993,7 @@ empty: Boolean                          requested 為空</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="js_resolveOpt.mjs.html">js/resolveOpt.mjs</a>, <a href="js_resolveOpt.mjs.html#line97">line 97</a>
+        <a href="js_resolveOpt.mjs.html">js/resolveOpt.mjs</a>, <a href="js_resolveOpt.mjs.html#line100">line 100</a>
     </li></ul></dd>
     
 
@@ -8647,7 +9078,7 @@ empty: Boolean                          requested 為空</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="js_resolveOpt.mjs.html">js/resolveOpt.mjs</a>, <a href="js_resolveOpt.mjs.html#line79">line 79</a>
+        <a href="js_resolveOpt.mjs.html">js/resolveOpt.mjs</a>, <a href="js_resolveOpt.mjs.html#line82">line 82</a>
     </li></ul></dd>
     
 
@@ -8921,7 +9352,7 @@ empty: Boolean                          requested 為空</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="js_resolveOpt.mjs.html">js/resolveOpt.mjs</a>, <a href="js_resolveOpt.mjs.html#line115">line 115</a>
+        <a href="js_resolveOpt.mjs.html">js/resolveOpt.mjs</a>, <a href="js_resolveOpt.mjs.html#line118">line 118</a>
     </li></ul></dd>
     
 
@@ -10302,6 +10733,91 @@ value 為空即移除。</p></li></ul></dd>
 
     
 
+    <h4 class="name" id="titleCase"><span class="type-signature"></span>titleCase<span class="signature">()</span><span class="type-signature"></span></h4>
+
+    
+
+
+
+
+<dl class="details">
+    
+    <dt class="tag-description">Description:</dt>
+    <dd class="tag-description"><ul class="dummy"><li><p>kebab-case 值 → 顯示文字(triangle-up → Triangle Up)</p></li></ul></dd>
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="components_ui_NodeSettingsForm.vue.html">components/ui/NodeSettingsForm.vue</a>, <a href="components_ui_NodeSettingsForm.vue.html#line49">line 49</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+            
+
+    
+
     <h4 class="name" id="uniq"><span class="type-signature"></span>uniq<span class="signature">()</span><span class="type-signature"></span></h4>
 
     
@@ -10332,6 +10848,91 @@ value 為空即移除。</p></li></ul></dd>
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
         <a href="js_graphMutation.mjs.html">js/graphMutation.mjs</a>, <a href="js_graphMutation.mjs.html#line16">line 16</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="visibleGroups"><span class="type-signature"></span>visibleGroups<span class="signature">()</span><span class="type-signature"></span></h4>
+
+    
+
+
+
+
+<dl class="details">
+    
+    <dt class="tag-description">Description:</dt>
+    <dd class="tag-description"><ul class="dummy"><li><p>依排除清單過濾: 回傳仍有可見欄位之群(順序不變)</p></li></ul></dd>
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="js_settingsGroups.mjs.html">js/settingsGroups.mjs</a>, <a href="js_settingsGroups.mjs.html#line47">line 47</a>
     </li></ul></dd>
     
 
@@ -13417,6 +14018,44 @@ Any value of the wrong type (or an empty string) falls back to the default liste
 
         <tr>
             
+                <td class="name"><code>settingsPopupMaxHeight</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>'400px'</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Settings form max height (CSS length); scrolls inside the form when exceeded</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
                 <td class="name"><code>nodesSettingsDeleteText</code></td>
             
 
@@ -13754,7 +14393,7 @@ Any value of the wrong type (or an empty string) falls back to the default liste
                 </td>
             
 
-            <td class="description last"><p>Default shape: 'rectangle' | 'diamond' | 'ellipse' | 'triangle' | ...</p></td>
+            <td class="description last"><p>Default shape: 'rectangle' | 'diamond' | 'ellipse' | 'triangle-up' | ...</p></td>
         </tr>
 
     
@@ -14932,7 +15571,7 @@ reason ∈ 'no-endpoint'|'unknown-handle'|'self'|'not-connectable'|'missing-node
 
         <tr>
             
-                <td class="name"><code>defConnMarkerStart</code></td>
+                <td class="name"><code>defConnMarkerFrom</code></td>
             
 
             <td class="type">
@@ -14970,7 +15609,7 @@ reason ∈ 'no-endpoint'|'unknown-handle'|'self'|'not-connectable'|'missing-node
 
         <tr>
             
-                <td class="name"><code>defConnMarkerStartSize</code></td>
+                <td class="name"><code>defConnMarkerFromSize</code></td>
             
 
             <td class="type">
@@ -15008,7 +15647,7 @@ reason ∈ 'no-endpoint'|'unknown-handle'|'self'|'not-connectable'|'missing-node
 
         <tr>
             
-                <td class="name"><code>defConnMarkerStartColor</code></td>
+                <td class="name"><code>defConnMarkerFromFaceColor</code></td>
             
 
             <td class="type">
@@ -15046,7 +15685,45 @@ reason ∈ 'no-endpoint'|'unknown-handle'|'self'|'not-connectable'|'missing-node
 
         <tr>
             
-                <td class="name"><code>defConnMarkerEnd</code></td>
+                <td class="name"><code>defConnMarkerFromEdgeColor</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>''</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Default start arrow outline colour (arrow and arrowclosed; '' = follows line colour)</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>defConnMarkerTo</code></td>
             
 
             <td class="type">
@@ -15084,7 +15761,7 @@ reason ∈ 'no-endpoint'|'unknown-handle'|'self'|'not-connectable'|'missing-node
 
         <tr>
             
-                <td class="name"><code>defConnMarkerEndSize</code></td>
+                <td class="name"><code>defConnMarkerToSize</code></td>
             
 
             <td class="type">
@@ -15122,7 +15799,7 @@ reason ∈ 'no-endpoint'|'unknown-handle'|'self'|'not-connectable'|'missing-node
 
         <tr>
             
-                <td class="name"><code>defConnMarkerEndColor</code></td>
+                <td class="name"><code>defConnMarkerToFaceColor</code></td>
             
 
             <td class="type">
@@ -15154,6 +15831,44 @@ reason ∈ 'no-endpoint'|'unknown-handle'|'self'|'not-connectable'|'missing-node
             
 
             <td class="description last"><p>Default end arrow fill (arrowclosed only; '' = line color darkened 20%)</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>defConnMarkerToEdgeColor</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>''</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Default end arrow outline colour (arrow and arrowclosed; '' = follows line colour)</p></td>
         </tr>
 
     
@@ -15289,7 +16004,7 @@ reason ∈ 'no-endpoint'|'unknown-handle'|'self'|'not-connectable'|'missing-node
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 4.0.5</a> on Sat Aug 29 2026 23:14:38 GMT+0800 (台北標準時間) using the <a href="https://github.com/clenemt/docdash">docdash</a> theme.
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 4.0.5</a> on Mon Aug 31 2026 15:59:43 GMT+0800 (台北標準時間) using the <a href="https://github.com/clenemt/docdash">docdash</a> theme.
 </footer>
 
 <script>prettyPrint();</script>

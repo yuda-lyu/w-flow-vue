@@ -5,9 +5,10 @@
  * 契約(spec/流程_互動契約.md §4.3):
  *   type:  conn.marker{End|Start}      → defConn.marker{End|Start}      → ''(無); conn 明確給 '' 即為無(不落回 defConn)
  *   size:  conn.marker{End|Start}Size  → defConn.marker{End|Start}Size  → 10   (圖面 px, 隨 zoom 同比縮放; 不隨線寬)
- *   fill:  conn.marker{End|Start}Color → defConn.marker{End|Start}Color → 線色加深 20%(僅 arrowclosed 使用, 三角形填色; arrow 無填充)
+ *   fill:  conn.marker{End|Start}FaceColor → defConn.同鍵 → 線色加深 20%(僅 arrowclosed 使用, 三角形填色; arrow 無填充)
  *          why 加深: 預設填色與線同色時箭頭與線融成一片, 方向不易辨識; 加深由線色推導, 宿主改線色即跟隨
- *   stroke = 線色
+ *   stroke: conn.marker{End|Start}EdgeColor → defConn.同鍵 → 線色(箭頭外框色; arrow 與 arrowclosed 皆適用)
+ *          未給時跟隨線色即為既有行為, 故本欄為向後相容之 opt-in 擴充
  *   strokeWidth = 線寬(箭頭外框與線同粗)
  * type ∈ '' | 'arrow'(線式, 無填充) | 'arrowclosed'(實心)
  */
@@ -62,20 +63,22 @@ function pick(c, d, key) {
  * 解析某端之 marker 規格; 無箭頭回 null。
  * @param {Object} conn
  * @param {Object} defConn
- * @param {'start'|'end'} end
+ * @param {'from'|'to'} end
  * @returns {{ type, size, fill, stroke, strokeWidth, id }|null}
  */
 export function resolveMarker(conn, defConn, end) {
     const c = conn || {}
     const d = defConn || {}
-    const k = end === 'start' ? 'markerStart' : 'markerEnd'
+    const k = end === 'from' ? 'markerFrom' : 'markerTo'
     //type: conn 明確給 ''(None)即為無箭頭, 不落回 defConn; 未給(undefined/null)才取 defConn
     const type = (c[k] !== undefined && c[k] !== null) ? c[k] : d[k]
     if (type !== 'arrow' && type !== 'arrowclosed') return null
     const line = resolveLineStyle(c, d)
     const size = clampSize(pick(c, d, k + 'Size'))
-    const fill = type === 'arrowclosed' ? (pick(c, d, k + 'Color') || darkenColor(line.color)) : 'none'
-    const spec = { type, size, fill, stroke: line.color, strokeWidth: line.width }
+    const fill = type === 'arrowclosed' ? (pick(c, d, k + 'FaceColor') || darkenColor(line.color)) : 'none'
+    //外框色: 未給即跟隨線色(既有行為), 給了才獨立於線色
+    const stroke = pick(c, d, k + 'EdgeColor') || line.color
+    const spec = { type, size, fill, stroke, strokeWidth: line.width }
     spec.id = markerId(spec)
     return spec
 }

@@ -57,8 +57,8 @@ describe('defaults', () => {
                 'type', 'fontSize', 'fontSizeMin', 'fontSizeMax', 'fontColor',
                 'edgeColor', 'edgeWidth', 'animated', 'defOffset',
                 'fromPosition', 'toPosition',
-                'markerStart', 'markerStartSize', 'markerStartColor',
-                'markerEnd', 'markerEndSize', 'markerEndColor',
+                'markerFrom', 'markerFromSize', 'markerFromFaceColor',
+                'markerTo', 'markerToSize', 'markerToFaceColor',
             ]
             keys.forEach(k => {
                 expect(CONN_DEFAULTS).toHaveProperty(k)
@@ -83,10 +83,10 @@ describe('defaults', () => {
         })
 
         test('markers default to none, size 10', () => {
-            expect(CONN_DEFAULTS.markerStart).toBe('')
-            expect(CONN_DEFAULTS.markerEnd).toBe('')
-            expect(CONN_DEFAULTS.markerStartSize).toBe(10)
-            expect(CONN_DEFAULTS.markerEndSize).toBe(10)
+            expect(CONN_DEFAULTS.markerFrom).toBe('')
+            expect(CONN_DEFAULTS.markerTo).toBe('')
+            expect(CONN_DEFAULTS.markerFromSize).toBe(10)
+            expect(CONN_DEFAULTS.markerToSize).toBe(10)
         })
 
         test('anchor defaults: bottom → top', () => {

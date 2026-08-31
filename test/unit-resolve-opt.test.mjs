@@ -58,7 +58,7 @@ describe('O2 群組解析', () => {
         expect(dn.width).toBe(NODE_DEFAULTS.width); expect(dn.shape).toBe(NODE_DEFAULTS.shape)
         const dc = resolveDefConn({ defConnEdgeWidth: 0, defConnAnimated: true, defOffset: 0 })
         expect(dc.edgeWidth).toBe(0); expect(dc.animated).toBe(true); expect(dc.defOffset).toBe(0)
-        expect(dc.fromPosition).toBe(CONN_DEFAULTS.fromPosition); expect(dc.markerEnd).toBe(CONN_DEFAULTS.markerEnd)
+        expect(dc.fromPosition).toBe(CONN_DEFAULTS.fromPosition); expect(dc.markerTo).toBe(CONN_DEFAULTS.markerTo)
         expect(resolveDefConn({}).defOffset).toBe(CONN_DEFAULTS.defOffset)
     })
     test('settingsText 非字串回退', () => {

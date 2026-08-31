@@ -1,5 +1,5 @@
 /**
- * E2E 圖台互動測試(Playwright)—— 單檔雙模式,對應 spec/流程_圖台互動.md 之 E2E-001 ~ E2E-040。
+ * E2E 圖台互動測試(Playwright)—— 單檔雙模式,對應 spec/流程_圖台互動.md 之 E2E-001 ~ E2E-043。
  *
  * 前置: npm run serve(dev server 須在 127.0.0.1:8080)
  *
@@ -247,6 +247,196 @@ async function openEdgeSettings(page, connId) {
     await label.dblclick()
     await page.waitForTimeout(400)
 }
+/**
+ * 設定表單之屬性群標題列(契約 §11): 群預設收合, 欄位在收合群內不可見, 故操作欄位前須先展開該群
+ * ——這正是真實使用者之操作路徑(不是繞道), 展開一律以真實點擊標題列完成。
+ */
+const settingsGroupHead = (page, title) =>
+    page.locator(`.vue-flow__settings-group-head:has(.vue-flow__settings-group-title:text-is("${title}"))`).first()
+
+/**
+ * 以真實滑鼠改下拉之值: 點控制項開下拉 → 點選項。
+ *
+ * 下拉已改用 SettingsSelect(w-component-vue 之 WTextSelect), 其清單是 **DOM 元素**而非 OS 層視窗,
+ * 故選項可被真實點擊 —— 原生 <select> 時期這條路徑 CDP 點不開(headless 與 headed 皆實測不到),
+ * 只能退而用鍵盤;換掉之後才得以覆蓋使用者真正走的路徑。
+ */
+async function selectByClick(page, labelText, optionText) {
+    const ctrl = page.locator(`.vue-flow__settings-form label:has-text("${labelText}") .vue-flow__settings-select`).first()
+    await ctrl.waitFor({ state: 'visible', timeout: 5000 })
+    const box = await ctrl.boundingBox()
+    await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2)
+    await page.waitForTimeout(500)
+    //下拉清單 Teleport 至 body; 取文字完全相符且為葉節點者
+    const opt = page.locator('body *').filter({ hasText: new RegExp(`^${optionText}$`) }).last()
+    await opt.waitFor({ state: 'visible', timeout: 5000 })
+    const ob = await opt.boundingBox()
+    await page.mouse.click(ob.x + ob.width / 2, ob.y + ob.height / 2)
+    await page.waitForTimeout(400)
+}
+
+/**
+ * 色票面板(WColorSelect)之定位。
+ *
+ * 該元件之面板 Teleport 至 body, 且**無 class、無 aria-label**(第三方元件, 不便侵入加 data-*),
+ * 故以「面板內的文字」語意定位: 唯一同時含 RGBA 與 Confirm 的 body 直屬節點。
+ * 面板內 R/G/B/A 為前四個可見 text input(其後尚有寬度 0 的 HSVA 隱藏欄), 此處為結構定位 —— 已於
+ * tmp 探查確認順序, 並由「填值後 conn 未變、按 Confirm 後才變」之斷言反向保護: 若面板結構改版,
+ * 這些斷言會直接紅燈而非靜默失效。
+ */
+const colorPanel = (page) => page.locator('body > div').filter({ hasText: 'RGBA' }).filter({ hasText: 'Confirm' }).last()
+
+/** 點某欄位之色塊開啟色票面板(色塊位於該 label 之右端) */
+async function openColorPanel(page, labelText) {
+    const lbl = page.locator(`.vue-flow__settings-form label:has-text("${labelText}")`).first()
+    await lbl.waitFor({ state: 'visible', timeout: 5000 })
+    const box = await lbl.boundingBox()
+    await page.mouse.click(box.x + box.width - 10, box.y + box.height / 2)
+    await page.waitForTimeout(700)
+    if (await colorPanel(page).count() !== 1) throw new Error(`openColorPanel: 「${labelText}」之色票面板未開啟`)
+}
+
+/** 於已開啟之面板填入 R/G/B(Vue v-model → 以 insertText 一次注入, 避免逐字 re-render 漏字) */
+async function fillPanelRgb(page, [r, g, b]) {
+    const panel = colorPanel(page)
+    const vals = [String(r), String(g), String(b)]
+    for (let i = 0; i < 3; i++) {
+        const inp = panel.locator('input[type="text"]').nth(i)
+        await inp.click()
+        await page.waitForTimeout(120)
+        const cur = await inp.inputValue()
+        await page.keyboard.press('End')
+        for (let k = 0; k < cur.length + 2; k++) await page.keyboard.press('Backspace')
+        await page.keyboard.insertText(vals[i])
+        await page.waitForTimeout(150)
+    }
+}
+
+/** 按面板之確認鈕(WColorSelect 僅於此時才 emit input, 開面板與填值皆不寫回) */
+async function confirmColorPanel(page) {
+    await colorPanel(page).getByText('Confirm', { exact: true }).last().click()
+    await page.waitForTimeout(600)
+}
+
+/** 完整的真實改色路徑: 點色塊 → 填 R/G/B → 按確認 */
+async function pickColor(page, labelText, rgb) {
+    await openColorPanel(page, labelText)
+    await fillPanelRgb(page, rgb)
+    await confirmColorPanel(page)
+}
+
+/** 展開指定屬性群(已展開則不重複點) */
+async function openSettingsGroup(page, title) {
+    const head = settingsGroupHead(page, title)
+    await head.waitFor({ state: 'visible', timeout: 5000 })
+    if ((await head.getAttribute('aria-expanded')) === 'false') {
+        await head.click()
+        await page.waitForTimeout(300)
+    }
+}
+
+/** 讀目前設定表單之群狀態: 標題順序、展開者、以及各群首個欄位是否可見 */
+function settingsGroupState(page) {
+    return page.evaluate(() => {
+        const form = document.querySelector('.vue-flow__settings-form')
+        if (!form) return null
+        //收合以 visibility:hidden + height:0 實作(非 display:none, 見契約 §11), 故 offsetParent 仍非 null;
+        //「使用者看得到嗎」須以 computed visibility 與實際佔位高度判定
+        const seen = (el) => !!el && getComputedStyle(el).visibility !== 'hidden' && el.getBoundingClientRect().height > 0
+        const gs = [...form.querySelectorAll('.vue-flow__settings-group')].map((g) => {
+            const head = g.querySelector('.vue-flow__settings-group-head')
+            const panel = g.querySelector('.vue-flow__settings-group-panel')
+            const firstField = panel.querySelector('label')
+            const caret = g.querySelector('.vue-flow__settings-group-caret')
+            const heading = head.closest('[role="heading"]')
+            return {
+                title: g.querySelector('.vue-flow__settings-group-title').textContent.trim(),
+                expanded: head.getAttribute('aria-expanded') === 'true',
+                caretOpen: caret.classList.contains('vue-flow__settings-group-caret--open'),
+                //真正的朝向: 取 computed transform(class 只是實作細節, 旋轉沒生效時 class 仍在)
+                caretTransform: getComputedStyle(caret).transform,
+                caretColor: getComputedStyle(caret).color,
+                panelClosed: panel.classList.contains('vue-flow__settings-group-panel--closed'),
+                fieldVisible: seen(firstField),
+                //APG accordion 結構: 標題按鈕須包在 role="heading" 且帶 aria-level
+                headingLevel: heading ? heading.getAttribute('aria-level') : null,
+            }
+        })
+        const del = form.querySelector('.vue-flow__delete-area')
+        const fcs = getComputedStyle(form)
+        const head0 = form.querySelector('.vue-flow__settings-group-head')
+        const label0 = form.querySelector('.vue-flow__settings-group-panel:not(.vue-flow__settings-group-panel--closed) label')
+        //popup 外框(form 往上第一個有背景色者): 用來驗群標題列是否 full-bleed 貼齊 popup 左右邊緣
+        let pop = form.parentElement
+        while (pop && pop !== document.body && getComputedStyle(pop).backgroundColor === 'rgba(0, 0, 0, 0)') pop = pop.parentElement
+        const P = pop ? pop.getBoundingClientRect() : null
+        const H = head0 ? head0.getBoundingClientRect() : null
+        const titleEl = form.querySelector('.vue-flow__settings-group-title')
+        return {
+            groups: gs,
+            formWidth: form.getBoundingClientRect().width,
+            formHeight: form.getBoundingClientRect().height,
+            maxHeight: fcs.maxHeight,
+            overflowY: fcs.overflowY,
+            scrollable: form.scrollHeight > form.clientHeight + 1,
+            //群標題列須明顯高於欄位列, 且有底色 —— 只靠字重/字級分不出分區
+            headHeight: H ? H.height : null,
+            headBg: head0 ? getComputedStyle(head0).backgroundColor : null,
+            labelHeight: label0 ? label0.getBoundingClientRect().height : null,
+            //full-bleed: 每一個標題底色都須貼齊 popup 左右邊緣(只量第一個會漏掉其餘群)
+            headInsets: P ? [...form.querySelectorAll('.vue-flow__settings-group-head')].map((h) => {
+                const r = h.getBoundingClientRect()
+                return [+(r.left - P.left).toFixed(1), +(P.right - r.right).toFixed(1)]
+            }) : [],
+            headRadius: head0 ? getComputedStyle(head0).borderTopLeftRadius : null,
+            headMinHeight: head0 ? getComputedStyle(head0).minHeight : null,
+            //標題文字與欄位標籤須落在同一條垂直線
+            titleLeft: titleEl ? +titleEl.getBoundingClientRect().left.toFixed(1) : null,
+            labelLeft: label0 ? +label0.getBoundingClientRect().left.toFixed(1) : null,
+            //字級單一來源: label 與控制項須繼承表單 root, 不得各自硬寫
+            rootFontSize: fcs.fontSize,
+            labelFontSize: label0 ? getComputedStyle(label0).fontSize : null,
+            controlFontSize: (() => {
+                const c = form.querySelector('.vue-flow__settings-group-panel:not(.vue-flow__settings-group-panel--closed) input, .vue-flow__settings-group-panel:not(.vue-flow__settings-group-panel--closed) select')
+                return c ? getComputedStyle(c).fontSize : null
+            })(),
+            //捲動容器不得產生水平捲動; 內容區寬與右對齊控制項之右緣亦不得因捲動條而位移
+            overflowX: fcs.overflowX,
+            hScroll: form.scrollWidth > form.clientWidth,
+            clientWidth: form.clientWidth,
+            controlRightInset: (() => {
+                const cs = form.querySelectorAll('.vue-flow__settings-group-panel:not(.vue-flow__settings-group-panel--closed) .vue-flow__settings-text, .vue-flow__settings-group-panel:not(.vue-flow__settings-group-panel--closed) .vue-flow__settings-select, .vue-flow__settings-group-panel:not(.vue-flow__settings-group-panel--closed) input[type="number"]')
+                if (!cs.length || !P) return null
+                return +(P.right - cs[cs.length - 1].getBoundingClientRect().right).toFixed(1)
+            })(),
+            deleteInGroup: !!(del && del.closest('.vue-flow__settings-group')),
+            deleteIsLast: !!del && form.lastElementChild === del,
+            //同一表單內的分隔語彙須一致: 刪除區之分隔線亦須 full-bleed(與群標題底色同一條邊界)
+            deleteInset: (P && del) ? (() => {
+                const r = del.getBoundingClientRect()
+                return [+(r.left - P.left).toFixed(1), +(P.right - r.right).toFixed(1)]
+            })() : null,
+            //刪除鈕右緣須與輸入控制項右緣落在同一條線(full-bleed 後以同值 padding 推回基準線之目的)
+            deleteBtnRightInset: (() => {
+                const btn = form.querySelector('.vue-flow__delete-btn')
+                return (P && btn) ? +(P.right - btn.getBoundingClientRect().right).toFixed(1) : null
+            })(),
+            //縱向邊界間距: 群↔群、末群↔刪除線 一律 0(間距只屬於展開內容自身之下緣, 收合即歸零)。
+            //任一邊界不為 0 即表示「群之間貼齊、某處卻浮開一段」的兩套規則。
+            boundaryGaps: (() => {
+                const gs2 = [...form.querySelectorAll('.vue-flow__settings-group')]
+                const out = []
+                for (let i = 0; i < gs2.length; i++) {
+                    const next = gs2[i + 1] || del
+                    if (!next) break
+                    out.push(+(next.getBoundingClientRect().top - gs2[i].getBoundingClientRect().bottom).toFixed(1))
+                }
+                return out
+            })(),
+        }
+    })
+}
+
 /** 以宿主 opt 切換齒輪顯示方式(setup 階段允許程式化設定 opt; hover 專屬之 case 用) */
 async function setSettingsTrigger(page, mode) {
     await evalVm(page, `vm.$set(vm.opt, 'nodesSettingsTrigger', arg); vm.$set(vm.opt, 'connsSettingsTrigger', arg)`, mode)
@@ -696,7 +886,7 @@ const CASES = [
         const added = await evalVm(page, 'return JSON.parse(JSON.stringify(vm.conns[vm.conns.length - 1]))')
         expectOk('E2E-027 新連線之 from/to 正確', added.from === '2' && added.to === '9', `added=${JSON.stringify(added)}`)
         expectOk('E2E-027 新連線持有兩端方位(出發 bottom / 落點 top)', added.fromPosition === 'bottom' && added.toPosition === 'top', `added=${JSON.stringify(added)}`)
-        expectOk('E2E-027 新連線 to 端自動實心箭頭', added.markerEnd === 'arrowclosed', `added=${JSON.stringify(added)}`)
+        expectOk('E2E-027 新連線 to 端自動實心箭頭', added.markerTo === 'arrowclosed', `added=${JSON.stringify(added)}`)
         const mk = await page.evaluate((id) => {
             const p = document.querySelector(`.vue-flow__edge[data-id="${id}"] path[marker-end]`)
             return p ? p.getAttribute('marker-end') : null
@@ -806,13 +996,14 @@ const CASES = [
         const dBefore = await getConnPathD(page, 'e1-2')
         const handleStyleBefore = await page.evaluate(() => document.querySelector('.vue-flow__node[data-id="1"] .vue-flow__handle[data-handle-position="bottom"]').getAttribute('style'))
 
-        //act(真 UI): 雙擊連線 e1-2 之 label 直接開設定 popup → 於 From Anchor 下拉選 Right
+        //act(真 UI): 雙擊連線 e1-2 之 label 直接開設定 popup → 展開 Path 群 → 於 From Anchor 下拉選 Right
         await openEdgeSettings(page, 'e1-2')
         await page.waitForTimeout(400)
-        const sel = page.locator('.vue-flow__settings-form label:has-text("From Anchor") select')
-        await sel.waitFor({ state: 'visible', timeout: 5000 })
-        await sel.selectOption('right')
-        await page.waitForTimeout(500)
+        await openSettingsGroup(page, 'Path')
+        await selectByClick(page, 'From Anchor', 'Right')
+        await page.waitForTimeout(300)
+        //改完值 popup 須仍開著(表單內控制項不得觸發 popup 關閉)
+        expectOk('E2E-031 改下拉值後設定 popup 仍開著', (await getForms(page)).count === 1, `forms=${JSON.stringify(await getForms(page))}`)
 
         //spec: conn.fromPosition === 'right'
         const post = await evalVm(page, `const c = vm.conns.find(c => c.id === 'e1-2'); return c.fromPosition`)
@@ -1144,7 +1335,7 @@ const CASES = [
     }),
 
     mkCase('E2E-036', 'bidirectional-arrows', async (page) => {
-        //真實 user path: ①看到 e3-5 兩端箭頭(線式 start / 實心橘 end) ②開該連線齒輪 ③改 From Marker=Arrow Closed、To Marker Size=20 ④看到箭頭更新
+        //真實 user path: ①看到 e3-5 兩端箭頭(線式 start / 實心橘 end) ②開該連線齒輪 ③展開 Arrows 群 ④改 From Marker=Arrow Closed、To Marker Size=20 ⑤看到箭頭更新
         await clickMenu(page, 'fitView')
         await page.waitForTimeout(400)
         const markerState = () => page.evaluate(() => {
@@ -1168,13 +1359,14 @@ const CASES = [
         await page.mouse.move(0, 0)
         await shot(page, 'flow-E2E-036-bidirectional-arrows-initial', { clip: clipAround(pb, PAD) })
 
-        //act(真 UI): 雙擊 label 直接開設定 popup → 改 From Marker / To Marker Size
+        //act(真 UI): 雙擊 label 直接開設定 popup → 展開 Arrows 群 → 改 From Marker / To Marker Size
         await openEdgeSettings(page, 'e3-5')
         await page.waitForTimeout(400)
-        const selStart = page.locator('.vue-flow__settings-form label:has-text("From Marker") select')
-        await selStart.first().waitFor({ state: 'visible', timeout: 5000 })
-        await selStart.first().selectOption('arrowclosed')
-        await page.waitForTimeout(300)
+        await openSettingsGroup(page, 'Arrows')
+        await selectByClick(page, 'From Marker', 'Arrow Closed')
+        //改 marker 後 popup 須仍開著 —— 「切換 From/To Marker 導致 popup 消失」是實際回報過的缺陷,
+        //故此處明確斷言而非只靠「後續還能操作」隱含驗證
+        expectOk('E2E-036 改 From Marker 後設定 popup 仍開著', (await getForms(page)).count === 1, `forms=${JSON.stringify(await getForms(page))}`)
         const sizeInput = page.locator('.vue-flow__settings-form label:has-text("To Marker Size") input')
         await sizeInput.click()
         await page.waitForFunction(() => document.activeElement && document.activeElement.tagName === 'INPUT')
@@ -1184,8 +1376,8 @@ const CASES = [
         await page.keyboard.insertText('20')
         await page.waitForTimeout(400)
 
-        const data = await evalVm(page, `const c = vm.conns.find(c => c.id === 'e3-5'); return { markerStart: c.markerStart, markerEndSize: c.markerEndSize }`)
-        expectOk('E2E-036 conn 資料更新', data.markerStart === 'arrowclosed' && data.markerEndSize === 20, `data=${JSON.stringify(data)}`)
+        const data = await evalVm(page, `const c = vm.conns.find(c => c.id === 'e3-5'); return { markerFrom: c.markerFrom, markerToSize: c.markerToSize }`)
+        expectOk('E2E-036 conn 資料更新', data.markerFrom === 'arrowclosed' && data.markerToSize === 20, `data=${JSON.stringify(data)}`)
         const s1 = await markerState()
         expectOk('E2E-036 start 改為實心', !!s1 && s1.start.found && /z$/i.test(s1.start.d) && s1.start.fill !== 'none', `start=${JSON.stringify(s1 && s1.start)}`)
         expectOk('E2E-036 end size 改為 20', !!s1 && s1.end.found && s1.end.width === '20', `end=${JSON.stringify(s1 && s1.end)}`)
@@ -1383,6 +1575,340 @@ const CASES = [
         geo = await measure()
         expectOk('E2E-040 padding 0: 受限軸貼邊(邊距 0)', Math.abs(geo.margins.left) < 1 && Math.abs(geo.margins.right) < 1, `margins=${JSON.stringify(geo.margins)}`)
         expectOk('E2E-040 padding 0: 節點可進入工具區下(明確選擇, 不自動讓位)', geo.hit >= 1, `overlapped=${geo.hit}`)
+    }),
+
+    mkCase('E2E-041', 'settings-groups', async (page) => {
+        //spec 契約 §11: 屬性分為可顯隱之群; 三角形朝右=收合 / 朝下=展開; 各群獨立顯隱; 展開/收合不改 popup 寬度
+        //真實 user path: ①雙擊節點開設定 popup ②只看到 Basic 展開 ③點 Appearance 標題文字展開 ④Basic 仍開著 ⑤再點一次收合
+        await centerOnNode(page, '1')
+        await page.waitForTimeout(300)
+        await openNodeSettings(page, '1')
+        await page.waitForTimeout(400)
+
+        const s0 = await settingsGroupState(page)
+        expectOk('E2E-041 節點表單群標題與順序',
+            !!s0 && JSON.stringify(s0.groups.map(g => g.title)) === JSON.stringify(['Basic', 'Appearance', 'Text', 'Advanced']),
+            `titles=${JSON.stringify(s0 && s0.groups.map(g => g.title))}`)
+        expectOk('E2E-041 預設僅 Basic 展開',
+            !!s0 && s0.groups.filter(g => g.expanded).length === 1 && s0.groups[0].expanded === true,
+            `expanded=${JSON.stringify(s0 && s0.groups.map(g => g.expanded))}`)
+        //三角形朝向即狀態: 展開者帶 --open(CSS 轉 90 度朝下), 收合者不帶(朝右)
+        expectOk('E2E-041 三角形朝向與展開態一致',
+            !!s0 && s0.groups.every(g => g.caretOpen === g.expanded),
+            `caret=${JSON.stringify(s0 && s0.groups.map(g => [g.title, g.caretOpen, g.expanded]))}`)
+        //以 computed transform 驗真正的朝向(不只驗 class): 收合為未旋轉, 展開為 rotate(90deg) 之矩陣
+        const upright = (t) => t === 'none' || t === 'matrix(1, 0, 0, 1, 0, 0)'
+        const rot90 = (t) => /^matrix\(-?0(\.\d+)?, 1, -1, -?0(\.\d+)?, 0, 0\)$/.test(t)
+        expectOk('E2E-041 三角形實際旋轉: 收合未旋轉、展開轉 90 度',
+            !!s0 && s0.groups.every(g => (g.expanded ? rot90(g.caretTransform) : upright(g.caretTransform))),
+            `transforms=${JSON.stringify(s0 && s0.groups.map(g => [g.title, g.expanded, g.caretTransform]))}`)
+        //APG accordion 之結構要求(標題按鈕包在 role="heading" 且帶 aria-level)
+        expectOk('E2E-041 每群標題皆為帶 aria-level 之 heading',
+            !!s0 && s0.groups.every(g => g.headingLevel === '3'),
+            `levels=${JSON.stringify(s0 && s0.groups.map(g => [g.title, g.headingLevel]))}`)
+        //三角形為狀態指示圖示: WCAG 2.2 §1.4.11 要求對「相鄰色」≥3:1。三角形坐在標題底色上而非白底,
+        //#666 對淺色主題之標題底色為 5.04:1; 先前的 #888 僅 3.11:1(當時記載的 3.55:1 是誤以白底計算)。
+        //此契約 pixel baseline 抓不到(一階色差落在 pixelmatch threshold 內), 故必須有語意斷言。
+        expectOk('E2E-041 三角形色階以相鄰色計算且餘裕充足(#666)',
+            !!s0 && s0.groups.every(g => g.caretColor === 'rgb(102, 102, 102)'),
+            `colors=${JSON.stringify(s0 && s0.groups.map(g => [g.title, g.caretColor]))}`)
+        //群標題與欄位之視覺分區: 標題列有底色、高度為契約(min-height 而非內容偶然撐出)
+        expectOk('E2E-041 群標題列底色為可隨主題走之疊加色', s0 && s0.headBg === 'rgba(0, 0, 0, 0.06)', `headBg=${s0 && s0.headBg}`)
+        expectOk('E2E-041 群標題列高度為契約 min-height:27px', s0 && s0.headMinHeight === '27px', `minHeight=${s0 && s0.headMinHeight}`)
+        expectOk('E2E-041 群標題列明顯高於欄位列',
+            !!s0 && s0.headHeight >= s0.labelHeight + 5,
+            `head=${s0 && s0.headHeight} label=${s0 && s0.labelHeight}`)
+        //full-bleed: 「每一個」標題底色都貼齊 popup 左右邊緣, 且不留圓角(圓角是浮起元素的語彙, 與 full-bleed 相斥)
+        expectOk('E2E-041 每個群標題列皆 full-bleed 貼齊 popup 左右邊緣',
+            !!s0 && s0.headInsets.length === s0.groups.length && s0.headInsets.every(([l, r]) => Math.abs(l) < 0.6 && Math.abs(r) < 0.6),
+            `insets=${JSON.stringify(s0 && s0.headInsets)}`)
+        expectOk('E2E-041 貼齊邊緣者不留圓角', s0 && s0.headRadius === '0px', `radius=${s0 && s0.headRadius}`)
+        //標題文字與欄位標籤同一條垂直線(標題列以負 margin full-bleed 後再補回同值 padding 之目的)
+        expectOk('E2E-041 標題文字與欄位標籤左緣對齊',
+            !!s0 && Math.abs(s0.titleLeft - s0.labelLeft) < 0.6,
+            `title=${s0 && s0.titleLeft} label=${s0 && s0.labelLeft}`)
+        //字級單一來源: label 與控制項繼承表單 root, opt.settingsPopupTextFontSize 才會真正生效
+        expectOk('E2E-041 label 與控制項字級繼承表單 root',
+            !!s0 && s0.labelFontSize === s0.rootFontSize && s0.controlFontSize === s0.rootFontSize,
+            `root=${s0 && s0.rootFontSize} label=${s0 && s0.labelFontSize} control=${s0 && s0.controlFontSize}`)
+        //表單高度上限(opt.settingsPopupMaxHeight, 預設 400px)與水平溢位
+        expectOk('E2E-041 表單套用高度上限 400px 且可捲動',
+            !!s0 && s0.maxHeight === '400px' && s0.overflowY === 'auto',
+            `maxHeight=${s0 && s0.maxHeight} overflowY=${s0 && s0.overflowY}`)
+        expectOk('E2E-041 表單不產生水平捲動',
+            !!s0 && s0.overflowX === 'hidden' && s0.hScroll === false,
+            `overflowX=${s0 && s0.overflowX} hScroll=${s0 && s0.hScroll}`)
+        //收合群之欄位真的看不到(visibility:hidden → offsetParent 為 null)
+        expectOk('E2E-041 收合群之欄位不可見, 展開群之欄位可見',
+            !!s0 && s0.groups.every(g => g.fieldVisible === g.expanded) && s0.groups.every(g => g.panelClosed === !g.expanded),
+            `fields=${JSON.stringify(s0 && s0.groups.map(g => [g.title, g.fieldVisible]))}`)
+        //刪除鈕不歸入任何群, 且恆為表單最後一列
+        expectOk('E2E-041 刪除區在群組之外且位於表單底部',
+            !!s0 && s0.deleteInGroup === false && s0.deleteIsLast === true,
+            `deleteInGroup=${s0 && s0.deleteInGroup} deleteIsLast=${s0 && s0.deleteIsLast}`)
+        //分隔語彙一致: 刪除區之分隔線與群標題底色同樣 full-bleed(一內縮一貼齊即為兩套規則)
+        expectOk('E2E-041 刪除區分隔線亦 full-bleed(與群標題同一邊界)',
+            !!s0 && s0.deleteInset && Math.abs(s0.deleteInset[0]) < 0.6 && Math.abs(s0.deleteInset[1]) < 0.6,
+            `deleteInset=${JSON.stringify(s0 && s0.deleteInset)}`)
+        expectOk('E2E-041 刪除鈕右緣與輸入控制項右緣同一條線',
+            !!s0 && s0.controlRightInset !== null && Math.abs(s0.deleteBtnRightInset - s0.controlRightInset) < 0.6,
+            `btn=${s0 && s0.deleteBtnRightInset} control=${s0 && s0.controlRightInset}`)
+        //縱向邊界一律緊貼: 群↔群與 末群↔刪除線 同一規則(間距只屬於展開內容之下緣)
+        expectOk('E2E-041 縱向邊界間距一律 0(含末群與刪除線之間)',
+            !!s0 && s0.boundaryGaps.length === s0.groups.length && s0.boundaryGaps.every(g => Math.abs(g) < 0.6),
+            `gaps=${JSON.stringify(s0 && s0.boundaryGaps)}`)
+        await shot(page, 'flow-E2E-041-settings-groups-node-default', { parkMouse: false })
+
+        //act: 點 Appearance 之「標題文字」(非三角形)——整條標題列皆可點
+        await page.locator('.vue-flow__settings-group-title:text-is("Appearance")').first().click()
+        await page.waitForTimeout(400)
+        const s1 = await settingsGroupState(page)
+        expectOk('E2E-041 Appearance 已展開', !!s1 && s1.groups[1].expanded === true, `expanded=${JSON.stringify(s1 && s1.groups.map(g => g.expanded))}`)
+        expectOk('E2E-041 各群獨立顯隱: Basic 仍展開', !!s1 && s1.groups[0].expanded === true, `expanded=${JSON.stringify(s1 && s1.groups.map(g => g.expanded))}`)
+        expectOk('E2E-041 展開數為 2(非手風琴式互斥)', !!s1 && s1.groups.filter(g => g.expanded).length === 2, `count=${s1 && s1.groups.filter(g => g.expanded).length}`)
+        //收合內容仍參與寬度計算 → popup 寬度不因展開/收合而跳動
+        expectOk('E2E-041 展開前後表單寬度不變', !!s1 && Math.abs(s1.formWidth - s0.formWidth) < 0.5, `before=${s0 && s0.formWidth} after=${s1 && s1.formWidth}`)
+        await shot(page, 'flow-E2E-041-settings-groups-node-appearance', { parkMouse: false })
+
+        //act: 再點一次 → 收合, 且 Basic 不受影響
+        await page.locator('.vue-flow__settings-group-title:text-is("Appearance")').first().click()
+        await page.waitForTimeout(400)
+        const s2 = await settingsGroupState(page)
+        expectOk('E2E-041 再點即收合', !!s2 && s2.groups[1].expanded === false && s2.groups[1].caretOpen === false, `expanded=${JSON.stringify(s2 && s2.groups.map(g => g.expanded))}`)
+        expectOk('E2E-041 收合他群後 Basic 仍展開', !!s2 && s2.groups[0].expanded === true, `expanded=${JSON.stringify(s2 && s2.groups.map(g => g.expanded))}`)
+        expectOk('E2E-041 收合後表單寬度仍不變', !!s2 && Math.abs(s2.formWidth - s0.formWidth) < 0.5, `before=${s0 && s0.formWidth} after=${s2 && s2.formWidth}`)
+
+        //act: 整條標題列皆可點 —— 分別點「三角形本身」與「標題列右側空白處」
+        await settingsGroupHead(page, 'Text').locator('.vue-flow__settings-group-caret').click()
+        await page.waitForTimeout(400)
+        const s3 = await settingsGroupState(page)
+        expectOk('E2E-041 點三角形本身即展開', !!s3 && s3.groups[2].expanded === true, `expanded=${JSON.stringify(s3 && s3.groups.map(g => g.expanded))}`)
+        const headBox = await settingsGroupHead(page, 'Advanced').boundingBox()
+        await page.mouse.click(headBox.x + headBox.width - 6, headBox.y + headBox.height / 2)
+        await page.waitForTimeout(400)
+        const s4 = await settingsGroupState(page)
+        expectOk('E2E-041 點標題列右側空白處即展開', !!s4 && s4.groups[3].expanded === true, `expanded=${JSON.stringify(s4 && s4.groups.map(g => g.expanded))}`)
+
+        //act: 鍵盤操作 —— 標題為 <button>, 須可 Tab 聚焦並以 Enter / Space 切換(APG 必要鍵盤行為)
+        await settingsGroupHead(page, 'Text').focus()
+        const focused = await page.evaluate(() => document.activeElement && document.activeElement.textContent.trim())
+        expectOk('E2E-041 群標題可被鍵盤聚焦', focused === 'Text', `activeElement=${focused}`)
+        await page.keyboard.press('Enter')
+        await page.waitForTimeout(400)
+        const s5 = await settingsGroupState(page)
+        expectOk('E2E-041 Enter 可收合已展開之群', !!s5 && s5.groups[2].expanded === false, `expanded=${JSON.stringify(s5 && s5.groups.map(g => g.expanded))}`)
+        await page.keyboard.press(' ')
+        await page.waitForTimeout(400)
+        const s6 = await settingsGroupState(page)
+        expectOk('E2E-041 Space 可重新展開', !!s6 && s6.groups[2].expanded === true, `expanded=${JSON.stringify(s6 && s6.groups.map(g => g.expanded))}`)
+        //收合群內之控制項一律不得留在 Tab 序列中(visibility:hidden 之語義後果)
+        const focusables = await page.evaluate(() => {
+            const form = document.querySelector('.vue-flow__settings-form')
+            const closed = [...form.querySelectorAll('.vue-flow__settings-group-panel--closed')]
+            const ctrls = closed.flatMap(p => [...p.querySelectorAll('input,select,button,[tabindex]')])
+            return { total: ctrls.length, reachable: ctrls.filter(c => getComputedStyle(c).visibility !== 'hidden').length }
+        })
+        expectOk('E2E-041 收合群內控制項不可聚焦', focusables.reachable === 0, `reachable=${focusables.reachable}/${focusables.total}`)
+
+        //節點表單全展開: 四群皆開, 內容超過上限後於表單內捲動(連線表單另於後段驗, 此處補節點側之對稱覆蓋)
+        await openSettingsGroup(page, 'Appearance')
+        await openSettingsGroup(page, 'Text')
+        await openSettingsGroup(page, 'Advanced')
+        await page.mouse.move(0, 0)
+        await page.waitForTimeout(400)
+        const s7 = await settingsGroupState(page)
+        expectOk('E2E-041 節點表單四群皆可同時展開',
+            !!s7 && s7.groups.every(g => g.expanded) && s7.groups.length === 4,
+            `expanded=${JSON.stringify(s7 && s7.groups.map(g => g.expanded))}`)
+        expectOk('E2E-041 節點表單全展開後亦封頂於 400px 並捲動',
+            !!s7 && Math.abs(s7.formHeight - 400) < 1 && s7.scrollable === true,
+            `h=${s7 && s7.formHeight} scrollable=${s7 && s7.scrollable}`)
+        expectOk('E2E-041 節點表單全展開後寬度與邊界不變',
+            !!s7 && Math.abs(s7.formWidth - s0.formWidth) < 0.5 && s7.boundaryGaps.every(g => Math.abs(g) < 0.6),
+            `w=${s0 && s0.formWidth}→${s7 && s7.formWidth} gaps=${JSON.stringify(s7 && s7.boundaryGaps)}`)
+        await shot(page, 'flow-E2E-041-settings-groups-node-expanded', { parkMouse: false })
+
+        //連線設定表單: 群數 5, 同一機制; Path 群展開後含 Waypoints 子區塊
+        await openEdgeSettings(page, 'e1-2')
+        await page.waitForTimeout(500)
+        const c0 = await settingsGroupState(page)
+        expectOk('E2E-041 連線表單群標題與順序',
+            !!c0 && JSON.stringify(c0.groups.map(g => g.title)) === JSON.stringify(['Basic', 'Path', 'Appearance', 'Arrows', 'Text']),
+            `titles=${JSON.stringify(c0 && c0.groups.map(g => g.title))}`)
+        expectOk('E2E-041 連線表單預設僅 Basic 展開',
+            !!c0 && c0.groups.filter(g => g.expanded).length === 1 && c0.groups[0].expanded === true,
+            `expanded=${JSON.stringify(c0 && c0.groups.map(g => g.expanded))}`)
+        expectOk('E2E-041 連線表單刪除區亦在群組之外且位於底部',
+            !!c0 && c0.deleteInGroup === false && c0.deleteIsLast === true,
+            `deleteInGroup=${c0 && c0.deleteInGroup} deleteIsLast=${c0 && c0.deleteIsLast}`)
+        await shot(page, 'flow-E2E-041-settings-groups-conn-default', { parkMouse: false })
+
+        await openSettingsGroup(page, 'Path')
+        const c1 = await settingsGroupState(page)
+        expectOk('E2E-041 連線 Path 群已展開且 Basic 仍展開',
+            !!c1 && c1.groups[1].expanded === true && c1.groups[0].expanded === true,
+            `expanded=${JSON.stringify(c1 && c1.groups.map(g => g.expanded))}`)
+        const wp = await page.evaluate(() => {
+            const el = document.querySelector('.vue-flow__settings-form .vue-flow__waypoints')
+            const seen = (e) => !!e && getComputedStyle(e).visibility !== 'hidden' && e.getBoundingClientRect().height > 0
+            return { exists: !!el, visible: seen(el), inPath: !!el && el.closest('.vue-flow__settings-group-panel') !== null }
+        })
+        expectOk('E2E-041 Waypoints 子區塊在 Path 群內且展開後可見', wp.exists && wp.visible && wp.inPath, `wp=${JSON.stringify(wp)}`)
+        expectOk('E2E-041 連線表單展開前後寬度不變', !!c1 && Math.abs(c1.formWidth - c0.formWidth) < 0.5, `before=${c0 && c0.formWidth} after=${c1 && c1.formWidth}`)
+        await shot(page, 'flow-E2E-041-settings-groups-conn-path', { parkMouse: false })
+
+        //高度上限之實際效果: 連線表單全展開(內容遠超 400px)須封頂並於表單內捲動, 且寬度不因捲動條而變
+        await openSettingsGroup(page, 'Appearance')
+        await openSettingsGroup(page, 'Arrows')
+        await openSettingsGroup(page, 'Text')
+        const c2 = await settingsGroupState(page)
+        expectOk('E2E-041 全展開後高度封頂於 400px',
+            !!c2 && Math.abs(c2.formHeight - 400) < 1,
+            `formHeight=${c2 && c2.formHeight}`)
+        expectOk('E2E-041 全展開後於表單內捲動(非讓 popup 無限長高)', !!c2 && c2.scrollable === true, `scrollable=${c2 && c2.scrollable}`)
+        //「寬度不變」須量到內容層: 只比外框寬會漏掉「外框同寬但內容被捲動條擠窄」的情形
+        expectOk('E2E-041 出現捲動條後外框寬 / clientWidth / 控制項右緣皆不變',
+            !!c2 && Math.abs(c2.formWidth - c0.formWidth) < 0.5 &&
+                Math.abs(c2.clientWidth - c0.clientWidth) < 0.5 &&
+                Math.abs(c2.controlRightInset - c0.controlRightInset) < 0.5,
+            `outer=${c0 && c0.formWidth}→${c2 && c2.formWidth} client=${c0 && c0.clientWidth}→${c2 && c2.clientWidth} ctrlRight=${c0 && c0.controlRightInset}→${c2 && c2.controlRightInset}`)
+        expectOk('E2E-041 捲動狀態下仍無水平捲動且標題列仍 full-bleed',
+            !!c2 && c2.hScroll === false && c2.headInsets.every(([l, r]) => Math.abs(l) < 0.6 && Math.abs(r) < 0.6),
+            `hScroll=${c2 && c2.hScroll} insets=${JSON.stringify(c2 && c2.headInsets)}`)
+    }),
+
+    mkCase('E2E-042', 'settings-groups-dark', async (page) => {
+        //spec 契約 §11「主題適應」: 群標題之底色/hover/分隔線/三角形一律走 CSS 變數且不硬寫 hex,
+        //表單依 opt.settingsPopupBackgroundColor 之相對亮度自動切換 —— 淺色疊黑加深、深色改疊白加亮並改用淺色三角形。
+        //setup(非 act): 由宿主 opt 指定深色 popup(此為宿主組態, 不是使用者操作)
+        await evalVm(page, `
+            vm.$set(vm.opt, 'settingsPopupBackgroundColor', '#2b2b30')
+            vm.$set(vm.opt, 'settingsPopupTextColor', '#eaeaea')
+            return true
+        `)
+        await page.waitForTimeout(300)
+
+        //act(真 UI): 雙擊節點開設定 popup, 再真實點擊展開 Appearance(驗 hover/展開態在深色下亦正確)
+        await centerOnNode(page, '1')
+        await page.waitForTimeout(300)
+        await openNodeSettings(page, '1')
+        await page.waitForTimeout(400)
+        await page.locator('.vue-flow__settings-group-title:text-is("Appearance")').first().click()
+        await page.mouse.move(0, 0)
+        await page.waitForTimeout(400)
+
+        const d = await settingsGroupState(page)
+        //標題帶改為疊白加亮(淺色主題為 rgba(0,0,0,0.06)); 深色底上若仍疊黑, 標題帶會比背景更暗
+        expectOk('E2E-042 深色底之群標題改為疊白加亮',
+            d && d.headBg === 'rgba(255, 255, 255, 0.1)', `headBg=${d && d.headBg}`)
+        //三角形改用淺色, 否則在深色底上看不見
+        expectOk('E2E-042 深色底之三角形改為淺色',
+            !!d && d.groups.every(g => g.caretColor === 'rgba(255, 255, 255, 0.72)'),
+            `colors=${JSON.stringify(d && d.groups.map(g => [g.title, g.caretColor]))}`)
+        //標題文字繼承 opt.settingsPopupTextColor(硬寫 #333 會在深色下不可讀)
+        const titleColor = await page.evaluate(() => getComputedStyle(document.querySelector('.vue-flow__settings-group-title')).color)
+        expectOk('E2E-042 標題文字繼承 popup 之 textColor', titleColor === 'rgb(234, 234, 234)', `titleColor=${titleColor}`)
+        //幾何契約在深色下不變(full-bleed、邊界緊貼、標題列高度)
+        expectOk('E2E-042 深色下 full-bleed 與縱向邊界不變',
+            !!d && d.headInsets.every(([l, r]) => Math.abs(l) < 0.6 && Math.abs(r) < 0.6) && d.boundaryGaps.every(g => Math.abs(g) < 0.6),
+            `insets=${JSON.stringify(d && d.headInsets)} gaps=${JSON.stringify(d && d.boundaryGaps)}`)
+        expectOk('E2E-042 深色下標題列高度契約不變', d && d.headMinHeight === '27px', `minHeight=${d && d.headMinHeight}`)
+        await shot(page, 'flow-E2E-042-settings-groups-dark', { parkMouse: false })
+    }),
+
+    mkCase('E2E-043', 'marker-face-edge-color', async (page) => {
+        //spec 契約 §4.3: 箭頭之填色(FaceColor)與框色(EdgeColor)分列; 框色未給時跟隨線色, 給了才脫鉤。
+        //真實 user path: ①開連線設定 popup ②展開 Arrows ③點色塊開色票 ④填 RGB ⑤按 Confirm ⑥看箭頭變色
+        //demo 之 e3-5: markerFrom='arrow'(線式) / markerTo='arrowclosed'(實心, faceColor #ffa500)
+        const markerOf = (endAttr) => page.evaluate((attr) => {
+            const path = document.querySelector('.vue-flow__edge[data-id="e3-5"] path[marker-end]')
+            const v = path && path.getAttribute(attr)
+            const m = v && v.match(/^url\(#(.+)\)$/)
+            const el = m ? document.getElementById(m[1]) : null
+            if (!el) return null
+            const p = el.querySelector('path')
+            return { id: m[1], fill: p.getAttribute('fill'), stroke: p.getAttribute('stroke') }
+        }, endAttr)
+        const connOf = () => evalVm(page, `
+            const c = vm.conns.find(c => c.id === 'e3-5')
+            return { face: c.markerToFaceColor, edge: c.markerToEdgeColor, fromEdge: c.markerFromEdgeColor, lineColor: c.edgeColor }
+        `)
+
+        await clickMenu(page, 'fitView')
+        await page.waitForTimeout(400)
+        const before = await markerOf('marker-end')
+        const lineColor = await evalVm(page, `const c = vm.conns.find(c => c.id === 'e3-5'); return c.edgeColor || vm.defConn.edgeColor`)
+        expectOk('E2E-043 前置: to 端為實心箭頭且框色初始跟隨線色',
+            !!before && before.fill === '#ffa500' && before.stroke === lineColor,
+            `before=${JSON.stringify(before)} lineColor=${lineColor}`)
+
+        await openEdgeSettings(page, 'e3-5')
+        await page.waitForTimeout(400)
+        await openSettingsGroup(page, 'Arrows')
+
+        //線式箭頭之 Face Color 不可改(fill 恆 none), 但 Edge Color 可改 —— 契約 §4.3 之可改矩陣
+        const editable = await page.evaluate(() => {
+            const st = {}
+            for (const lb of document.querySelectorAll('.vue-flow__settings-form label')) {
+                const t = lb.textContent.trim().split('\n')[0].trim()
+                const f = lb.querySelector('.vue-flow__field')
+                if (f) st[t] = !f.classList.contains('vue-flow__field--disabled')
+            }
+            return st
+        })
+        expectOk('E2E-043 線式箭頭: Face 不可改而 Edge 可改',
+            editable['From Marker Face Color'] === false && editable['From Marker Edge Color'] === true,
+            `editable=${JSON.stringify(editable)}`)
+        expectOk('E2E-043 實心箭頭: Face 與 Edge 皆可改',
+            editable['To Marker Face Color'] === true && editable['To Marker Edge Color'] === true,
+            `editable=${JSON.stringify(editable)}`)
+
+        //開色票但不確認即關閉 → 不得寫回(WColorSelect 曾有「開啟即觸發變更」之缺陷, 於此鎖定)
+        await openColorPanel(page, 'To Marker Face Color')
+        await fillPanelRgb(page, [10, 20, 30])
+        const midConn = await connOf()
+        expectOk('E2E-043 填色但未按確認: 資料未寫回', midConn.face === '#ffa500', `face=${midConn.face}`)
+        await page.mouse.click(5, 5) //點面板外關閉
+        await page.waitForTimeout(500)
+        const dismissed = await connOf()
+        expectOk('E2E-043 未確認即關閉色票: 資料仍未變', dismissed.face === '#ffa500', `face=${dismissed.face}`)
+
+        //真正改 Face Color
+        await openEdgeSettings(page, 'e3-5')
+        await page.waitForTimeout(400)
+        await openSettingsGroup(page, 'Arrows')
+        await pickColor(page, 'To Marker Face Color', [12, 34, 56])
+        const afterFace = await connOf()
+        const mkFace = await markerOf('marker-end')
+        expectOk('E2E-043 Face Color 已寫回 conn', afterFace.face === 'rgba(12, 34, 56, 1)', `face=${afterFace.face}`)
+        expectOk('E2E-043 marker 之 fill 隨之改變', !!mkFace && mkFace.fill === 'rgba(12, 34, 56, 1)', `marker=${JSON.stringify(mkFace)}`)
+        expectOk('E2E-043 改 Face 不動框色(仍跟隨線色)', !!mkFace && mkFace.stroke === lineColor, `stroke=${mkFace && mkFace.stroke}`)
+        expectOk('E2E-043 規格不同即換新 marker id', !!mkFace && mkFace.id !== before.id, `${before.id} → ${mkFace && mkFace.id}`)
+
+        //再改 Edge Color —— 本次新增之能力: 框色脫離線色
+        await pickColor(page, 'To Marker Edge Color', [200, 30, 90])
+        const afterEdge = await connOf()
+        const mkEdge = await markerOf('marker-end')
+        expectOk('E2E-043 Edge Color 已寫回 conn', afterEdge.edge === 'rgba(200, 30, 90, 1)', `edge=${afterEdge.edge}`)
+        expectOk('E2E-043 marker 之 stroke 改為該色', !!mkEdge && mkEdge.stroke === 'rgba(200, 30, 90, 1)', `marker=${JSON.stringify(mkEdge)}`)
+        expectOk('E2E-043 框色已脫離線色(這正是本欄之目的)', !!mkEdge && mkEdge.stroke !== lineColor, `stroke=${mkEdge && mkEdge.stroke} lineColor=${lineColor}`)
+        expectOk('E2E-043 Face 與 Edge 各自獨立保留', !!mkEdge && mkEdge.fill === 'rgba(12, 34, 56, 1)', `fill=${mkEdge && mkEdge.fill}`)
+        expectOk('E2E-043 發出 conn-settings-update', (await emitted(page)).includes('conn-settings-update'), 'no conn-settings-update')
+
+        //線式箭頭之框色亦可改(它只有描邊, 框色對它才是唯一有效的顏色)
+        await pickColor(page, 'From Marker Edge Color', [0, 128, 64])
+        const fromEdge = await connOf()
+        const mkFrom = await markerOf('marker-start')
+        expectOk('E2E-043 線式箭頭之 Edge Color 亦生效',
+            fromEdge.fromEdge === 'rgba(0, 128, 64, 1)' && !!mkFrom && mkFrom.stroke === 'rgba(0, 128, 64, 1)' && mkFrom.fill === 'none',
+            `conn=${fromEdge.fromEdge} marker=${JSON.stringify(mkFrom)}`)
+
+        //關閉 popup 後拍該邊區域(看得到兩端箭頭之實際顏色)
+        await page.mouse.click(5, 5)
+        await page.waitForTimeout(400)
+        await page.mouse.move(0, 0)
+        const pb = await (await page.$('.vue-flow__edge[data-id="e3-5"] path[marker-end]')).boundingBox()
+        await shot(page, 'flow-E2E-043-marker-face-edge-color', { clip: clipAround(pb, PAD) })
     }),
 
 ]

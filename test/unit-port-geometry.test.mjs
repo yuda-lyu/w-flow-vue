@@ -12,7 +12,7 @@ import { sideAnchorFraction } from '../src/js/shapeAnchor.mjs'
 import { getHandlePosition } from '../src/js/geometry.mjs'
 import { handlePlacementStyle, nodeShape } from '../src/js/nodeStyle.mjs'
 
-const SHAPES = ['rectangle', 'diamond', 'ellipse', 'triangle', 'triangle-right', 'triangle-down', 'triangle-left']
+const SHAPES = ['rectangle', 'diamond', 'ellipse', 'triangle-up', 'triangle-right', 'triangle-down', 'triangle-left']
 const SIDES = ['top', 'right', 'bottom', 'left']
 
 describe('Q1 fraction 表', () => {
@@ -23,7 +23,7 @@ describe('Q1 fraction 表', () => {
             expect([f.fx, f.fy]).toEqual(rect[s])
         }
     })
-    test.each(['triangle', 'triangle-down'])('%s: 左右斜邊中點於 1/4、3/4', (shape) => {
+    test.each(['triangle-up', 'triangle-down'])('%s: 左右斜邊中點於 1/4、3/4', (shape) => {
         expect(sideAnchorFraction(shape, 'left')).toEqual({ fx: 0.25, fy: 0.5 })
         expect(sideAnchorFraction(shape, 'right')).toEqual({ fx: 0.75, fy: 0.5 })
         expect(sideAnchorFraction(shape, 'top')).toEqual({ fx: 0.5, fy: 0 })
@@ -76,7 +76,7 @@ describe('Q2 28 格: 把手圓心 == geometry 端點', () => {
 
 describe('Q3 尺寸變更', () => {
     test('nodeInternals 優先於 node.width/height; 端點隨外接矩形', () => {
-        const node = { id: 'n', shape: 'triangle', position: { x: 0, y: 0 }, width: 100, height: 40 }
+        const node = { id: 'n', shape: 'triangle-up', position: { x: 0, y: 0 }, width: 100, height: 40 }
         expect(getHandlePosition(node, 'right', {})).toEqual({ x: 75, y: 20 })
         expect(getHandlePosition(node, 'right', { width: 200, height: 80 })).toEqual({ x: 150, y: 40 })
         expect(getHandlePosition({ ...node, width: 40, height: 40 }, 'left', {})).toEqual({ x: 10, y: 20 })

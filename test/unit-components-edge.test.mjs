@@ -65,7 +65,7 @@ describe('EdgeWrapper', () => {
     })
 
     test('marker-start / marker-end urls via edgeMarker', () => {
-        const w = mk({ markerStart: 'arrow', markerEnd: 'arrowclosed' })
+        const w = mk({ markerFrom: 'arrow', markerTo: 'arrowclosed' })
         const p = visiblePath(w)
         expect(p.attributes('marker-start')).toMatch(/^url\(#vue-flow__mk-/)
         expect(p.attributes('marker-end')).toMatch(/^url\(#vue-flow__mk-/)
@@ -79,15 +79,15 @@ describe('EdgeMarkerDefs', () => {
     const mount2 = (conns) => mount(EdgeMarkerDefs, { propsData: { conns } })
     test('renders marker defs for conns with markers', () => {
         const w = mount2([
-            { id: 'e1', from: '1', to: '2', markerEnd: 'arrowclosed' },
-            { id: 'e2', from: '2', to: '3', markerEnd: 'arrow' },
+            { id: 'e1', from: '1', to: '2', markerTo: 'arrowclosed' },
+            { id: 'e2', from: '2', to: '3', markerTo: 'arrow' },
         ])
         expect(w.findAll('marker').length).toBe(2)
     })
     test('deduplicates same marker spec; both ends counted separately', () => {
         const w = mount2([
-            { id: 'e1', from: '1', to: '2', markerEnd: 'arrowclosed' },
-            { id: 'e2', from: '2', to: '3', markerEnd: 'arrowclosed', markerStart: 'arrowclosed' },
+            { id: 'e1', from: '1', to: '2', markerTo: 'arrowclosed' },
+            { id: 'e2', from: '2', to: '3', markerTo: 'arrowclosed', markerFrom: 'arrowclosed' },
         ])
         expect(w.findAll('marker').length).toBe(1)
     })

@@ -4,7 +4,7 @@
 import { sideAnchorFraction } from './shapeAnchor.mjs'
 import { resolveNodeSize } from './geometry.mjs'
 
-export const SHAPES = ['rectangle', 'diamond', 'ellipse', 'triangle', 'triangle-right', 'triangle-down', 'triangle-left']
+export const SHAPES = ['rectangle', 'diamond', 'ellipse', 'triangle-up', 'triangle-right', 'triangle-down', 'triangle-left']
 
 /**
  * 節點有效形狀(單一來源): node.shape → defNode.shape → 'rectangle'; 非法值視為未給。
@@ -19,7 +19,7 @@ export function nodeShape(node, defNode) {
 }
 
 export function isTriangleShape(shape) {
-    return shape === 'triangle' || shape === 'triangle-right' || shape === 'triangle-down' || shape === 'triangle-left'
+    return shape === 'triangle-up' || shape === 'triangle-right' || shape === 'triangle-down' || shape === 'triangle-left'
 }
 
 export function isSvgShape(node, defNode) {

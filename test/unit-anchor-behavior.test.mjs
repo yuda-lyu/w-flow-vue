@@ -2,7 +2,7 @@
  * 方位由連線持有之元件層行為驗收(anchorPolicy 契約之可執行翻譯; spec/流程_互動契約.md §4)。
  *
  * 規格:
- * B1 拖曳建線 → conn = { id, from, to, fromPosition, toPosition, markerEnd:'arrowclosed' }; from=出發節點, fromPosition=出發邊, to=落點節點, toPosition=落點邊; to 端自動實心箭頭。
+ * B1 拖曳建線 → conn = { id, from, to, fromPosition, toPosition, markerTo:'arrowclosed' }; from=出發節點, fromPosition=出發邊, to=落點節點, toPosition=落點邊; to 端自動實心箭頭。
  * B2 改連線 From Anchor → 該邊出發方位改道; 節點把手不動(四把手恆在)。
  * B3 節點資料即使帶 toPosition/fromPosition/type 亦不被讀取: 邊方位仍由連線決定, 把手仍為四個。
  * B4 defConn 層: 宿主設 defConnFromPosition/defConnToPosition 而連線未設時, 邊兩端取之。
@@ -43,9 +43,9 @@ describe('B1 建線之 conn 持有兩端方位', () => {
         await dragCreate(w, '1', 'right', '2', 'left')
         expect(w.vm.conns).toHaveLength(1)
         const c = w.vm.conns[0]
-        expect(Object.keys(c).sort()).toEqual(['from', 'fromPosition', 'id', 'markerEnd', 'to', 'toPosition'])
+        expect(Object.keys(c).sort()).toEqual(['from', 'fromPosition', 'id', 'markerTo', 'to', 'toPosition'])
         //拖曳建線之新邊 to 端自動實心箭頭
-        expect(c).toMatchObject({ from: '1', to: '2', fromPosition: 'right', toPosition: 'left', markerEnd: 'arrowclosed' })
+        expect(c).toMatchObject({ from: '1', to: '2', fromPosition: 'right', toPosition: 'left', markerTo: 'arrowclosed' })
         expect(w.emitted('connect')[0][0]).toEqual({ from: '1', to: '2', fromPosition: 'right', toPosition: 'left' })
         w.destroy()
     })

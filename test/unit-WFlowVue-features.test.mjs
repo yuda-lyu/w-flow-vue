@@ -5,7 +5,11 @@ import { mount } from '@vue/test-utils'
 import WFlowVue from '../src/components/WFlowVue.vue'
 import NodeSettingsForm from '../src/components/ui/NodeSettingsForm.vue'
 import ConnSettingsForm from '../src/components/ui/ConnSettingsForm.vue'
+import SettingsSelect from '../src/components/ui/SettingsSelect.vue'
 import { resolveMarker, markerId, markerUrl } from '../src/js/edgeMarker.mjs'
+
+/** 取表單內第 i 個下拉(依 template 出現順序); 下拉已非原生 select, 故以元件而非 DOM 定位 */
+const selectAt = (w, i) => w.findAllComponents(SettingsSelect).at(i).vm
 
 const sampleNodes = [
     { id: '1', name: 'Node 1', position: { x: 50, y: 50 }, width: 100, height: 40 },
@@ -14,7 +18,7 @@ const sampleNodes = [
 ]
 const sampleConns = [
     { id: 'e1-3', from: '1', to: '3', name: 'conn 1-3' },
-    { id: 'e3-2', from: '3', to: '2', name: 'conn 3-2', markerEnd: 'arrowclosed' },
+    { id: 'e3-2', from: '3', to: '2', name: 'conn 3-2', markerTo: 'arrowclosed' },
 ]
 //節點無 type/toPosition/fromPosition(spec 項1-2); 把手樣式(handle*)四項取代舊 handleSource*/handleTarget* 八項
 const defNode = {
@@ -24,14 +28,14 @@ const defNode = {
     popupDirection: 'right',
     handleFaceColor: '#555555', handleEdgeColor: '#ffffff', handleEdgeWidth: 1, handleSize: 10,
 }
-//連線新增兩端方位(fromPosition/toPosition)與雙向箭頭(markerStart/markerEnd 各 type/size/color)
+//連線新增兩端方位(fromPosition/toPosition)與雙向箭頭(markerFrom/markerTo 各 type/size/color)
 const defConn = {
     type: 'bezier', fontSize: 10, fontSizeMin: 1, fontSizeMax: 72,
     fontColor: '#333333', edgeColor: '#b1b1b1', edgeWidth: 1,
     edgeDasharray: '',
     fromPosition: 'bottom', toPosition: 'top',
-    markerStart: '', markerStartSize: 10, markerStartColor: '',
-    markerEnd: '', markerEndSize: 10, markerEndColor: '',
+    markerFrom: '', markerFromSize: 10, markerFromFaceColor: '',
+    markerTo: '', markerToSize: 10, markerToFaceColor: '',
     animated: false, defOffset: 24,
 }
 
@@ -60,8 +64,10 @@ describe('NodeSettingsForm', () => {
     test('emits update on name', async () => { const w = mountForm(); await w.findAll('input[type="text"]').at(0).setValue('X'); expect(w.emitted('update')[0]).toEqual(['name', 'X']); w.destroy() })
     test('emits update on description', async () => { const w = mountForm(); await w.findAll('input[type="text"]').at(1).setValue('D'); expect(w.emitted('update')[0]).toEqual(['description', 'D']); w.destroy() })
     //Type 欄位已刪(節點無型別); 剩兩個 select: Shape(idx0), Popup Direction(idx1)
-    test('emits update on shape', async () => { const w = mountForm(); const s = w.findAll('select').at(0); s.element.value = 'diamond'; await s.trigger('input'); expect(w.emitted('update').some(e => e[0] === 'shape')).toBe(true); w.destroy() })
-    test('emits update on popupDirection', async () => { const w = mountForm(); const s = w.findAll('select').at(1); s.element.value = 'left'; await s.trigger('input'); expect(w.emitted('update').some(e => e[0] === 'popupDirection')).toBe(true); w.destroy() })
+    //下拉已改用 SettingsSelect(w-component-vue 之 WTextSelect 封裝), 其對外只送「值」;
+    //此處驗的是表單收到該值後是否正確轉發, 選單自身之 值↔項目 轉換另由 unit-settings-controls 覆蓋
+    test('emits update on shape', () => { const w = mountForm(); selectAt(w, 0).$emit('input', 'diamond'); expect(w.emitted('update')[0]).toEqual(['shape', 'diamond']); w.destroy() })
+    test('emits update on popupDirection', () => { const w = mountForm(); selectAt(w, 1).$emit('input', 'left'); expect(w.emitted('update')[0]).toEqual(['popupDirection', 'left']); w.destroy() })
     test('fontSize ignores below min', () => { const w = mountForm(); w.vm.onFontSizeInput('0'); expect(w.emitted('update')).toBeFalsy(); w.destroy() })
     test('fontSize clamps to max', () => { const w = mountForm(); w.vm.onFontSizeInput('100'); expect(w.emitted('update')[0]).toEqual(['fontSize', 72]); w.destroy() })
     test('fontSize accepts valid', () => { const w = mountForm(); w.vm.onFontSizeInput('20'); expect(w.emitted('update')[0]).toEqual(['fontSize', 20]); w.destroy() })
@@ -97,7 +103,7 @@ describe('NodeSettingsForm', () => {
 
 // 2. ConnSettingsForm
 describe('ConnSettingsForm', () => {
-    const conn = { id: 'e1', from: '1', to: '2', name: 'C', type: 'bezier', fontSize: 10, fontColor: '#333', edgeColor: '#b1b1b1', edgeWidth: 1, markerEnd: '', animated: false }
+    const conn = { id: 'e1', from: '1', to: '2', name: 'C', type: 'bezier', fontSize: 10, fontColor: '#333', edgeColor: '#b1b1b1', edgeWidth: 1, markerTo: '', animated: false }
     function mountForm(ov = {}) {
         return mount(ConnSettingsForm, { propsData: { conn: { ...conn, ...ov }, defConn } })
     }
@@ -105,58 +111,67 @@ describe('ConnSettingsForm', () => {
 
     test('renders text inputs', () => { const w = mountForm(); expect(w.findAll('input[type="text"]').length).toBe(2); w.destroy() })
     test('emits update on name', async () => { const w = mountForm(); await w.findAll('input[type="text"]').at(0).setValue('N'); expect(w.emitted('update')[0]).toEqual(['name', 'N']); w.destroy() })
-    test('emits update on type', async () => { const w = mountForm(); const s = w.findAll('select').at(0); s.element.value = 'step'; await s.trigger('input'); expect(w.emitted('update').some(e => e[0] === 'type')).toBe(true); w.destroy() })
-    //新增: 兩端方位(From/To Anchor, spec 項8)——四值 select, 單一來源 anchorPolicy.connSourceSide/connTargetSide
-    test('emits update on fromPosition (From Anchor)', async () => {
+    test('emits update on type', () => { const w = mountForm(); selectAt(w, 0).$emit('input', 'step'); expect(w.emitted('update')[0]).toEqual(['type', 'step']); w.destroy() })
+    //新增: 兩端方位(From/To Anchor, spec 項8)——四值下拉, 單一來源 anchorPolicy.connSourceSide/connTargetSide
+    test('emits update on fromPosition (From Anchor)', () => {
         const w = mountForm()
-        const s = w.findAll('select').at(1)
-        s.element.value = 'left'
-        await s.trigger('input')
+        selectAt(w, 1).$emit('input', 'left')
         expect(w.emitted('update')[0]).toEqual(['fromPosition', 'left'])
         w.destroy()
     })
-    test('emits update on toPosition (To Anchor)', async () => {
+    test('emits update on toPosition (To Anchor)', () => {
         const w = mountForm()
-        const s = w.findAll('select').at(2)
-        s.element.value = 'right'
-        await s.trigger('input')
+        selectAt(w, 2).$emit('input', 'right')
         expect(w.emitted('update')[0]).toEqual(['toPosition', 'right'])
         w.destroy()
     })
     test('emits update on animated', async () => { const w = mountForm(); await w.find('input[type="checkbox"]').setChecked(true); expect(w.emitted('update').some(e => e[0] === 'animated')).toBe(true); w.destroy() })
-    test('emits update on markerEnd', async () => { const w = mountForm(); const s = w.findAll('select').at(4); s.element.value = 'arrowclosed'; await s.trigger('input'); expect(w.emitted('update')[0]).toEqual(['markerEnd', 'arrowclosed']); w.destroy() })
+    test('emits update on markerTo', () => { const w = mountForm(); selectAt(w, 4).$emit('input', 'arrowclosed'); expect(w.emitted('update')[0]).toEqual(['markerTo', 'arrowclosed']); w.destroy() })
     //None 選項須 emit ''(不再是 undefined, spec 項8)
-    test('markerEnd None emits empty string, not undefined', async () => {
-        const w = mountForm({ markerEnd: 'arrow' })
-        const s = w.findAll('select').at(4)
-        s.element.value = ''
-        await s.trigger('input')
-        expect(w.emitted('update')[0]).toEqual(['markerEnd', ''])
+    test('markerTo None emits empty string, not undefined', () => {
+        const w = mountForm({ markerTo: 'arrow' })
+        selectAt(w, 4).$emit('input', '')
+        expect(w.emitted('update')[0]).toEqual(['markerTo', ''])
         w.destroy()
     })
-    //Marker Size/Color 恆顯示(知道可改)但有條件才可改: Size 有箭頭時, Color 僅實心箭頭時; 其餘 disabled
-    test('marker size/color rows always present; size enabled when marker set, color enabled only for arrowclosed', () => {
-        const colorDisabled = (w) => w.findAll('.vue-flow__field').wrappers.filter(f => f.classes('vue-flow__field--disabled')).length
-        const w1 = mountForm({ markerEnd: '' })
+    /**
+     * Size 與兩個 Color 欄恆顯示(讓使用者知道可改), 但依箭頭樣式決定可否改:
+     *   Size       有箭頭即可改
+     *   Face Color 僅實心(arrowclosed)—— 線式之 fill 恆 none, 可改卻無效即半吊子 affordance
+     *   Edge Color 線式與實心皆可(兩者都有描邊)
+     * 每端各有 Face/Edge 兩個 .vue-flow__field, 故兩端共 4 個。
+     */
+    test('marker size/face/edge colour rows always present; enabled per arrow type', () => {
+        const fieldState = (w) => w.findAll('.vue-flow__field').wrappers.map(f => !f.classes('vue-flow__field--disabled'))
+        //[FromFace, FromEdge, ToFace, ToEdge]
+        const w1 = mountForm({ markerTo: '' })
         const sizeInputs = () => w1.findAll('input[type="number"][min="4"]').wrappers
         expect(sizeInputs().length).toBe(2) //From / To
         expect(sizeInputs().every(i => i.element.disabled)).toBe(true)
-        expect(colorDisabled(w1)).toBe(2)
+        expect(fieldState(w1)).toEqual([false, false, false, false]) //兩端皆無箭頭
         w1.destroy()
-        const w2 = mountForm({ markerEnd: 'arrow' })
+
+        const w2 = mountForm({ markerTo: 'arrow' })
         const inputs2 = w2.findAll('input[type="number"][min="4"]').wrappers
         expect(inputs2[0].element.disabled).toBe(true) //From(None)
         expect(inputs2[1].element.disabled).toBe(false) //To(arrow)
-        expect(colorDisabled(w2)).toBe(2) //線式箭頭無填色 → color 仍 disabled
+        //To 為線式: Face 不可改(無填色)、Edge 可改(有描邊)
+        expect(fieldState(w2)).toEqual([false, false, false, true])
         w2.destroy()
-        const w3 = mountForm({ markerEnd: 'arrowclosed' })
-        expect(colorDisabled(w3)).toBe(1) //僅 From 端 disabled
+
+        const w3 = mountForm({ markerTo: 'arrowclosed' })
+        //To 為實心: Face 與 Edge 皆可改
+        expect(fieldState(w3)).toEqual([false, false, true, true])
         w3.destroy()
+
+        const w4 = mountForm({ markerFrom: 'arrow', markerTo: 'arrowclosed' })
+        expect(fieldState(w4)).toEqual([false, true, true, true])
+        w4.destroy()
     })
-    test('emits update on markerEndSize', async () => {
-        const w = mountForm({ markerEnd: 'arrow', markerEndSize: 10 })
-        w.vm.onMarkerSizeInput('markerEndSize', '20')
-        expect(w.emitted('update')[0]).toEqual(['markerEndSize', 20])
+    test('emits update on markerToSize', async () => {
+        const w = mountForm({ markerTo: 'arrow', markerToSize: 10 })
+        w.vm.onMarkerSizeInput('markerToSize', '20')
+        expect(w.emitted('update')[0]).toEqual(['markerToSize', 20])
         w.destroy()
     })
     test('fontSize clamps', () => { const w = mountForm(); w.vm.onFontSizeInput('100'); expect(w.emitted('update')[0]).toEqual(['fontSize', 72]); w.destroy() })
@@ -449,14 +464,14 @@ describe('Snap-to-Grid integration', () => {
 
 // 10/12. edgeMarker.mjs 單一來源(取代 EdgeMarkerDefs.getMarkerId 與 EdgeWrapper.getMarkerUrl, spec 項10):
 // EdgeMarkerDefs(<defs> 產生)與 EdgeWrapper(url(#id) 引用)皆經 resolveMarker/markerId/markerUrl, id 不可能分家。
-// conn.markerEnd/markerStart 恆為字串型別('' | 'arrow' | 'arrowclosed'), 不再接受 {type,color} 物件(色彩改由 markerXColor 欄位)。
+// conn.markerTo/markerFrom 恆為字串型別('' | 'arrow' | 'arrowclosed'), 不再接受 {type,color} 物件(色彩改由 markerXColor 欄位)。
 describe('edgeMarker 解析(EdgeMarkerDefs / EdgeWrapper 單一來源)', () => {
     test('marker ID matches between EdgeMarkerDefs and EdgeWrapper', () => {
         const w = createWrapper()
-        // Find EdgeWrapper that has markerEnd='arrowclosed' (conn e3-2)
+        // Find EdgeWrapper that has markerTo='arrowclosed' (conn e3-2)
         const ews = w.findAllComponents({ name: 'EdgeWrapper' })
         const ew = ews.wrappers.find(e => e.props('conn').id === 'e3-2')
-        const url = ew.vm.markerEndUrl
+        const url = ew.vm.markerToUrl
         // Extract ID from url(#...)
         const match = url && url.match(/url\(#(.+)\)/)
         expect(match).toBeTruthy()
@@ -470,32 +485,32 @@ describe('edgeMarker 解析(EdgeMarkerDefs / EdgeWrapper 單一來源)', () => {
         w.destroy()
     })
     test('resolveMarker: 相同規格(type/size/fill/stroke/strokeWidth)恆產生相同 id(供 defs 去重)', () => {
-        const connA = { markerEnd: 'arrowclosed', edgeColor: '#b1b1b1', edgeWidth: 1 }
-        const connB = { markerEnd: 'arrowclosed', edgeColor: '#b1b1b1', edgeWidth: 1 }
-        const specA = resolveMarker(connA, {}, 'end')
-        const specB = resolveMarker(connB, {}, 'end')
+        const connA = { markerTo: 'arrowclosed', edgeColor: '#b1b1b1', edgeWidth: 1 }
+        const connB = { markerTo: 'arrowclosed', edgeColor: '#b1b1b1', edgeWidth: 1 }
+        const specA = resolveMarker(connA, {}, 'to')
+        const specB = resolveMarker(connB, {}, 'to')
         expect(specA.id).toBe(specB.id)
         expect(markerId(specA)).toBe(specA.id)
     })
     test('arrow(線式): 無填充(fill=none); arrowclosed: fill=線色加深 20%(未給 markerXColor 時)', () => {
         const line = { edgeColor: '#ff0000', edgeWidth: 2 }
-        expect(resolveMarker({ ...line, markerEnd: 'arrow' }, {}, 'end').fill).toBe('none')
-        expect(resolveMarker({ ...line, markerEnd: 'arrowclosed' }, {}, 'end').fill).toBe('#cc0000') //#ff0000 加深 20%
+        expect(resolveMarker({ ...line, markerTo: 'arrow' }, {}, 'to').fill).toBe('none')
+        expect(resolveMarker({ ...line, markerTo: 'arrowclosed' }, {}, 'to').fill).toBe('#cc0000') //#ff0000 加深 20%
     })
-    test('markerEndColor 覆蓋 arrowclosed 之 fill(線式箭頭無填充故不受影響)', () => {
-        const conn = { markerEnd: 'arrowclosed', markerEndColor: '#00ff00', edgeColor: '#ff0000', edgeWidth: 1 }
-        expect(resolveMarker(conn, {}, 'end').fill).toBe('#00ff00')
+    test('markerToFaceColor 覆蓋 arrowclosed 之 fill(線式箭頭無填充故不受影響)', () => {
+        const conn = { markerTo: 'arrowclosed', markerToFaceColor: '#00ff00', edgeColor: '#ff0000', edgeWidth: 1 }
+        expect(resolveMarker(conn, {}, 'to').fill).toBe('#00ff00')
     })
     test('markerX 為 "" 或未給: 回 null(無箭頭)', () => {
-        expect(resolveMarker({ markerEnd: '' }, {}, 'end')).toBeNull()
-        expect(resolveMarker({}, {}, 'end')).toBeNull()
+        expect(resolveMarker({ markerTo: '' }, {}, 'to')).toBeNull()
+        expect(resolveMarker({}, {}, 'to')).toBeNull()
     })
-    test('conn 明確給 "" 之 markerEnd 不落回 defConn(明確無, 非未給)', () => {
-        expect(resolveMarker({ markerEnd: '' }, { markerEnd: 'arrow' }, 'end')).toBeNull()
+    test('conn 明確給 "" 之 markerTo 不落回 defConn(明確無, 非未給)', () => {
+        expect(resolveMarker({ markerTo: '' }, { markerTo: 'arrow' }, 'to')).toBeNull()
     })
     test('markerUrl(null) 回 null; 有效規格回 url(#id)', () => {
         expect(markerUrl(null)).toBeNull()
-        const spec = resolveMarker({ markerEnd: 'arrow', edgeColor: '#b1b1b1', edgeWidth: 1 }, {}, 'end')
+        const spec = resolveMarker({ markerTo: 'arrow', edgeColor: '#b1b1b1', edgeWidth: 1 }, {}, 'to')
         expect(markerUrl(spec)).toBe(`url(#${spec.id})`)
     })
 })

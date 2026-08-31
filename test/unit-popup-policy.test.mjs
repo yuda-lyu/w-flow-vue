@@ -45,7 +45,7 @@ describe('Q3 資訊 popup 開啟計畫', () => {
 
 describe('Q4 欄位有效值政策', () => {
     test('raw / defined / explicit-empty / truthy', () => {
-        const d = { name: 'D', edgeWidth: 3, animated: true, markerEnd: 'arrow', edgeColor: '#000', fontSize: 12 }
+        const d = { name: 'D', edgeWidth: 3, animated: true, markerTo: 'arrow', edgeColor: '#000', fontSize: 12 }
         expect(FIELD_POLICY.name).toBe('raw')
         expect(effectiveField('name', { name: '' }, d)).toBe('')
         expect(effectiveField('name', {}, d)).toBe('')
@@ -53,8 +53,8 @@ describe('Q4 欄位有效值政策', () => {
         expect(effectiveField('edgeWidth', {}, d)).toBe(3)
         expect(effectiveField('animated', { animated: false }, d)).toBe(false)
         expect(effectiveField('animated', {}, d)).toBe(true)
-        expect(effectiveField('markerEnd', { markerEnd: '' }, d)).toBe('')
-        expect(effectiveField('markerEnd', {}, d)).toBe('arrow')
+        expect(effectiveField('markerTo', { markerTo: '' }, d)).toBe('')
+        expect(effectiveField('markerTo', {}, d)).toBe('arrow')
         expect(effectiveField('edgeColor', { edgeColor: '' }, d)).toBe('#000')
         expect(effectiveField('edgeColor', { edgeColor: '#fff' }, d)).toBe('#fff')
         expect(effectiveField('fontSize', {}, {})).toBe('')

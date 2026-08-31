@@ -22,7 +22,7 @@ const TRI_HORIZONTAL_FRACTION = { ...RECT_FRACTION, top: { fx: 0.5, fy: 0.25 }, 
  */
 export function sideAnchorFraction(shape, side) {
     let table = RECT_FRACTION
-    if (shape === 'triangle' || shape === 'triangle-down') table = TRI_VERTICAL_FRACTION
+    if (shape === 'triangle-up' || shape === 'triangle-down') table = TRI_VERTICAL_FRACTION
     else if (shape === 'triangle-right' || shape === 'triangle-left') table = TRI_HORIZONTAL_FRACTION
     return table[side] || table.bottom
 }

@@ -34,12 +34,17 @@ export const CONN_DEFAULTS = {
     fromPosition: 'bottom',
     toPosition: 'top',
     //兩端箭頭: type '' | 'arrow' | 'arrowclosed'; size px; color 為實心箭頭之填充色(未給即線色)
-    markerStart: '',
-    markerStartSize: 10,
-    markerStartColor: '',
-    markerEnd: '',
-    markerEndSize: 10,
-    markerEndColor: '',
+    markerFrom: '',
+    markerFromSize: 10,
+    //箭頭之填色與框色分列(與節點之 faceColor / edgeColor 同一語彙):
+    //  FaceColor 為三角形填色, 僅 arrowclosed 有意義(arrow 為線式, fill 恆 none), '' = 線色加深 20%
+    //  EdgeColor 為箭頭外框色, arrow 與 arrowclosed 皆有意義, '' = 跟隨線色(既有行為)
+    markerFromFaceColor: '',
+    markerFromEdgeColor: '',
+    markerTo: '',
+    markerToSize: 10,
+    markerToFaceColor: '',
+    markerToEdgeColor: '',
     animated: false,
     defOffset: 24,
 }
@@ -63,6 +68,7 @@ export const NODE_SETTING_KEYS = [
 export const CONN_SETTING_KEYS = [
     'name', 'description', 'type', 'fromPosition', 'toPosition', 'fontSize', 'fontColor', 'animated',
     'edgeColor', 'edgeWidth', 'edgeDasharray', 'points', 'curvature',
-    'markerStart', 'markerStartSize', 'markerStartColor', 'markerEnd', 'markerEndSize', 'markerEndColor',
+    'markerFrom', 'markerFromSize', 'markerFromFaceColor', 'markerFromEdgeColor',
+    'markerTo', 'markerToSize', 'markerToFaceColor', 'markerToEdgeColor',
     'deletable', 'hidden', 'class', 'style',
 ]

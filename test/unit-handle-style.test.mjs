@@ -86,7 +86,7 @@ describe('H4 定位外推量 = 節點外框寬', () => {
     test('handlePlacementStyle: 外框盒邊上者外推 border, 內部點(三角斜邊)不外推', () => {
         expect(handlePlacementStyle('rectangle', 'top', 3)).toEqual({ left: '50%', top: 'calc(0% + -3px)', transform: 'translate(-50%, -50%)' })
         expect(handlePlacementStyle('rectangle', 'right', 3)).toEqual({ left: 'calc(100% + 3px)', top: '50%', transform: 'translate(-50%, -50%)' })
-        expect(handlePlacementStyle('triangle', 'left', 0)).toEqual({ left: '25%', top: '50%', transform: 'translate(-50%, -50%)' })
+        expect(handlePlacementStyle('triangle-up', 'left', 0)).toEqual({ left: '25%', top: '50%', transform: 'translate(-50%, -50%)' })
         expect(handlePlacementStyle('triangle-right', 'bottom', 0)).toEqual({ left: '50%', top: '75%', transform: 'translate(-50%, -50%)' })
     })
     test('把手之外推隨節點 edgeWidth / 形狀', async () => {

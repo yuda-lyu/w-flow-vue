@@ -64,7 +64,9 @@
          (錨區仍於 popup 開啟時渲染供 WPopup 定位, 但齒輪 icon 以 --silent 隱藏) -->
     <div v-if="(gearVisible || settingsPopupShow) && draggable && !locked && settingsEnabled" class="vue-flow__node-settings-anchor" :class="{ 'vue-flow__node-settings-anchor--silent': settingsTrigger !== 'hover' }" @click="onSettingsAnchorClick">
       <!-- 受控而非v-model: 開啟請求須經onSettingsPopupInput裁決(複選模式中拒開);
-           WPopup非isolated, trigger點擊只是$emit請求, @show跟隨實際開啟故拒開時不會幽靈emit -->
+           WPopup非isolated, trigger點擊只是$emit請求, @show跟隨實際開啟故拒開時不會幽靈emit。
+           paddingStyle 歸零: 設定表單之內距由 ui/settingsForm.css 掌管, 使群標題列能 full-bleed 貼齊 popup
+           左右邊緣; popup 若自帶水平 padding, 標題底色會成為浮在中間的色塊而非分區用的 section header -->
       <WPopup
         :value="settingsPopupShow"
         @input="onSettingsPopupInput"
@@ -76,7 +78,7 @@
         :autoFitMaxWidth="false"
         :backgroundColor="settingsPopupBackgroundColor"
         :textColor="settingsPopupTextColor"
-        :paddingStyle="{v:8,h:8}"
+        :paddingStyle="{v:0,h:0}"
         @show="$emit('node-settings-click', { node: node })"
       >
         <template v-slot:trigger>
@@ -91,6 +93,8 @@
             :node="node"
             :def-node="dn"
             :text-font-size="settingsPopupTextFontSize"
+            :max-height="settingsPopupMaxHeight"
+            :background-color="settingsPopupBackgroundColor"
             :excludes="settingsExcludes"
             @update="onSettingsUpdate"
             @delete="onSettingsDelete"
@@ -146,6 +150,7 @@ export default {
         settingsPopupBackgroundColor: { type: String, default: '#fff' },
         settingsPopupTextColor: { type: String, default: '#333' },
         settingsPopupTextFontSize: { type: String, default: '12px' },
+        settingsPopupMaxHeight: { type: String, default: '400px' },
         inforPopupBackgroundColor: { type: String, default: '#fff' },
         inforPopupTitleTextColor: { type: String, default: '#333' },
         inforPopupTitleTextFontSize: { type: String, default: '12px' },

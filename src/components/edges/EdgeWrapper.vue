@@ -24,8 +24,8 @@
     <path
       :d="pathData.path"
       :style="connStyle"
-      :marker-start="markerStartUrl"
-      :marker-end="markerEndUrl"
+      :marker-start="markerFromUrl"
+      :marker-end="markerToUrl"
     />
     <!-- 強制轉折點標記(編輯模式顯示, 可直接拖曳移動座標; 亦可經齒輪設定表單編修) -->
     <template v-if="showWaypoints">
@@ -86,7 +86,8 @@
                foreignObject內元素被patch替換後up落在新元素上, click(popup開啟訊號)根本不發生(已於e2e重現: E2E-012表單數變0);
                click時WPopup trigger之內層handler先跑(popup先開), 冒泡至此才轉移active -->
           <span v-if="(gearVisible || settingsPopupShow) && interactive && !locked && settingsEnabled" class="vue-flow__edge-settings-anchor" :class="{ 'vue-flow__edge-settings-anchor--silent': settingsTrigger !== 'hover' }" @click="onSettingsAnchorClick">
-              <!-- 受控而非v-model: 開啟請求經onSettingsPopupInput裁決(複選模式中拒開), @show跟隨實際開啟 -->
+              <!-- 受控而非v-model: 開啟請求經onSettingsPopupInput裁決(複選模式中拒開), @show跟隨實際開啟。
+                   paddingStyle 歸零之理由同 NodeWrapper: 讓群標題列 full-bleed 貼齊 popup 邊緣 -->
               <WPopup
                 :value="settingsPopupShow"
                 @input="onSettingsPopupInput"
@@ -98,7 +99,7 @@
                 :autoFitMaxWidth="false"
                 :backgroundColor="settingsPopupBackgroundColor"
                 :textColor="settingsPopupTextColor"
-                :paddingStyle="{v:8,h:8}"
+                :paddingStyle="{v:0,h:0}"
                 @show="$emit('conn-settings-click', { conn: conn })"
               >
                 <template v-slot:trigger>
@@ -120,6 +121,8 @@
                     :conn="conn"
                     :def-conn="dc"
                     :text-font-size="settingsPopupTextFontSize"
+                    :max-height="settingsPopupMaxHeight"
+                    :background-color="settingsPopupBackgroundColor"
                     :excludes="settingsExcludes"
                     :default-point="waypointDefaultPoint"
                     :target-point="waypointTargetPoint"
@@ -180,6 +183,7 @@ export default {
         settingsPopupBackgroundColor: { type: String, default: '#fff' },
         settingsPopupTextColor: { type: String, default: '#333' },
         settingsPopupTextFontSize: { type: String, default: '12px' },
+        settingsPopupMaxHeight: { type: String, default: '400px' },
         inforPopupBackgroundColor: { type: String, default: '#fff' },
         inforPopupTitleTextColor: { type: String, default: '#333' },
         inforPopupTitleTextFontSize: { type: String, default: '12px' },
@@ -320,11 +324,11 @@ export default {
             return computeConnStyle(this.conn, this.dc, this.selected)
         },
         //兩端箭頭(edgeMarker 單一來源, 與 EdgeMarkerDefs 同一 id)
-        markerStartUrl() {
-            return markerUrl(resolveMarker(this.conn, this.dc, 'start'))
+        markerFromUrl() {
+            return markerUrl(resolveMarker(this.conn, this.dc, 'from'))
         },
-        markerEndUrl() {
-            return markerUrl(resolveMarker(this.conn, this.dc, 'end'))
+        markerToUrl() {
+            return markerUrl(resolveMarker(this.conn, this.dc, 'to'))
         },
         labelStyle() {
             return computeLabelStyle(this.conn, this.dc)

@@ -1,0 +1,131 @@
+/**
+ * 設定表單(節點 / 連線)之共用版面樣式。
+ *
+ * 由 NodeSettingsForm.vue 與 ConnSettingsForm.vue 各自 import, 使兩表單被外部單獨引用時
+ * 都能自帶完整版面(先前這些規則放在 WFlowVue.vue 的全域 <style>, 外部只 import 表單元件時拿不到,
+ * 且連線表單自帶一份重複的刪除區樣式而節點表單沒有 —— 兩者不對稱)。
+ *
+ * 一律用 vue-flow__ 前綴之全域 class(非 scoped): 這些 class 為對外公開之樣式覆寫點。
+ */
+
+/**
+ * 水平內距 12px 為表單之對齊基準線: 群標題列以負 margin 突破它而 full-bleed 貼齊 popup 邊緣,
+ * 但標題列自身再補回 12px padding, 故標題文字與欄位標籤落在同一條垂直線上。
+ * 12px 對齊 Ant Design Collapse 之 small size header padding(8px 12px)。
+ * 垂直 8px: popup 圓角 4px, 標題底色若貼齊頂端會被圓角切到, 故留 8px。
+ * popup 本身之 paddingStyle 已歸零(NodeWrapper / EdgeWrapper), 內距全由本檔掌管。
+ */
+.vue-flow__settings-form {
+  /* 主題變數: popup 之底色/文字色可由宿主經 opt 指定(含深色), 故群標題之各層顏色一律走變數而非硬寫 hex。
+     surface 用半透明黑疊加而非實色 —— 在白底上 rgba(0,0,0,0.06) 恰等於 #f0f0f0, 換底色時自動跟著走。
+     宿主要另配色時覆寫這些變數即可, 不需改元件。 */
+  --vf-settings-surface: rgba(0, 0, 0, 0.06);
+  --vf-settings-surface-hover: rgba(0, 0, 0, 0.14);
+  --vf-settings-divider: var(--vf-settings-bg, #fff);
+  --vf-settings-caret: #666;
+  --vf-settings-caret-hover: #333;
+  /* 分隔線(刪除區上緣、轉折點子區塊上緣): 同樣用疊加而非硬寫 #eee, 深色主題才跟著走 */
+  --vf-settings-rule: rgba(0, 0, 0, 0.09);
+  /* 次要文字兩級(子區塊標題 / 序號與提示文字): 深色主題由 JS 改注淺色, 見 mixins/settingsForm */
+  --vf-settings-text-muted: #666;
+  --vf-settings-text-faint: #999;
+  --vf-settings-inline-padding: 12px;
+  /* 次級字級(群標題、子區塊標題、序號、刪除鈕): 以 em 相對表單 root, 使 textFontSize 能整體縮放 */
+  --vf-settings-font-sm: 0.92em;
+
+  display: flex;
+  flex-direction: column;
+  /* gap 0: 相鄰之收合群須緊貼成一份清單(僅以 1px 分隔線區隔, 見 SettingsGroup)——
+     群與群之間若留 8px 白隙, 一排灰帶會讀成「分離的按鈕」而非分區清單。
+     群內之欄位間距改由群內容區自身的 gap 提供。 */
+  gap: 0;
+  min-width: 180px;
+  padding: 8px var(--vf-settings-inline-padding);
+  box-sizing: border-box;
+  /* 字級單一來源: 由此繼承給 label 與控制項, 使 opt.settingsPopupTextFontSize(以 inline style 覆寫本值)真正生效 */
+  font-size: 12px;
+  /* overflow-y 設 auto 時, overflow-x 之 visible 會被計算成 auto(CSS Overflow §3);
+     長標題或 min-content 撐開時會冒出水平捲軸, 故明確關閉 */
+  overflow-x: hidden;
+  /* 表單為捲動容器: 繼承 popup 圓角, 使捲到頂/底時方角的標題底色不會溢出 popup 的圓角 */
+  border-radius: inherit;
+}
+.vue-flow__settings-form label {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  font-size: inherit;
+}
+.vue-flow__settings-form select,
+.vue-flow__settings-form input[type="number"],
+.vue-flow__settings-form input[type="text"] {
+  width: 100px;
+  font-size: inherit;
+  padding: 1px 4px;
+  border: 1px solid #ccc;
+  border-radius: 3px;
+}
+/* w-component-vue 之 WTextSelect / WText: 其根元素為 div, 不受上列原生控制項規則約束,
+   故在此統一寬度, 使各欄之控制項右緣落在同一條線 */
+.vue-flow__settings-form .vue-flow__settings-select,
+.vue-flow__settings-form .vue-flow__settings-text {
+  width: 100px;
+  flex-shrink: 0;
+}
+.vue-flow__settings-form input[type="color"] {
+  width: 32px;
+  height: 24px;
+  padding: 0;
+  border: 1px solid #ccc;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.vue-flow__settings-form input:disabled,
+.vue-flow__settings-form select:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+/* 有條件才可改之欄位(WColorSelect 無 disabled prop, 以容器 pointer-events 阻擋並淡化) */
+.vue-flow__field--disabled {
+  pointer-events: none;
+  opacity: 0.4;
+}
+/* 刪除為破壞性操作: 不歸入任何屬性群組, 恆顯示於表單底部並以分隔線區隔。
+   本區上緣**不加 margin**: 分隔線緊貼前一個群, 與「群標題之間緊貼」同一規則。表單內的縱向間距只有一個
+   來源 —— 展開內容自身之 padding-bottom(見 SettingsGroup), 收合時歸零。線若另加 margin, 會出現
+   「群與群貼齊、刪除線卻浮開一段」的兩套規則; 且 flex item 之 margin 不與前一項 padding 折疊, 兩者都給
+   還會疊成 20px。 */
+.vue-flow__delete-area {
+  /* 分隔線與群標題底色同樣 full-bleed 貼齊 popup 左右邊緣 —— 同一表單內的分隔語彙必須一致:
+     一條左右內縮的線配上貼齊邊緣的標題帶, 讀起來是兩套規則。作法同標題列: 負 margin 突破表單水平內距,
+     再以同值 padding 把按鈕推回對齊基準線(故按鈕右緣與輸入框右緣同為一份 inline padding)。 */
+  margin: 0 calc(-1 * var(--vf-settings-inline-padding)) 0;
+  padding: 8px var(--vf-settings-inline-padding) 0;
+  border-top: 1px solid var(--vf-settings-rule);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+.vue-flow__delete-btn {
+  padding: 3px 10px;
+  font-size: var(--vf-settings-font-sm);
+  border: 1px solid #dc2626;
+  border-radius: 3px;
+  color: #fff;
+  background: #dc2626;
+  cursor: pointer;
+}
+.vue-flow__delete-btn:hover {
+  background: #b91c1c;
+  border-color: #b91c1c;
+}
+/* 等待宿主確認期間: 淡化且不可再點(尺寸與文字不變, 不造成版面跳動) */
+.vue-flow__delete-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+.vue-flow__delete-btn:disabled:hover {
+  background: #dc2626;
+  border-color: #dc2626;
+}

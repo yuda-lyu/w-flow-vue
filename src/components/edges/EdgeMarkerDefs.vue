@@ -34,7 +34,7 @@ export default {
             const set = new Map()
             const defConn = this.defConn
             this.conns.forEach(conn => {
-                for (const end of ['start', 'end']) {
+                for (const end of ['from', 'to']) {
                     const spec = resolveMarker(conn, defConn, end)
                     if (spec && !set.has(spec.id)) set.set(spec.id, markerDef(spec))
                 }

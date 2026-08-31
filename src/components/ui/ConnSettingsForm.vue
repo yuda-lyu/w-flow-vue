@@ -1,76 +1,92 @@
 <template>
   <div class="vue-flow__settings-form" :style="formStyle">
-    <label v-if="!isEx('name')">Name
-      <input type="text" :value="eff('name')" @input="$emit('update', 'name', $event.target.value)">
-    </label>
-    <label v-if="!isEx('description')">Description
-      <input type="text" :value="eff('description')" @input="$emit('update', 'description', $event.target.value)">
-    </label>
-    <label v-if="!isEx('type')">Type
-      <select :value="eff('type')" @input="$emit('update', 'type', $event.target.value)">
-        <option value="bezier">Bezier</option>
-        <option value="straight">Straight</option>
-        <option value="step">Step</option>
-        <option value="smoothstep">Smooth Step</option>
-      </select>
-    </label>
-    <label v-if="!isEx('fromPosition')">From Anchor
-      <select :value="effSide('from')" @input="$emit('update', 'fromPosition', $event.target.value)">
-        <option v-for="sd in sides" :key="sd" :value="sd">{{ sideLabel(sd) }}</option>
-      </select>
-    </label>
-    <label v-if="!isEx('toPosition')">To Anchor
-      <select :value="effSide('to')" @input="$emit('update', 'toPosition', $event.target.value)">
-        <option v-for="sd in sides" :key="sd" :value="sd">{{ sideLabel(sd) }}</option>
-      </select>
-    </label>
-    <label v-if="!isEx('fontSize')">Font Size
-      <input type="number" :value="eff('fontSize')" :min="defConn.fontSizeMin" :max="defConn.fontSizeMax" @input="onFontSizeInput($event.target.value)">
-    </label>
-    <label v-if="!isEx('fontColor')">Font Color
-      <WColorSelect :value="eff('fontColor')" :size="160" :colorBlockSize="16" :showColorText="false" :btnText="colorConfirmText" @input="$emit('update', 'fontColor', $event)" />
-    </label>
-    <label v-if="!isEx('animated')">Animated
-      <input type="checkbox" :checked="!!eff('animated')" @change="$emit('update', 'animated', $event.target.checked)">
-    </label>
-    <label v-if="!isEx('edgeColor')">Edge Color
-      <WColorSelect :value="eff('edgeColor')" :size="160" :colorBlockSize="16" :showColorText="false" :btnText="colorConfirmText" @input="$emit('update', 'edgeColor', $event)" />
-    </label>
-    <label v-if="!isEx('edgeWidth')">Edge Width
-      <input type="number" :value="eff('edgeWidth')" min="1" :max="edgeWidthMax" @input="onEdgeWidthInput($event.target.value)">
-    </label>
-    <!-- 兩端箭頭(edgeMarker 契約): 樣式 無/線式/實心; Size/Color 兩欄恆顯示(讓使用者知道可改)但有條件才可改:
-         Size 於有箭頭時可改, Color(三角形填色)僅於實心箭頭時可改, 其餘 disabled -->
-    <template v-for="end in ['Start', 'End']">
-      <label v-if="!isEx('marker' + end)" :key="'mk' + end">{{ endLabel(end) }} Marker
-        <select :value="eff('marker' + end)" @input="$emit('update', 'marker' + end, $event.target.value)">
-          <option v-for="m in markerOptions" :key="m.value" :value="m.value">{{ m.label }}</option>
-        </select>
-      </label>
-      <label v-if="!isEx('marker' + end + 'Size')" :key="'mks' + end">{{ endLabel(end) }} Marker Size
-        <input type="number" :value="eff('marker' + end + 'Size')" :min="markerSizeMin" :max="markerSizeMax" :disabled="!eff('marker' + end)" @input="onMarkerSizeInput('marker' + end + 'Size', $event.target.value)">
-      </label>
-      <label v-if="!isEx('marker' + end + 'Color')" :key="'mkc' + end">{{ endLabel(end) }} Marker Color
-        <span class="vue-flow__field" :class="{ 'vue-flow__field--disabled': eff('marker' + end) !== 'arrowclosed' }" :aria-disabled="eff('marker' + end) !== 'arrowclosed'">
-          <WColorSelect :value="eff('marker' + end + 'Color') || eff('edgeColor')" :size="160" :colorBlockSize="16" :showColorText="false" :btnText="colorConfirmText" @input="$emit('update', 'marker' + end + 'Color', $event)" />
-        </span>
-      </label>
-    </template>
-    <div v-if="!isEx('points')" class="vue-flow__waypoints">
-      <div class="vue-flow__waypoints-head">
-        <span>Waypoints</span>
-        <button class="vue-flow__waypoints-add" title="新增轉折點" @click="addWaypoint">＋</button>
-      </div>
-      <div v-for="(p, i) in ptsLocal" :key="'wp' + i" class="vue-flow__waypoints-row">
-        <span class="vue-flow__waypoints-idx">{{ i + 1 }}</span>
-        <input type="number" :value="p[0]" title="X" @input="onWaypointInput(i, 0, $event.target.value)">
-        <input type="number" :value="p[1]" title="Y" @input="onWaypointInput(i, 1, $event.target.value)">
-        <button class="vue-flow__waypoints-del" title="移除此轉折點" @click="removeWaypoint(i)">×</button>
-      </div>
-      <div v-if="!ptsLocal.length" class="vue-flow__waypoints-empty">無(自動路由)</div>
-    </div>
+    <SettingsGroup
+      v-for="g in groups"
+      :key="g.key"
+      :title="g.title"
+      :group-key="g.key"
+      :open="isGroupOpen(g.key)"
+      @update:open="setGroupOpen(g.key, $event)"
+    >
+      <template v-if="g.key === 'basic'">
+        <label v-if="!isEx('name')" data-field-key="name">Name
+          <SettingsText :value="eff('name')" @input="$emit('update', 'name', $event)" />
+        </label>
+        <label v-if="!isEx('description')" data-field-key="description">Description
+          <SettingsText :value="eff('description')" @input="$emit('update', 'description', $event)" />
+        </label>
+      </template>
+      <template v-else-if="g.key === 'path'">
+        <label v-if="!isEx('type')" data-field-key="type">Type
+          <SettingsSelect :items="typeItems" :value="eff('type')" @input="$emit('update', 'type', $event)" />
+        </label>
+        <label v-if="!isEx('fromPosition')" data-field-key="fromPosition">From Anchor
+          <SettingsSelect :items="sideItems" :value="effSide('from')" @input="$emit('update', 'fromPosition', $event)" />
+        </label>
+        <label v-if="!isEx('toPosition')" data-field-key="toPosition">To Anchor
+          <SettingsSelect :items="sideItems" :value="effSide('to')" @input="$emit('update', 'toPosition', $event)" />
+        </label>
+        <div v-if="!isEx('points')" class="vue-flow__waypoints" data-field-key="points">
+          <div class="vue-flow__waypoints-head">
+            <span>Waypoints</span>
+            <button class="vue-flow__waypoints-add" title="新增轉折點" @click="addWaypoint">＋</button>
+          </div>
+          <div v-for="(p, i) in ptsLocal" :key="'wp' + i" class="vue-flow__waypoints-row">
+            <span class="vue-flow__waypoints-idx">{{ i + 1 }}</span>
+            <input type="number" :value="p[0]" title="X" @input="onWaypointInput(i, 0, $event.target.value)">
+            <input type="number" :value="p[1]" title="Y" @input="onWaypointInput(i, 1, $event.target.value)">
+            <button class="vue-flow__waypoints-del" title="移除此轉折點" @click="removeWaypoint(i)">×</button>
+          </div>
+          <div v-if="!ptsLocal.length" class="vue-flow__waypoints-empty">無(自動路由)</div>
+        </div>
+      </template>
+      <template v-else-if="g.key === 'appearance'">
+        <label v-if="!isEx('edgeColor')" data-field-key="edgeColor">Edge Color
+          <WColorSelect :value="eff('edgeColor')" :size="160" :colorBlockSize="16" :showColorText="false" :btnText="colorConfirmText" @input="$emit('update', 'edgeColor', $event)" />
+        </label>
+        <label v-if="!isEx('edgeWidth')" data-field-key="edgeWidth">Edge Width
+          <input type="number" :value="eff('edgeWidth')" min="1" :max="edgeWidthMax" @input="onEdgeWidthInput($event.target.value)">
+        </label>
+        <label v-if="!isEx('animated')" data-field-key="animated">Animated
+          <input type="checkbox" :checked="!!eff('animated')" @change="$emit('update', 'animated', $event.target.checked)">
+        </label>
+      </template>
+      <!-- 兩端箭頭(edgeMarker 契約): 樣式 無/線式/實心; Size 與兩個 Color 欄恆顯示(讓使用者知道可改)但依樣式決定可否改:
+             Size       — 有箭頭即可改
+             Face Color — 三角形填色, 僅實心(arrowclosed)可改; 線式箭頭 fill 恆 none, 改了不會有畫面效果
+             Edge Color — 箭頭外框色, 線式與實心皆可改(兩者都有描邊); 未給即跟隨線色 -->
+      <template v-else-if="g.key === 'arrows'">
+        <template v-for="end in ['From', 'To']">
+          <label v-if="!isEx('marker' + end)" :key="'mk' + end" :data-field-key="'marker' + end">{{ end }} Marker
+            <SettingsSelect :items="markerItems" :value="eff('marker' + end)" @input="$emit('update', 'marker' + end, $event)" />
+          </label>
+          <label v-if="!isEx('marker' + end + 'Size')" :key="'mks' + end" :data-field-key="'marker' + end + 'Size'">{{ end }} Marker Size
+            <input type="number" :value="eff('marker' + end + 'Size')" :min="markerSizeMin" :max="markerSizeMax" :disabled="!eff('marker' + end)" @input="onMarkerSizeInput('marker' + end + 'Size', $event.target.value)">
+          </label>
+          <label v-if="!isEx('marker' + end + 'FaceColor')" :key="'mkf' + end" :data-field-key="'marker' + end + 'FaceColor'">{{ end }} Marker Face Color
+            <span class="vue-flow__field" :class="{ 'vue-flow__field--disabled': !faceColorEditable(end) }" :aria-disabled="!faceColorEditable(end)">
+              <WColorSelect :value="eff('marker' + end + 'FaceColor') || eff('edgeColor')" :size="160" :colorBlockSize="16" :showColorText="false" :btnText="colorConfirmText" @input="$emit('update', 'marker' + end + 'FaceColor', $event)" />
+            </span>
+          </label>
+          <label v-if="!isEx('marker' + end + 'EdgeColor')" :key="'mke' + end" :data-field-key="'marker' + end + 'EdgeColor'">{{ end }} Marker Edge Color
+            <span class="vue-flow__field" :class="{ 'vue-flow__field--disabled': !edgeColorEditable(end) }" :aria-disabled="!edgeColorEditable(end)">
+              <WColorSelect :value="eff('marker' + end + 'EdgeColor') || eff('edgeColor')" :size="160" :colorBlockSize="16" :showColorText="false" :btnText="colorConfirmText" @input="$emit('update', 'marker' + end + 'EdgeColor', $event)" />
+            </span>
+          </label>
+        </template>
+      </template>
+      <template v-else-if="g.key === 'text'">
+        <label v-if="!isEx('fontSize')" data-field-key="fontSize">Font Size
+          <input type="number" :value="eff('fontSize')" :min="defConn.fontSizeMin" :max="defConn.fontSizeMax" @input="onFontSizeInput($event.target.value)">
+        </label>
+        <label v-if="!isEx('fontColor')" data-field-key="fontColor">Font Color
+          <WColorSelect :value="eff('fontColor')" :size="160" :colorBlockSize="16" :showColorText="false" :btnText="colorConfirmText" @input="$emit('update', 'fontColor', $event)" />
+        </label>
+      </template>
+    </SettingsGroup>
     <!-- 刪除不做內建二次確認: 是否需要確認由宿主以 opt.funConfirmDeleting(async)決定, 未提供即直接刪除。
-         等待宿主確認期間按鈕 disabled(pending), 與節點設定表單同契約 -->
+         等待宿主確認期間按鈕 disabled(pending), 與節點設定表單同契約。
+         刪除為破壞性操作, 不歸入任何屬性群組, 恆顯示於表單底部 -->
     <div class="vue-flow__delete-area">
       <button class="vue-flow__delete-btn" :disabled="deleteConfirming || conn.deletable === false" @click="$emit('delete')">{{ deleteText }}</button>
     </div>
@@ -80,14 +96,22 @@
 <script>
 import WColorSelect from 'w-component-vue/src/components/WColorSelect.vue'
 import settingsForm from '../mixins/settingsForm.mjs'
+import SettingsGroup from './SettingsGroup.vue'
+import SettingsSelect from './SettingsSelect.vue'
+import SettingsText from './SettingsText.vue'
+import { CONN_SETTING_GROUPS } from '../../js/settingsGroups.mjs'
 import { SIDES, connSourceSide, connTargetSide } from '../../js/anchorPolicy.mjs'
+import { EDGE_TYPES } from '../../js/edgePath.mjs'
 import { MARKER_TYPES, MARKER_SIZE_MIN, MARKER_SIZE_MAX } from '../../js/edgeMarker.mjs'
+import './settingsForm.css'
 
+const EDGE_TYPE_LABELS = { 'bezier': 'Bezier', 'straight': 'Straight', 'step': 'Step', 'smoothstep': 'Smooth Step' }
 const MARKER_LABELS = { '': 'None', 'arrow': 'Arrow', 'arrowclosed': 'Arrow Closed' }
 
 export default {
-    components: { WColorSelect },
-    //欄位有效值/排除/文字/刪除確認態/數值 clamp 由 mixins/settingsForm 提供(與 NodeSettingsForm 同一份)
+    name: 'ConnSettingsForm',
+    components: { WColorSelect, SettingsGroup, SettingsSelect, SettingsText },
+    //欄位有效值/排除/文字/刪除確認態/數值 clamp/分群展開態 由 mixins/settingsForm 提供(與 NodeSettingsForm 同一份)
     mixins: [settingsForm],
     props: {
         conn: { type: Object, required: true },
@@ -107,15 +131,24 @@ export default {
         defaults() {
             return this.defConn
         },
+        //分群定義(順序即呈現順序); 群標題與成員之單一來源在 js/settingsGroups.mjs
+        groupDefs() {
+            return CONN_SETTING_GROUPS
+        },
         deleteTextKey() {
             return 'connDelete'
         },
-        //箭頭樣式選項由 edgeMarker.MARKER_TYPES 衍生(單一來源)
-        markerOptions() {
-            return MARKER_TYPES.map(v => ({ value: v, label: MARKER_LABELS[v] || v }))
+        //下拉選項一律為 { value, text }(值與顯示文字分離, 見 SettingsSelect)
+        typeItems() {
+            return EDGE_TYPES.map(v => ({ value: v, text: EDGE_TYPE_LABELS[v] || v }))
         },
-        sides() {
-            return SIDES
+        //箭頭樣式選項由 edgeMarker.MARKER_TYPES 衍生(單一來源)
+        markerItems() {
+            return MARKER_TYPES.map(v => ({ value: v, text: MARKER_LABELS[v] || v }))
+        },
+        //兩端方位之選項: 值域取 anchorPolicy.SIDES(單一來源), 顯示首字大寫
+        sideItems() {
+            return SIDES.map(v => ({ value: v, text: v.charAt(0).toUpperCase() + v.slice(1) }))
         },
         markerSizeMin() {
             return MARKER_SIZE_MIN
@@ -138,12 +171,15 @@ export default {
         effSide(end) {
             return end === 'from' ? connSourceSide(this.conn, this.defConn) : connTargetSide(this.conn, this.defConn)
         },
-        //兩端箭頭欄位標籤: 資料鍵 markerStart/markerEnd 對應顯示 From / To(與 From/To Anchor 同一語彙)
-        endLabel(end) {
-            return end === 'Start' ? 'From' : 'To'
+        //(箭頭欄位不需標籤轉換函式: 資料鍵之 markerFrom/markerTo 與顯示之 From/To 同名, template 直接用 v-for 之值)
+        //填色僅實心箭頭有意義(線式之 fill 恆 none, 改了不會有畫面效果 —— 可改卻無效即為半吊子 affordance)
+        faceColorEditable(end) {
+            return this.eff('marker' + end) === 'arrowclosed'
         },
-        sideLabel(sd) {
-            return sd.charAt(0).toUpperCase() + sd.slice(1)
+        //外框色於線式與實心皆有意義(兩者都有描邊); 無箭頭時兩色皆不可改
+        edgeColorEditable(end) {
+            const t = this.eff('marker' + end)
+            return t === 'arrow' || t === 'arrowclosed'
         },
         onMarkerSizeInput(key, val) {
             let n = Number(val)
@@ -199,28 +235,29 @@ export default {
 </script>
 
 <style>
-/* 有條件才可改之欄位(WColorSelect 無 disabled prop, 以容器 pointer-events 阻擋並淡化) */
-.vue-flow__field--disabled {
-  pointer-events: none;
-  opacity: 0.4;
-}
-.vue-flow__settings-form input:disabled,
-.vue-flow__settings-form select:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
+/* 本檔只保留連線專屬之轉折點樣式; 表單共用版面(含 .vue-flow__field--disabled、disabled 欄位、
+   刪除區)在 ./settingsForm.css, 由兩個表單共同 import */
+/* 轉折點為 Path 群「內」之子區塊: 其上緣分隔線刻意不 full-bleed(那是群層級的語彙),
+   隨群內容一起內縮; 線色與刪除區同走 --vf-settings-rule 以隨主題變化 */
 .vue-flow__waypoints {
   display: flex;
   flex-direction: column;
   gap: 4px;
   padding-top: 6px;
-  border-top: 1px solid #eee;
-  font-size: 12px;
+  border-top: 1px solid var(--vf-settings-rule);
+  font-size: inherit;
 }
 .vue-flow__waypoints-head {
   display: flex;
   justify-content: space-between;
   align-items: center;
+}
+/* 轉折點為 Path 群「內」之子區塊標題: 層級為 群標題 > 本標題 > 欄位標籤。
+   與群標題同字級但降一階色(muted)且不加 letter-spacing —— 群標題另有底色與 full-bleed, 兩者不致混淆 */
+.vue-flow__waypoints-head > span {
+  font-size: var(--vf-settings-font-sm);
+  font-weight: 600;
+  color: var(--vf-settings-text-muted);
 }
 .vue-flow__waypoints-add {
   display: inline-flex;
@@ -232,13 +269,13 @@ export default {
   border: 1px solid #ccc;
   border-radius: 3px;
   background: #fff;
-  color: #666;
+  color: var(--vf-settings-text-muted);
   cursor: pointer;
-  font-size: 12px;
+  font-size: inherit;
   line-height: 1;
 }
 .vue-flow__waypoints-add:hover {
-  border-color: #666;
+  border-color: var(--vf-settings-text-muted);
   color: #333;
 }
 .vue-flow__waypoints-row {
@@ -248,13 +285,13 @@ export default {
 }
 .vue-flow__waypoints-idx {
   width: 14px;
-  color: #999;
-  font-size: 11px;
+  color: var(--vf-settings-text-faint);
+  font-size: var(--vf-settings-font-sm);
   text-align: right;
 }
 .vue-flow__waypoints-row input[type="number"] {
   width: 62px;
-  font-size: 12px;
+  font-size: inherit;
   padding: 1px 4px;
   border: 1px solid #ccc;
   border-radius: 3px;
@@ -269,7 +306,7 @@ export default {
   border: 1px solid #ccc;
   border-radius: 3px;
   background: #fff;
-  color: #999;
+  color: var(--vf-settings-text-faint);
   cursor: pointer;
   font-size: 13px;
   line-height: 1;
@@ -280,37 +317,7 @@ export default {
   color: #dc2626;
 }
 .vue-flow__waypoints-empty {
-  color: #aaa;
-  font-size: 11px;
-}
-.vue-flow__delete-area {
-  margin-top: 4px;
-  padding-top: 8px;
-  border-top: 1px solid #eee;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-}
-.vue-flow__delete-btn {
-  padding: 3px 10px;
-  font-size: 11px;
-  border: 1px solid #dc2626;
-  border-radius: 3px;
-  color: #fff;
-  background: #dc2626;
-  cursor: pointer;
-}
-.vue-flow__delete-btn:hover {
-  background: #b91c1c;
-  border-color: #b91c1c;
-}
-/* 等待宿主確認期間: 淡化且不可再點(尺寸與文字不變, 不造成版面跳動) */
-.vue-flow__delete-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-.vue-flow__delete-btn:disabled:hover {
-  background: #dc2626;
-  border-color: #dc2626;
+  color: var(--vf-settings-text-faint);
+  font-size: var(--vf-settings-font-sm);
 }
 </style>

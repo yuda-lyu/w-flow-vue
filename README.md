@@ -33,8 +33,25 @@ Add script for vue.
 
 Add script for w-flow-vue.
 ```alias
-<script src="https://cdn.jsdelivr.net/npm/w-flow-vue@1.0.43/dist/w-flow-vue.umd.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/w-flow-vue@1.0.44/dist/w-flow-vue.umd.js"></script>
 ```
+
+## Settings form components (for advanced use)
+
+The node / connection settings popups are built from standalone components that can be imported directly, so a host app can embed the same form in its own panel, or assemble a custom one:
+
+```js
+import NodeSettingsForm from 'w-flow-vue/src/components/ui/NodeSettingsForm.vue'
+import ConnSettingsForm from 'w-flow-vue/src/components/ui/ConnSettingsForm.vue'
+import SettingsGroup from 'w-flow-vue/src/components/ui/SettingsGroup.vue'
+import { NODE_SETTING_GROUPS, CONN_SETTING_GROUPS, visibleGroups } from 'w-flow-vue/src/js/settingsGroups.mjs'
+```
+
+- `NodeSettingsForm` / `ConnSettingsForm` — the full form. Props: `node` / `conn`, `defNode` / `defConn`, `excludes` (field keys to hide), `defaultOpenGroups` (which groups start expanded, default `['basic']` — read once on create, not a controlled prop), `maxHeight` (CSS length; the form scrolls inside itself past this, `opt.settingsPopupMaxHeight` defaults to `'400px'`), `textFontSize`. Emits `update(key, value)` and `delete`. Both mount standalone — every `inject` has a default, and each form imports its own `settingsForm.css` — so they work and look right outside `WFlowVue`.
+- `SettingsGroup` — one collapsible group. Props: `title`, `open`, `headingLevel` (default 3); emits `update:open` (so `:open.sync` works). The disclosure triangle points right when collapsed and down when expanded (the symbol shows the current state, as in macOS Finder), and the whole header row is clickable. Markup follows the [W3C ARIA APG accordion pattern](https://www.w3.org/WAI/ARIA/apg/patterns/accordion/): the header button is wrapped in a `role="heading"` element with `aria-level`.
+- `settingsGroups.mjs` — the grouping definition (`{ key, title, fields }`, array order is display order) plus `visibleGroups(groups, excludes)`. Import it to drive your own layout, or to decide which fields to exclude.
+
+These are `.vue` / `.mjs` sources, so your build must handle Vue 2 SFCs (the same way this package consumes `w-component-vue`). The prebuilt `dist/w-flow-vue.umd.js` bundle only exports the `WFlowVue` component itself.
 
 ## Required setup for Vue 2 apps
 

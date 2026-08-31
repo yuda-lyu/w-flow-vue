@@ -97,7 +97,7 @@ describe('geometry', () => {
     })
 
     describe('getHandlePosition — triangle', () => {
-        const tri = { id: 't', position: { x: 0, y: 0 }, width: 100, height: 100, shape: 'triangle' }
+        const tri = { id: 't', position: { x: 0, y: 0 }, width: 100, height: 100, shape: 'triangle-up' }
 
         test('top handle (apex) is at top center', () => {
             const pos = getHandlePosition(tri, 'top', {})
@@ -156,13 +156,13 @@ describe('geometry', () => {
         const tri = (shape) => ({ id: 't', shape, position: { x: 0, y: 0 }, width: 100, height: 100 })
 
         test('triangle(朝上): top 側為頂點', () => {
-            const p = getHandlePosition(tri('triangle'), 'top', {})
+            const p = getHandlePosition(tri('triangle-up'), 'top', {})
             expect(p.x).toBeCloseTo(50, 0)
             expect(p.y).toBeCloseTo(0, 0)
         })
 
         test('triangle(朝上): bottom 側為底邊中點', () => {
-            const p = getHandlePosition(tri('triangle'), 'bottom', {})
+            const p = getHandlePosition(tri('triangle-up'), 'bottom', {})
             expect(p.x).toBeCloseTo(50, 0)
             expect(p.y).toBeCloseTo(100, 0)
         })
@@ -186,8 +186,8 @@ describe('geometry', () => {
         })
 
         test('斜邊上之連接點為斜邊中點(外接矩形 1/4、3/4), 不在外接矩形邊上', () => {
-            expect(getHandlePosition(tri('triangle'), 'left', {})).toEqual({ x: 25, y: 50 })
-            expect(getHandlePosition(tri('triangle'), 'right', {})).toEqual({ x: 75, y: 50 })
+            expect(getHandlePosition(tri('triangle-up'), 'left', {})).toEqual({ x: 25, y: 50 })
+            expect(getHandlePosition(tri('triangle-up'), 'right', {})).toEqual({ x: 75, y: 50 })
             expect(getHandlePosition(tri('triangle-down'), 'left', {})).toEqual({ x: 25, y: 50 })
             expect(getHandlePosition(tri('triangle-right'), 'top', {})).toEqual({ x: 50, y: 25 })
             expect(getHandlePosition(tri('triangle-right'), 'bottom', {})).toEqual({ x: 50, y: 75 })
