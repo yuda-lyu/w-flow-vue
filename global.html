@@ -29,7 +29,7 @@
 <nav >
     
     
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-EdgeMarkerDefs.html">EdgeMarkerDefs</a></li><li><a href="module-Handle.html">Handle</a></li><li><a href="module-NodeBody.html">NodeBody</a></li><li><a href="module-NodePorts.html">NodePorts</a></li><li><a href="module-NodeSettingsForm.html">NodeSettingsForm</a></li><li><a href="module-SettingsGroup.html">SettingsGroup</a></li><li><a href="module-SettingsSelect.html">SettingsSelect</a></li><li><a href="module-SettingsText.html">SettingsText</a></li></ul><h3>Events</h3><ul><li><a href="global.html#event:elements-deleted%25E6%2589%2580%25E6%259C%2589%25E5%2588%25AA%25E9%2599%25A4%25E8%25B7%25AF%25E5%25BE%2591%25E5%25AE%258C%25E6%2588%2590%25E5%25BE%258C%25E7%259A%2586%25E7%2599%25BC%25E5%2587%25BA(%25E6%2596%25BCupdate:*%25E4%25B9%258B%25E5%25BE%258C%25E3%2580%2581%25E6%259C%2580%25E5%25BE%258C%25E7%2599%25BC%25E5%2587%25BA),payload:%257Bfrom,requested:%257BnodeIds,connIds%257D,deleted:%257BnodeIds,connIds,nodes,conns%257D,cascades:%255B%257BnodeId,connIds%257D%255D,notFound:%257BnodeIds,connIds%257D,excluded:%257BnodeIds,connIds%257D%257D-deleted.nodes/conns%25E7%2582%25BA%25E8%25A2%25AB%25E5%2588%25AA%25E7%2595%25B6%25E4%25B8%258B%25E4%25B9%258B%25E6%25B7%25B1%25E8%25A4%2587%25E8%25A3%25BD%25E5%25BF%25AB%25E7%2585%25A7(JSON%25E5%25BE%2580%25E8%25BF%2594,%25E5%2590%258CgetFlowData);id%25E6%25B8%2585%25E5%2596%25AE%25E4%25BE%259B%25E8%25BC%2595%25E9%2587%258F%25E8%25A8%2598%25E5%25B8%25B3;-cascades%25E5%258F%25AA%25E6%258F%258F%25E8%25BF%25B0%25E5%259B%25A0%25E6%259E%259C(%25E5%2593%25AA%25E6%25A2%259D%25E9%2582%258A%25E5%259B%25A0%25E5%2593%25AA%25E5%2580%258B%25E7%25AF%2580%25E9%25BB%259E%25E8%2580%258C%25E5%2588%25AA),%25E8%25A8%2598%25E5%25B8%25B3%25E4%25BB%25A5deleted.*Ids%25E7%2582%25BA%25E6%25BA%2596(%25E5%25B7%25B2%25E5%258E%25BB%25E9%2587%258D);-%25E4%25B8%258D%25E5%2590%25AB%25E5%2588%25AA%25E5%25BE%258C%25E5%2585%25A8%25E9%2587%258F%25E5%25BF%25AB%25E7%2585%25A7(remain):%25E9%259C%2580%25E8%25A6%2581%25E8%2580%2585%25E5%2591%25BC%25E5%258F%25ABgetFlowData()%25E6%2588%2596%25E6%25B2%25BF%25E7%2594%25A8update:nodes/update:conns%25E3%2580%2582%25E5%2588%25AA%25E9%2599%25A4%25E5%258F%25AA%25E6%259C%2589%25E9%2580%2599%25E4%25B8%2580%25E5%2580%258B%25E5%25AE%258C%25E6%2588%2590%25E4%25BA%258B%25E4%25BB%25B6%25E3%2580%2582%25E6%2589%2580%25E6%259C%2589%25E5%2585%25A5%25E5%258F%25A3%25E5%2590%258C%25E4%25B8%2580%25E5%25BA%258F%25E5%2588%2597:(%25E5%2583%2585%25E5%25AF%25A6%25E9%259A%259B%25E8%25AE%258A%25E5%258B%2595%25E4%25B9%258B%25E9%259B%2586%25E5%2590%2588)update:nodes%25E2%2586%2592update:conns%25E2%2586%2592elements-deleted%25E3%2580%2582">elements-deleted 所有刪除路徑完成後皆發出(於 update:* 之後、最後發出),payload:  { from, requested:{nodeIds,connIds}, deleted:{nodeIds,connIds,nodes,conns}, cascades:[{nodeId,connIds}],    notFound:{nodeIds,connIds}, excluded:{nodeIds,connIds} }  - deleted.nodes/conns 為被刪當下之深複製快照(JSON 往返,同 getFlowData);id 清單供輕量記帳;  - cascades 只描述因果(哪條邊因哪個節點而刪),記帳以 deleted.*Ids 為準(已去重);  - 不含刪後全量快照(remain):需要者呼叫 getFlowData() 或沿用 update:nodes / update:conns。  刪除只有這一個完成事件。所有入口同一序列:(僅實際變動之集合)update:nodes → update:conns → elements-deleted。</a></li></ul><h3>Global</h3><ul><li><a href="global.html#CARET_PATH">CARET_PATH</a></li><li><a href="global.html#CONN_SETTING_GROUPS">CONN_SETTING_GROUPS</a></li><li><a href="global.html#CONN_SETTING_KEYS">CONN_SETTING_KEYS</a></li><li><a href="global.html#DEFAULT_OPEN_GROUPS">DEFAULT_OPEN_GROUPS</a></li><li><a href="global.html#DRAG_THRESHOLD_PX">DRAG_THRESHOLD_PX</a></li><li><a href="global.html#EDGE_TYPES">EDGE_TYPES</a></li><li><a href="global.html#EDGE_WIDTH_MAX">EDGE_WIDTH_MAX</a></li><li><a href="global.html#FIELD_POLICY">FIELD_POLICY</a></li><li><a href="global.html#GEAR_PATH">GEAR_PATH</a></li><li><a href="global.html#INFO_POPUP_DEFER_MS">INFO_POPUP_DEFER_MS</a></li><li><a href="global.html#MARKER_TYPES">MARKER_TYPES</a></li><li><a href="global.html#MENU_OPT_KEYS">MENU_OPT_KEYS</a></li><li><a href="global.html#NODE_DEFAULTS">NODE_DEFAULTS</a></li><li><a href="global.html#NODE_SETTING_GROUPS">NODE_SETTING_GROUPS</a></li><li><a href="global.html#NODE_SETTING_KEYS">NODE_SETTING_KEYS</a></li><li><a href="global.html#RECT_FRACTION">RECT_FRACTION</a></li><li><a href="global.html#SETTINGS_TRIGGERS">SETTINGS_TRIGGERS</a></li><li><a href="global.html#SIDES">SIDES</a></li><li><a href="global.html#applyDelete">applyDelete</a></li><li><a href="global.html#assessConnection">assessConnection</a></li><li><a href="global.html#assessGraphConnection">assessGraphConnection</a></li><li><a href="global.html#buildConnectionCandidate">buildConnectionCandidate</a></li><li><a href="global.html#buildRoundedPath">buildRoundedPath</a></li><li><a href="global.html#canOpenPopup">canOpenPopup</a></li><li><a href="global.html#canOpenSettings">canOpenSettings</a></li><li><a href="global.html#clampInsets">clampInsets</a></li><li><a href="global.html#clampPosition">clampPosition</a></li><li><a href="global.html#clampZoom">clampZoom</a></li><li><a href="global.html#classifyHit">classifyHit</a></li><li><a href="global.html#clientToLocal">clientToLocal</a></li><li><a href="global.html#computeCenterView">computeCenterView</a></li><li><a href="global.html#computeConnStyle">computeConnStyle</a></li><li><a href="global.html#computeEdgeClasses">computeEdgeClasses</a></li><li><a href="global.html#computeFitView">computeFitView</a></li><li><a href="global.html#computeLabelStyle">computeLabelStyle</a></li><li><a href="global.html#computeResize">computeResize</a></li><li><a href="global.html#connSourceSide">connSourceSide</a></li><li><a href="global.html#connTargetSide">connTargetSide</a></li><li><a href="global.html#crossedThreshold">crossedThreshold</a></li><li><a href="global.html#darkenColor">darkenColor</a></li><li><a href="global.html#describeHandleEndpoint">describeHandleEndpoint</a></li><li><a href="global.html#easeInOutCubic">easeInOutCubic</a></li><li><a href="global.html#effectiveAnimated">effectiveAnimated</a></li><li><a href="global.html#effectiveEdgeType">effectiveEdgeType</a></li><li><a href="global.html#findDuplicateIds">findDuplicateIds</a></li><li><a href="global.html#findHandleElAt">findHandleElAt</a></li><li><a href="global.html#fixSvgNs">fixSvgNs</a></li><li><a href="global.html#flowToScreen">flowToScreen</a></li><li><a href="global.html#gearVisible">gearVisible</a></li><li><a href="global.html#generateId">generateId</a></li><li><a href="global.html#gestureBlockedReason">gestureBlockedReason</a></li><li><a href="global.html#getBezierPath">getBezierPath</a></li><li><a href="global.html#getControlOffset">getControlOffset</a></li><li><a href="global.html#getHandlePosition">getHandlePosition</a></li><li><a href="global.html#getOverlappingNodes">getOverlappingNodes</a></li><li><a href="global.html#getPathFunction">getPathFunction</a></li><li><a href="global.html#getSmoothStepPath">getSmoothStepPath</a></li><li><a href="global.html#getStepPath">getStepPath</a></li><li><a href="global.html#getStraightPath">getStraightPath</a></li><li><a href="global.html#handlePlacementStyle">handlePlacementStyle</a></li><li><a href="global.html#handleStyleVars">handleStyleVars</a></li><li><a href="global.html#infoOpenPlan">infoOpenPlan</a></li><li><a href="global.html#installGlobalCursor">installGlobalCursor</a></li><li><a href="global.html#isAffordanceHit">isAffordanceHit</a></li><li><a href="global.html#isCanvasBlank">isCanvasBlank</a></li><li><a href="global.html#isDarkColor">isDarkColor</a></li><li><a href="global.html#isSide">isSide</a></li><li><a href="global.html#labelAtHalfLength">labelAtHalfLength</a></li><li><a href="global.html#labelOffsetStyle">labelOffsetStyle</a></li><li><a href="global.html#lookupRoute">lookupRoute</a></li><li><a href="global.html#markerDef">markerDef</a></li><li><a href="global.html#markerId">markerId</a></li><li><a href="global.html#markerUrl">markerUrl</a></li><li><a href="global.html#nodeBorderWidth">nodeBorderWidth</a></li><li><a href="global.html#nodeShape">nodeShape</a></li><li><a href="global.html#nodesBounds">nodesBounds</a></li><li><a href="global.html#oppositeSide">oppositeSide</a></li><li><a href="global.html#optComputeds">optComputeds</a></li><li><a href="global.html#orthogonalizeThroughPoints">orthogonalizeThroughPoints</a></li><li><a href="global.html#pairEndpoints">pairEndpoints</a></li><li><a href="global.html#parseWaypoints">parseWaypoints</a></li><li><a href="global.html#pickMenuValue">pickMenuValue</a></li><li><a href="global.html#previewDelete">previewDelete</a></li><li><a href="global.html#recenterForResize">recenterForResize</a></li><li><a href="global.html#rectsOverlap">rectsOverlap</a></li><li><a href="global.html#resolveContainerSize">resolveContainerSize</a></li><li><a href="global.html#resolveDefConn">resolveDefConn</a></li><li><a href="global.html#resolveDefNode">resolveDefNode</a></li><li><a href="global.html#resolveLineStyle">resolveLineStyle</a></li><li><a href="global.html#resolveMarker">resolveMarker</a></li><li><a href="global.html#resolveNodeSize">resolveNodeSize</a></li><li><a href="global.html#resolveOpt">resolveOpt</a></li><li><a href="global.html#resolveOptValue">resolveOptValue</a></li><li><a href="global.html#resolvePadding">resolvePadding</a></li><li><a href="global.html#resolveSettingsText">resolveSettingsText</a></li><li><a href="global.html#screenToFlow">screenToFlow</a></li><li><a href="global.html#segmentFallback">segmentFallback</a></li><li><a href="global.html#setDomFlag">setDomFlag</a></li><li><a href="global.html#setHandleConnectRole">setHandleConnectRole</a></li><li><a href="global.html#setHandleConnectStatus">setHandleConnectStatus</a></li><li><a href="global.html#settingsOpensOn">settingsOpensOn</a></li><li><a href="global.html#sideAnchorFraction">sideAnchorFraction</a></li><li><a href="global.html#sideNormal">sideNormal</a></li><li><a href="global.html#snapPosition">snapPosition</a></li><li><a href="global.html#snapshotDeep">snapshotDeep</a></li><li><a href="global.html#startDocumentGesture">startDocumentGesture</a></li><li><a href="global.html#stubFallback">stubFallback</a></li><li><a href="global.html#titleCase">titleCase</a></li><li><a href="global.html#uniq">uniq</a></li><li><a href="global.html#visibleGroups">visibleGroups</a></li><li><a href="global.html#zoomAroundPoint">zoomAroundPoint</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-EdgeMarkerDefs.html">EdgeMarkerDefs</a></li><li><a href="module-Handle.html">Handle</a></li><li><a href="module-NodeBody.html">NodeBody</a></li><li><a href="module-NodePorts.html">NodePorts</a></li><li><a href="module-NodeSettingsForm.html">NodeSettingsForm</a></li><li><a href="module-SettingsGroup.html">SettingsGroup</a></li><li><a href="module-SettingsSelect.html">SettingsSelect</a></li><li><a href="module-SettingsText.html">SettingsText</a></li></ul><h3>Events</h3><ul><li><a href="global.html#event:elements-deleted%25E6%2589%2580%25E6%259C%2589%25E5%2588%25AA%25E9%2599%25A4%25E8%25B7%25AF%25E5%25BE%2591%25E5%25AE%258C%25E6%2588%2590%25E5%25BE%258C%25E7%259A%2586%25E7%2599%25BC%25E5%2587%25BA(%25E6%2596%25BCupdate:*%25E4%25B9%258B%25E5%25BE%258C%25E3%2580%2581%25E6%259C%2580%25E5%25BE%258C%25E7%2599%25BC%25E5%2587%25BA),payload:%257Bfrom,requested:%257BnodeIds,connIds%257D,deleted:%257BnodeIds,connIds,nodes,conns%257D,cascades:%255B%257BnodeId,connIds%257D%255D,notFound:%257BnodeIds,connIds%257D,excluded:%257BnodeIds,connIds%257D%257D-deleted.nodes/conns%25E7%2582%25BA%25E8%25A2%25AB%25E5%2588%25AA%25E7%2595%25B6%25E4%25B8%258B%25E4%25B9%258B%25E6%25B7%25B1%25E8%25A4%2587%25E8%25A3%25BD%25E5%25BF%25AB%25E7%2585%25A7(JSON%25E5%25BE%2580%25E8%25BF%2594,%25E5%2590%258CgetFlowData);id%25E6%25B8%2585%25E5%2596%25AE%25E4%25BE%259B%25E8%25BC%2595%25E9%2587%258F%25E8%25A8%2598%25E5%25B8%25B3;-cascades%25E5%258F%25AA%25E6%258F%258F%25E8%25BF%25B0%25E5%259B%25A0%25E6%259E%259C(%25E5%2593%25AA%25E6%25A2%259D%25E9%2582%258A%25E5%259B%25A0%25E5%2593%25AA%25E5%2580%258B%25E7%25AF%2580%25E9%25BB%259E%25E8%2580%258C%25E5%2588%25AA),%25E8%25A8%2598%25E5%25B8%25B3%25E4%25BB%25A5deleted.*Ids%25E7%2582%25BA%25E6%25BA%2596(%25E5%25B7%25B2%25E5%258E%25BB%25E9%2587%258D);-%25E4%25B8%258D%25E5%2590%25AB%25E5%2588%25AA%25E5%25BE%258C%25E5%2585%25A8%25E9%2587%258F%25E5%25BF%25AB%25E7%2585%25A7(remain):%25E9%259C%2580%25E8%25A6%2581%25E8%2580%2585%25E5%2591%25BC%25E5%258F%25ABgetFlowData()%25E6%2588%2596%25E6%25B2%25BF%25E7%2594%25A8update:nodes/update:conns%25E3%2580%2582%25E5%2588%25AA%25E9%2599%25A4%25E5%258F%25AA%25E6%259C%2589%25E9%2580%2599%25E4%25B8%2580%25E5%2580%258B%25E5%25AE%258C%25E6%2588%2590%25E4%25BA%258B%25E4%25BB%25B6%25E3%2580%2582%25E6%2589%2580%25E6%259C%2589%25E5%2585%25A5%25E5%258F%25A3%25E5%2590%258C%25E4%25B8%2580%25E5%25BA%258F%25E5%2588%2597:(%25E5%2583%2585%25E5%25AF%25A6%25E9%259A%259B%25E8%25AE%258A%25E5%258B%2595%25E4%25B9%258B%25E9%259B%2586%25E5%2590%2588)update:nodes%25E2%2586%2592update:conns%25E2%2586%2592elements-deleted%25E3%2580%2582">elements-deleted 所有刪除路徑完成後皆發出(於 update:* 之後、最後發出),payload:  { from, requested:{nodeIds,connIds}, deleted:{nodeIds,connIds,nodes,conns}, cascades:[{nodeId,connIds}],    notFound:{nodeIds,connIds}, excluded:{nodeIds,connIds} }  - deleted.nodes/conns 為被刪當下之深複製快照(JSON 往返,同 getFlowData);id 清單供輕量記帳;  - cascades 只描述因果(哪條邊因哪個節點而刪),記帳以 deleted.*Ids 為準(已去重);  - 不含刪後全量快照(remain):需要者呼叫 getFlowData() 或沿用 update:nodes / update:conns。  刪除只有這一個完成事件。所有入口同一序列:(僅實際變動之集合)update:nodes → update:conns → elements-deleted。</a></li></ul><h3>Global</h3><ul><li><a href="global.html#CARET_PATH">CARET_PATH</a></li><li><a href="global.html#CONN_SETTING_GROUPS">CONN_SETTING_GROUPS</a></li><li><a href="global.html#CONN_SETTING_KEYS">CONN_SETTING_KEYS</a></li><li><a href="global.html#DEFAULT_OPEN_GROUPS">DEFAULT_OPEN_GROUPS</a></li><li><a href="global.html#DRAG_THRESHOLD_PX">DRAG_THRESHOLD_PX</a></li><li><a href="global.html#EDGE_TYPES">EDGE_TYPES</a></li><li><a href="global.html#EDGE_WIDTH_MAX">EDGE_WIDTH_MAX</a></li><li><a href="global.html#FIELD_POLICY">FIELD_POLICY</a></li><li><a href="global.html#GEAR_PATH">GEAR_PATH</a></li><li><a href="global.html#INFO_POPUP_DEFER_MS">INFO_POPUP_DEFER_MS</a></li><li><a href="global.html#MARKER_TYPES">MARKER_TYPES</a></li><li><a href="global.html#MENU_OPT_KEYS">MENU_OPT_KEYS</a></li><li><a href="global.html#NODE_DEFAULTS">NODE_DEFAULTS</a></li><li><a href="global.html#NODE_SETTING_GROUPS">NODE_SETTING_GROUPS</a></li><li><a href="global.html#NODE_SETTING_KEYS">NODE_SETTING_KEYS</a></li><li><a href="global.html#RECT_FRACTION">RECT_FRACTION</a></li><li><a href="global.html#SETTINGS_TRIGGERS">SETTINGS_TRIGGERS</a></li><li><a href="global.html#SIDES">SIDES</a></li><li><a href="global.html#applyDelete">applyDelete</a></li><li><a href="global.html#armPointerGesture">armPointerGesture</a></li><li><a href="global.html#assessConnection">assessConnection</a></li><li><a href="global.html#assessGraphConnection">assessGraphConnection</a></li><li><a href="global.html#buildConnectionCandidate">buildConnectionCandidate</a></li><li><a href="global.html#buildRoundedPath">buildRoundedPath</a></li><li><a href="global.html#canOpenPopup">canOpenPopup</a></li><li><a href="global.html#canOpenSettings">canOpenSettings</a></li><li><a href="global.html#clampInsets">clampInsets</a></li><li><a href="global.html#clampPosition">clampPosition</a></li><li><a href="global.html#clampZoom">clampZoom</a></li><li><a href="global.html#classifyHit">classifyHit</a></li><li><a href="global.html#clientToLocal">clientToLocal</a></li><li><a href="global.html#computeCenterView">computeCenterView</a></li><li><a href="global.html#computeConnStyle">computeConnStyle</a></li><li><a href="global.html#computeEdgeClasses">computeEdgeClasses</a></li><li><a href="global.html#computeFitView">computeFitView</a></li><li><a href="global.html#computeLabelStyle">computeLabelStyle</a></li><li><a href="global.html#computeResize">computeResize</a></li><li><a href="global.html#connSourceSide">connSourceSide</a></li><li><a href="global.html#connTargetSide">connTargetSide</a></li><li><a href="global.html#crossedThreshold">crossedThreshold</a></li><li><a href="global.html#darkenColor">darkenColor</a></li><li><a href="global.html#describeHandleEndpoint">describeHandleEndpoint</a></li><li><a href="global.html#easeInOutCubic">easeInOutCubic</a></li><li><a href="global.html#effectiveAnimated">effectiveAnimated</a></li><li><a href="global.html#effectiveEdgeType">effectiveEdgeType</a></li><li><a href="global.html#findDuplicateIds">findDuplicateIds</a></li><li><a href="global.html#findHandleElAt">findHandleElAt</a></li><li><a href="global.html#fixSvgNs">fixSvgNs</a></li><li><a href="global.html#flowToScreen">flowToScreen</a></li><li><a href="global.html#gearVisible">gearVisible</a></li><li><a href="global.html#generateId">generateId</a></li><li><a href="global.html#gestureBlockedReason">gestureBlockedReason</a></li><li><a href="global.html#getBezierPath">getBezierPath</a></li><li><a href="global.html#getControlOffset">getControlOffset</a></li><li><a href="global.html#getHandlePosition">getHandlePosition</a></li><li><a href="global.html#getOverlappingNodes">getOverlappingNodes</a></li><li><a href="global.html#getPathFunction">getPathFunction</a></li><li><a href="global.html#getSmoothStepPath">getSmoothStepPath</a></li><li><a href="global.html#getStepPath">getStepPath</a></li><li><a href="global.html#getStraightPath">getStraightPath</a></li><li><a href="global.html#handlePlacementStyle">handlePlacementStyle</a></li><li><a href="global.html#handleStyleVars">handleStyleVars</a></li><li><a href="global.html#infoOpenPlan">infoOpenPlan</a></li><li><a href="global.html#installGlobalCursor">installGlobalCursor</a></li><li><a href="global.html#isAffordanceHit">isAffordanceHit</a></li><li><a href="global.html#isCanvasBlank">isCanvasBlank</a></li><li><a href="global.html#isDarkColor">isDarkColor</a></li><li><a href="global.html#isFromMouse">isFromMouse</a></li><li><a href="global.html#isSide">isSide</a></li><li><a href="global.html#labelAtHalfLength">labelAtHalfLength</a></li><li><a href="global.html#labelOffsetStyle">labelOffsetStyle</a></li><li><a href="global.html#lookupRoute">lookupRoute</a></li><li><a href="global.html#markerDef">markerDef</a></li><li><a href="global.html#markerId">markerId</a></li><li><a href="global.html#markerUrl">markerUrl</a></li><li><a href="global.html#nodeBorderWidth">nodeBorderWidth</a></li><li><a href="global.html#nodeShape">nodeShape</a></li><li><a href="global.html#nodesBounds">nodesBounds</a></li><li><a href="global.html#oppositeSide">oppositeSide</a></li><li><a href="global.html#optComputeds">optComputeds</a></li><li><a href="global.html#orthogonalizeThroughPoints">orthogonalizeThroughPoints</a></li><li><a href="global.html#pairEndpoints">pairEndpoints</a></li><li><a href="global.html#parseWaypoints">parseWaypoints</a></li><li><a href="global.html#pickMenuValue">pickMenuValue</a></li><li><a href="global.html#preventNativeDefault">preventNativeDefault</a></li><li><a href="global.html#previewDelete">previewDelete</a></li><li><a href="global.html#recenterForResize">recenterForResize</a></li><li><a href="global.html#rectsOverlap">rectsOverlap</a></li><li><a href="global.html#resolveContainerSize">resolveContainerSize</a></li><li><a href="global.html#resolveDefConn">resolveDefConn</a></li><li><a href="global.html#resolveDefNode">resolveDefNode</a></li><li><a href="global.html#resolveLineStyle">resolveLineStyle</a></li><li><a href="global.html#resolveMarker">resolveMarker</a></li><li><a href="global.html#resolveNodeSize">resolveNodeSize</a></li><li><a href="global.html#resolveOpt">resolveOpt</a></li><li><a href="global.html#resolveOptValue">resolveOptValue</a></li><li><a href="global.html#resolvePadding">resolvePadding</a></li><li><a href="global.html#resolveSettingsText">resolveSettingsText</a></li><li><a href="global.html#screenToFlow">screenToFlow</a></li><li><a href="global.html#segmentFallback">segmentFallback</a></li><li><a href="global.html#setDomFlag">setDomFlag</a></li><li><a href="global.html#setHandleConnectRole">setHandleConnectRole</a></li><li><a href="global.html#setHandleConnectStatus">setHandleConnectStatus</a></li><li><a href="global.html#settingsOpensOn">settingsOpensOn</a></li><li><a href="global.html#sideAnchorFraction">sideAnchorFraction</a></li><li><a href="global.html#sideNormal">sideNormal</a></li><li><a href="global.html#snapPosition">snapPosition</a></li><li><a href="global.html#snapshotDeep">snapshotDeep</a></li><li><a href="global.html#startDocumentGesture">startDocumentGesture</a></li><li><a href="global.html#stubFallback">stubFallback</a></li><li><a href="global.html#titleCase">titleCase</a></li><li><a href="global.html#uniq">uniq</a></li><li><a href="global.html#visibleGroups">visibleGroups</a></li><li><a href="global.html#zoomAroundPoint">zoomAroundPoint</a></li></ul>
     
 </nav>
 
@@ -412,7 +412,7 @@ appearance 之群鍵/標題與節點一致(成員依元素型別而異), 使兩�
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="js_domGesture.mjs.html">js/domGesture.mjs</a>, <a href="js_domGesture.mjs.html#line9">line 9</a>
+        <a href="js_domGesture.mjs.html">js/domGesture.mjs</a>, <a href="js_domGesture.mjs.html#line14">line 14</a>
     </li></ul></dd>
     
 
@@ -910,7 +910,7 @@ type ∈ '' | 'arrow'(線式, 無填充) | 'arrowclosed'(實心)</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="js_resolveOpt.mjs.html">js/resolveOpt.mjs</a>, <a href="js_resolveOpt.mjs.html#line184">line 184</a>
+        <a href="js_resolveOpt.mjs.html">js/resolveOpt.mjs</a>, <a href="js_resolveOpt.mjs.html#line186">line 186</a>
     </li></ul></dd>
     
 
@@ -1651,6 +1651,285 @@ HTML元素因而無排版盒(0x0不可見)。</p>
 
     </dd>
 </dl>
+
+    
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="armPointerGesture"><span class="type-signature"></span>armPointerGesture<span class="signature">(downEvent, onStart, opt<span class="signature-attributes">opt</span>)</span><span class="type-signature"></span></h4>
+
+    
+
+
+
+
+<dl class="details">
+    
+    <dt class="tag-description">Description:</dt>
+    <dd class="tag-description"><ul class="dummy"><li><p>pointer 通道(觸控/觸控筆)之手勢啟動閘門: 接觸當下不啟動, 待跨越拖曳門檻才以「按下當下之事件」啟動。</p>
+<p>why 延後:
+①觸控之純點按(tap)會由瀏覽器補送整組相容滑鼠事件, 若接觸當下就啟動, 同一次點按會被 pointer 與 mouse 兩條路各跑一遍
+(平移起訖各發一次 viewport-change、縮放發一次無位移之 node-resize-end…);拖曳期間則不補送相容事件, 故只有拖曳走 pointer 路。
+②點一下把手/四角/轉折點本就不該開始建線或縮放——與節點拖曳既有之「跨門檻才 drag-start」同一語義。</p>
+<p>onStart 收到的是<strong>按下當下</strong>之事件(pointerdown): 其 button 為 0、座標為接觸點, 故呼叫端既有之主鍵守衛與起點計算皆可原樣沿用
+(pointermove 之 button 為 -1, 傳它會被主鍵守衛誤擋)。</p></li></ul></dd>
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="js_domGesture.mjs.html">js/domGesture.mjs</a>, <a href="js_domGesture.mjs.html#line83">line 83</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <h5 class="h5-parameters">Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+        <th>Attributes</th>
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>downEvent</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">PointerEvent</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"><p>觸發之 pointerdown</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>onStart</code></td>
+            
+
+            <td class="type">
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>opt</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Object</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last">
+                <h6>Properties</h6>
+                
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+        <th>Attributes</th>
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>threshold</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">number</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"><p>門檻(px), 預設同 DRAG_THRESHOLD_PX</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+            </td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5 class="h5-returns">Returns:</h5>
+
+        
+
 
     
 
@@ -3716,7 +3995,7 @@ zoom 上限 maxZoom(不設下限: 大圖可低於 zoomMin, 滾輪縮放再以當
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="js_domGesture.mjs.html">js/domGesture.mjs</a>, <a href="js_domGesture.mjs.html#line12">line 12</a>
+        <a href="js_domGesture.mjs.html">js/domGesture.mjs</a>, <a href="js_domGesture.mjs.html#line17">line 17</a>
     </li></ul></dd>
     
 
@@ -4727,7 +5006,7 @@ elementFromPoint 可能撿到他 flow 之把手; 以最近之 [data-flow-id] 祖
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="js_domGesture.mjs.html">js/domGesture.mjs</a>, <a href="js_domGesture.mjs.html#line20">line 20</a>
+        <a href="js_domGesture.mjs.html">js/domGesture.mjs</a>, <a href="js_domGesture.mjs.html#line25">line 25</a>
     </li></ul></dd>
     
 
@@ -6016,7 +6295,7 @@ translate(-50%,-50%) 置中, 故 hover 放大時圓心不動。</p></li></ul></d
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="js_domGesture.mjs.html">js/domGesture.mjs</a>, <a href="js_domGesture.mjs.html#line28">line 28</a>
+        <a href="js_domGesture.mjs.html">js/domGesture.mjs</a>, <a href="js_domGesture.mjs.html#line55">line 55</a>
     </li></ul></dd>
     
 
@@ -6275,6 +6554,94 @@ translate(-50%,-50%) 置中, 故 hover 放大時圓心不動。</p></li></ul></d
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
         <a href="components_mixins_settingsForm.mjs.html">components/mixins/settingsForm.mjs</a>, <a href="components_mixins_settingsForm.mjs.html#line36">line 36</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="isFromMouse"><span class="type-signature"></span>isFromMouse<span class="signature">()</span><span class="type-signature"></span></h4>
+
+    
+
+
+
+
+<dl class="details">
+    
+    <dt class="tag-description">Description:</dt>
+    <dd class="tag-description"><ul class="dummy"><li><p>事件是否來自滑鼠通道(pointer 通道之分流判準, 全套件單一來源)。
+滑鼠會同時送出 pointerdown 與 mousedown, 故 pointer 監聽一律跳過 pointerType==='mouse', 由既有 mouse 路徑處理;
+觸控/觸控筆只有 pointer 事件(拖曳期間瀏覽器不補送相容滑鼠事件), 由 pointer 路徑處理。
+原生 MouseEvent 無 pointerType(undefined), 視為滑鼠通道。</p></li></ul></dd>
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="js_domGesture.mjs.html">js/domGesture.mjs</a>, <a href="js_domGesture.mjs.html#line38">line 38</a>
     </li></ul></dd>
     
 
@@ -7328,7 +7695,7 @@ Returns waypoint array or null (fallback needed).</p></li></ul></dd>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="js_resolveOpt.mjs.html">js/resolveOpt.mjs</a>, <a href="js_resolveOpt.mjs.html#line107">line 107</a>
+        <a href="js_resolveOpt.mjs.html">js/resolveOpt.mjs</a>, <a href="js_resolveOpt.mjs.html#line109">line 109</a>
     </li></ul></dd>
     
 
@@ -7764,6 +8131,94 @@ Inserts at most one corner between consecutive points; skips zero-length segment
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
         <a href="components_ui_Controls.vue.html">components/ui/Controls.vue</a>, <a href="components_ui_Controls.vue.html#line64">line 64</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="preventNativeDefault"><span class="type-signature"></span>preventNativeDefault<span class="signature">()</span><span class="type-signature"></span></h4>
+
+    
+
+
+
+
+<dl class="details">
+    
+    <dt class="tag-description">Description:</dt>
+    <dd class="tag-description"><ul class="dummy"><li><p>阻止原生預設行為(選字/原生拖曳), 但只在滑鼠通道上做。
+why: 觸控之 down 事件一旦 preventDefault, 瀏覽器即不再補送該次點按之相容滑鼠事件(實測只剩 click),
+而點按語義(node-click / canvas-click / WPopup 之 window 層互斥關閉)全靠那些相容事件;
+觸控拖曳改以 CSS touch-action: none 向瀏覽器要手勢, 不需要也不可以在此 preventDefault。</p></li></ul></dd>
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="js_domGesture.mjs.html">js/domGesture.mjs</a>, <a href="js_domGesture.mjs.html#line48">line 48</a>
     </li></ul></dd>
     
 
@@ -8293,7 +8748,7 @@ empty: Boolean                          requested 為空</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="js_resolveOpt.mjs.html">js/resolveOpt.mjs</a>, <a href="js_resolveOpt.mjs.html#line153">line 153</a>
+        <a href="js_resolveOpt.mjs.html">js/resolveOpt.mjs</a>, <a href="js_resolveOpt.mjs.html#line155">line 155</a>
     </li></ul></dd>
     
 
@@ -8378,7 +8833,7 @@ empty: Boolean                          requested 為空</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="js_resolveOpt.mjs.html">js/resolveOpt.mjs</a>, <a href="js_resolveOpt.mjs.html#line129">line 129</a>
+        <a href="js_resolveOpt.mjs.html">js/resolveOpt.mjs</a>, <a href="js_resolveOpt.mjs.html#line131">line 131</a>
     </li></ul></dd>
     
 
@@ -8993,7 +9448,7 @@ empty: Boolean                          requested 為空</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="js_resolveOpt.mjs.html">js/resolveOpt.mjs</a>, <a href="js_resolveOpt.mjs.html#line100">line 100</a>
+        <a href="js_resolveOpt.mjs.html">js/resolveOpt.mjs</a>, <a href="js_resolveOpt.mjs.html#line102">line 102</a>
     </li></ul></dd>
     
 
@@ -9078,7 +9533,7 @@ empty: Boolean                          requested 為空</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="js_resolveOpt.mjs.html">js/resolveOpt.mjs</a>, <a href="js_resolveOpt.mjs.html#line82">line 82</a>
+        <a href="js_resolveOpt.mjs.html">js/resolveOpt.mjs</a>, <a href="js_resolveOpt.mjs.html#line84">line 84</a>
     </li></ul></dd>
     
 
@@ -9352,7 +9807,7 @@ empty: Boolean                          requested 為空</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="js_resolveOpt.mjs.html">js/resolveOpt.mjs</a>, <a href="js_resolveOpt.mjs.html#line118">line 118</a>
+        <a href="js_resolveOpt.mjs.html">js/resolveOpt.mjs</a>, <a href="js_resolveOpt.mjs.html#line120">line 120</a>
     </li></ul></dd>
     
 
@@ -10368,7 +10823,7 @@ value 為空即移除。</p></li></ul></dd>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="js_domGesture.mjs.html">js/domGesture.mjs</a>, <a href="js_domGesture.mjs.html#line48">line 48</a>
+        <a href="js_domGesture.mjs.html">js/domGesture.mjs</a>, <a href="js_domGesture.mjs.html#line127">line 127</a>
     </li></ul></dd>
     
 
@@ -10611,7 +11066,7 @@ value 為空即移除。</p></li></ul></dd>
                 </td>
             
 
-            <td class="description last"><p>mousemove 時主鍵已放開即以 'buttons-lost' 終止</p></td>
+            <td class="description last"><p>move 時主鍵已放開即以 'buttons-lost' 終止(觸控之 pointermove 接觸中 buttons 為 1, 不受影響)</p></td>
         </tr>
 
     
@@ -12082,6 +12537,46 @@ multiSelectionKey 按住(且 multiSelectEnabled、elementsSelectable、未鎖定
             
 
             <td class="description last"><p>Zoom with mouse wheel</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>zoomOnPinch</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">boolean</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>true</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Zoom with a two-finger pinch on touch devices (anchored at the midpoint between
+the two fingers, same zoom semantics as the wheel). Independent of opt.zoomOnScroll: set both to false to disable zooming entirely.
+Pinching is ignored while another gesture (node drag, connect, box select, resize, waypoint) is in progress.</p></td>
         </tr>
 
     
@@ -16004,7 +16499,7 @@ reason ∈ 'no-endpoint'|'unknown-handle'|'self'|'not-connectable'|'missing-node
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 4.0.5</a> on Mon Sep 21 2026 17:42:15 GMT+0800 (台北標準時間) using the <a href="https://github.com/clenemt/docdash">docdash</a> theme.
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 4.0.5</a> on Tue Sep 22 2026 17:39:45 GMT+0800 (台北標準時間) using the <a href="https://github.com/clenemt/docdash">docdash</a> theme.
 </footer>
 
 <script>prettyPrint();</script>

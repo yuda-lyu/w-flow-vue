@@ -3,7 +3,7 @@
 <head>
     
     <meta charset="utf-8">
-    <title>SettingsText - Documentation</title>
+    <title>components/mixins/pointerGesture.mjs - Documentation</title>
     
     
     <script src="scripts/prettify/prettify.js"></script>
@@ -35,150 +35,53 @@
 
 <div id="main">
     
-    <h1 class="page-title">SettingsText</h1>
+    <h1 class="page-title">components/mixins/pointerGesture.mjs</h1>
     
 
     
 
 
 
-
-<section>
-
-<header>
     
-        
-            
-        
-    
-</header>
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>import { isFromMouse, armPointerGesture } from '../../js/domGesture.mjs'
 
-<article>
-    
-        <div class="container-overview">
-        
-            
-                <div class="description usertext"><p>設定表單專用之文字輸入框(薄封裝 w-component-vue 之 WText)。</p>
-<p>存在理由同 SettingsSelect: 外觀 props 集中一處(表單有 4 個文字欄), 且把 WText 之
-<code>@input(value, err, event)</code> 三參數簽章收斂成只送值。</p>
-<p>WText 預設為「底線」外觀(bottomLine* 系列), 此處關掉底線改用四邊框線, 以對齊表單既有之
-原生控制項樣式(1px #ccc / 圓角 3 / 白底)。</p>
-<p>height 給 14 而非 18: 該 prop 指的是<strong>內容區</strong>高度, 外框尚須加上 padding(1+1)與 border(1+1),
-故 14 + 2 + 2 = 18px, 恰與同表單之原生 number input 等高(給 20 會得到 24px 而比鄰列高出一截)。</p></div>
-            
-
-            
-                
-
-
-
-
-<dl class="details">
-    
-    <dt class="tag-description">Description:</dt>
-    <dd class="tag-description"><ul class="dummy"><li><p>設定表單專用之文字輸入框(薄封裝 w-component-vue 之 WText)。</p>
-<p>存在理由同 SettingsSelect: 外觀 props 集中一處(表單有 4 個文字欄), 且把 WText 之
-<code>@input(value, err, event)</code> 三參數簽章收斂成只送值。</p>
-<p>WText 預設為「底線」外觀(bottomLine* 系列), 此處關掉底線改用四邊框線, 以對齊表單既有之
-原生控制項樣式(1px #ccc / 圓角 3 / 白底)。</p>
-<p>height 給 14 而非 18: 該 prop 指的是<strong>內容區</strong>高度, 外框尚須加上 padding(1+1)與 border(1+1),
-故 14 + 2 + 2 = 18px, 恰與同表單之原生 number input 等高(給 20 會得到 24px 而比鄰列高出一截)。</p></li></ul></dd>
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="components_ui_SettingsText.vue.html">components/ui/SettingsText.vue</a>, <a href="components_ui_SettingsText.vue.html#line16">line 16</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-            
-        
-        </div>
-    
-
-    
-
-    
-
-    
-    
-    
-
-     
-
-    
-
-    
-
-    
-
-    
-
-    
-</article>
-
-</section>
+/**
+ * pointer 通道(觸控/觸控筆)之手勢入口接線 —— 畫布/節點/四角/把手/轉折點/label 共用同一份規則。
+ *
+ * 分流與延後之理由見 js/domGesture.mjs 之 isFromMouse 與 armPointerGesture:
+ * 滑鼠同時送 pointer 與 mouse 兩套事件(故跳過滑鼠), 觸控之點按會補送相容滑鼠事件而拖曳不會(故延後到跨門檻)。
+ *
+ * 用法: 元件 template 掛 `@pointerdown="onXxxPointerDown"`, method 內呼叫
+ * `this.armPointer(event, (down) => this.onXxxMouseDown(down))` —— 既有滑鼠 handler 原樣重用, 不複製手勢邏輯。
+ */
+export default {
+    beforeDestroy() {
+        //尚未跨門檻即被銷毀者, 其 document 監聽不會自行移除
+        this.disposePointerArm()
+    },
+    methods: {
+        armPointer(event, start) {
+            if (isFromMouse(event)) return
+            //同一元件上一次之未啟動閘門先收掉(如手指放開未送達 pointerup), 避免監聽器疊加
+            this.disposePointerArm()
+            this._ptrArm = armPointerGesture(event, (down) => {
+                this._ptrArm = null
+                start(down)
+            })
+        },
+        disposePointerArm() {
+            if (!this._ptrArm) return false
+            this._ptrArm.dispose()
+            this._ptrArm = null
+            return true
+        },
+    },
+}
+</code></pre>
+        </article>
+    </section>
 
 
 
