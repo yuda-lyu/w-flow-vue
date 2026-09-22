@@ -1,5 +1,5 @@
 /**
- * E2E 圖台互動測試(Playwright)—— 單檔雙模式,對應 spec/流程_圖台互動.md 之 E2E-001 ~ E2E-043。
+ * E2E 圖台互動測試(Playwright)—— 單檔雙模式,對應 spec/流程_圖台互動.md 之 E2E-001 ~ E2E-050。
  *
  * 前置: npm run serve(dev server 須在 127.0.0.1:8080)
  *
@@ -93,7 +93,9 @@ function evalVm(page, body, arg = null) {
 }
 
 async function openPage(browser, opts = {}) {
-    const page = await browser.newPage({ viewport: { width: VW, height: VH } })
+    //opts.touch: 觸控裝置情境(hasTouch)——手勢以 CDP Input.dispatchTouchEvent 送入真實輸入管線;
+    //同時使 @media (pointer: coarse) 生效, 故命中區放大之 CSS 亦在此情境被覆蓋
+    const page = await browser.newPage({ viewport: { width: VW, height: VH }, hasTouch: !!opts.touch })
     if (opts.rawInit) {
         //初始化觀察器(E2E-038): 於任何頁面腳本前掛 rAF 記錄, 逐幀記錄 pending class / viewport transform / 可見性
         await page.addInitScript(() => {
@@ -453,6 +455,76 @@ async function blankPoint(page) {
     }, pt)
     if (/node|edge|panel/.test(tag)) throw new Error(`空白點取樣落在 ${tag}`)
     return pt
+}
+
+// ─────────────────────────── 觸控手勢(act) ───────────────────────────
+// Playwright 無觸控拖曳 API(touchscreen 只有 tap), 故以 CDP Input.dispatchTouchEvent 送出 ——
+// 它走瀏覽器真實輸入管線(與實機手指同一條路: 產生 touch/pointer 事件、受 touch-action 與手勢辨識影響),
+// 不是 JS 合成事件(dispatchEvent), 故仍屬 user-facing input。
+const touchPoint = (x, y, id = 1) => ({ x: Math.round(x), y: Math.round(y), id, radiusX: 1, radiusY: 1, force: 1 })
+
+/** 單指拖曳: 自 from 位移 (dx, dy), 分 steps 段 */
+async function touchDrag(cdp, page, from, dx, dy, steps = 14) {
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [touchPoint(from.x, from.y)] })
+    for (let i = 1; i <= steps; i++) {
+        await page.waitForTimeout(16)
+        await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [touchPoint(from.x + dx * i / steps, from.y + dy * i / steps)] })
+    }
+    await page.waitForTimeout(16)
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] })
+    await page.waitForTimeout(300)
+}
+
+/** 雙指捏合: 以 center 為中心, 兩指相距 2*r0 張開(或收合)至 2*r1 */
+async function touchPinch(cdp, page, center, r0, r1, steps = 12) {
+    const pair = (r) => [touchPoint(center.x - r, center.y, 1), touchPoint(center.x + r, center.y, 2)]
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [pair(r0)[0]] })
+    await page.waitForTimeout(20)
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: pair(r0) })
+    for (let i = 1; i <= steps; i++) {
+        await page.waitForTimeout(16)
+        await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: pair(r0 + (r1 - r0) * i / steps) })
+    }
+    await page.waitForTimeout(16)
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] })
+    await page.waitForTimeout(300)
+}
+
+/** 手勢期間之滑鼠事件計數器(驗證「拖曳期間瀏覽器不補送相容滑鼠事件」) */
+const startMouseEventCounter = (page) => page.evaluate(() => {
+    window.__mouseEv = { mousedown: 0, mousemove: 0, mouseup: 0 }
+    for (const t of ['mousedown', 'mousemove', 'mouseup']) {
+        window.addEventListener(t, () => { window.__mouseEv[t] += 1 }, { capture: true, passive: true })
+    }
+})
+const readMouseEventCounter = (page) => page.evaluate(() => ({ ...window.__mouseEv }))
+
+const handleBox = async (page, nodeId, position) => {
+    const el = await page.$(`.vue-flow__node[data-id="${nodeId}"] .vue-flow__handle--${position}`)
+    const b = await el.boundingBox()
+    return { x: b.x + b.width / 2, y: b.y + b.height / 2 }
+}
+const centerOf = (box) => ({ x: box.x + box.width / 2, y: box.y + box.height / 2 })
+
+/** 找一個「其下無節點/邊/工具列」之畫布點(且右下留有拖曳空間), 回傳 client 與對應之 flow 座標 */
+async function freeCanvasSpot(page) {
+    const spot = await page.evaluate(() => {
+        const root = document.querySelector('.vue-flow')
+        const r = root.getBoundingClientRect()
+        const sel = '.vue-flow__panel, .vue-flow__node, .vue-flow__edge, .vue-flow__handle, .vue-flow__resize, .vue-flow__edge-waypoint'
+        for (let y = r.top + 40; y < r.bottom - 90; y += 15) {
+            for (let x = r.left + 40; x < r.right - 110; x += 15) {
+                const el = document.elementFromPoint(x, y)
+                if (!el || !root.contains(el) || el.closest(sel)) continue
+                return { x, y }
+            }
+        }
+        return null
+    })
+    if (!spot) throw new Error('找不到可放置轉折點之空白畫布點')
+    const vp = await getViewport(page)
+    const rect = await getContainerRect(page)
+    return { client: spot, flow: [Math.round((spot.x - rect.left - vp.x) / vp.zoom), Math.round((spot.y - rect.top - vp.y) / vp.zoom)] }
 }
 
 /** setup: 直接設定 opt 資料(非 act) */
@@ -1910,6 +1982,192 @@ const CASES = [
         const pb = await (await page.$('.vue-flow__edge[data-id="e3-5"] path[marker-end]')).boundingBox()
         await shot(page, 'flow-E2E-043-marker-face-edge-color', { clip: clipAround(pb, PAD) })
     }),
+
+    // ── 觸控(pointer 通道): 皆以 opts.touch 開 hasTouch 情境, 手勢走 CDP 真實輸入管線 ──
+
+    mkCase('E2E-044', 'touch-panned', async (page) => {
+        const cdp = await page.context().newCDPSession(page)
+        const ta = await page.evaluate(() => getComputedStyle(document.querySelector('.vue-flow')).touchAction)
+        expectOk('E2E-044 .vue-flow 宣告 touch-action: none', ta === 'none', `touchAction=${ta}`)
+
+        const p = await blankPoint(page)
+        const before = await getViewport(page)
+        await startMouseEventCounter(page)
+        await touchDrag(cdp, page, p, -140, -110)
+        const after = await getViewport(page)
+        const mouseEv = await readMouseEventCounter(page)
+
+        expectOk('E2E-044 viewport 位移量等於手指位移量',
+            Math.abs((after.x - before.x) - (-140)) < 1 && Math.abs((after.y - before.y) - (-110)) < 1,
+            `d=${after.x - before.x},${after.y - before.y}`)
+        expectOk('E2E-044 平移不改變 zoom', Math.abs(after.zoom - before.zoom) < 1e-6, `zoom=${after.zoom}`)
+        //拖曳期間瀏覽器不補送相容滑鼠事件 → 此路徑只能由 pointer 通道承擔(契約 §2)
+        expectOk('E2E-044 整段拖曳期間滑鼠事件 0 次',
+            mouseEv.mousedown === 0 && mouseEv.mousemove === 0 && mouseEv.mouseup === 0,
+            `mouseEv=${JSON.stringify(mouseEv)}`)
+        await shot(page, 'flow-E2E-044-touch-panned', { clip: await getCanvasClip(page) })
+    }, { touch: true }),
+
+    mkCase('E2E-045', 'touch-node-dragged', async (page) => {
+        const cdp = await page.context().newCDPSession(page)
+        const box = await nodeBox(page, '2')
+        const before = await getNode(page, '2')
+        const other = await getNode(page, '3')
+        const zoom = (await getViewport(page)).zoom
+        await touchDrag(cdp, page, centerOf(box), 90, 70)
+        const after = await getNode(page, '2')
+        const otherAfter = await getNode(page, '3')
+
+        expectOk('E2E-045 節點位移量 = 手指位移 ÷ zoom',
+            Math.abs((after.position.x - before.position.x) - 90 / zoom) < 1 && Math.abs((after.position.y - before.position.y) - 70 / zoom) < 1,
+            `d=${after.position.x - before.position.x},${after.position.y - before.position.y} zoom=${zoom}`)
+        expectOk('E2E-045 其餘節點不動',
+            otherAfter.position.x === other.position.x && otherAfter.position.y === other.position.y,
+            `other=${JSON.stringify(otherAfter.position)}`)
+        expectOk('E2E-045 發出 update:nodes', (await emitted(page)).includes('update:nodes'), 'no update:nodes')
+        await shot(page, 'flow-E2E-045-touch-node-dragged', { clip: await getCanvasClip(page) })
+    }, { touch: true }),
+
+    mkCase('E2E-046', 'touch-node-resized', async (page) => {
+        const cdp = await page.context().newCDPSession(page)
+        //觸控無 hover: 先 tap 選取, 四角才出現(選取亦為四角之顯示條件之一)
+        const box = await nodeBox(page, '2')
+        await page.touchscreen.tap(centerOf(box).x, centerOf(box).y)
+        await page.waitForTimeout(400)
+        const corners = await page.$$eval('.vue-flow__node[data-id="2"] .vue-flow__resize', els => els.length)
+        expectOk('E2E-046 tap 後四角可達(觸控下 affordance 取得得到)', corners === 4, `corners=${corners}`)
+
+        const cb = await (await page.$('.vue-flow__node[data-id="2"] .vue-flow__resize--bottom-right')).boundingBox()
+        const before = await getNode(page, '2')
+        const zoom = (await getViewport(page)).zoom
+        await touchDrag(cdp, page, centerOf(cb), 60, 40)
+        const after = await getNode(page, '2')
+
+        expectOk('E2E-046 寬高各增手指位移 ÷ zoom',
+            Math.abs((after.width - before.width) - 60 / zoom) < 1 && Math.abs((after.height - before.height) - 40 / zoom) < 1,
+            `w=${before.width}→${after.width} h=${before.height}→${after.height}`)
+        expectOk('E2E-046 右下角縮放不動座標',
+            after.position.x === before.position.x && after.position.y === before.position.y,
+            `pos=${JSON.stringify(after.position)}`)
+        expectOk('E2E-046 發出 update:nodes', (await emitted(page)).includes('update:nodes'), 'no update:nodes')
+        await shot(page, 'flow-E2E-046-touch-node-resized', { clip: await getCanvasClip(page) })
+    }, { touch: true }),
+
+    mkCase('E2E-047', 'touch-conn-created', async (page) => {
+        const cdp = await page.context().newCDPSession(page)
+        const before = await getConnsLen(page)
+        const from = await handleBox(page, '2', 'right')
+        const to = await handleBox(page, '3', 'left')
+        await touchDrag(cdp, page, from, to.x - from.x, to.y - from.y, 18)
+        const after = await getConnsLen(page)
+        const created = await evalVm(page, 'return JSON.parse(JSON.stringify(vm.conns[vm.conns.length - 1]))')
+
+        expectOk('E2E-047 觸控拖曳把手建立連線', after === before + 1, `conns=${before}→${after}`)
+        expectOk('E2E-047 新邊之 from/to 為該兩節點', created.from === '2' && created.to === '3', `conn=${JSON.stringify({ from: created.from, to: created.to })}`)
+        expectOk('E2E-047 發出 update:conns', (await emitted(page)).includes('update:conns'), 'no update:conns')
+        await shot(page, 'flow-E2E-047-touch-conn-created', { clip: await getCanvasClip(page) })
+    }, { touch: true }),
+
+    mkCase('E2E-048', 'touch-waypoint-dragged', async (page) => {
+        const cdp = await page.context().newCDPSession(page)
+        //setup(非 act): 於畫布空白處放一個轉折點——點位須實地掃描, 寫死座標會落在節點上而拖到節點
+        const vp = await getViewport(page)
+        const spot = await freeCanvasSpot(page)
+        await setConnField(page, 'e1-2', 'points', [spot.flow])
+        await page.waitForTimeout(400)
+
+        const wp = await (await page.$('.vue-flow__edge-waypoint:not(.vue-flow__edge-waypoint-hit)')).boundingBox()
+        const before = await evalVm(page, `return JSON.parse(JSON.stringify(vm.conns.find(c => c.id === 'e1-2').points))`)
+        await touchDrag(cdp, page, centerOf(wp), 60, 45)
+        const after = await evalVm(page, `return JSON.parse(JSON.stringify(vm.conns.find(c => c.id === 'e1-2').points))`)
+
+        expectOk('E2E-048 轉折點位移量 = 手指位移 ÷ zoom',
+            Math.abs((after[0][0] - before[0][0]) - 60 / vp.zoom) < 1 && Math.abs((after[0][1] - before[0][1]) - 45 / vp.zoom) < 1,
+            `${JSON.stringify(before)}→${JSON.stringify(after)}`)
+        expectOk('E2E-048 發出 conn-settings-update', (await emitted(page)).includes('conn-settings-update'), 'no conn-settings-update')
+        await shot(page, 'flow-E2E-048-touch-waypoint-dragged', { clip: await getCanvasClip(page) })
+    }, { touch: true }),
+
+    mkCase('E2E-049', 'touch-pinch-zoom', async (page) => {
+        const cdp = await page.context().newCDPSession(page)
+        const rect = await getContainerRect(page)
+        const center = { x: Math.round(rect.left + rect.width / 2), y: Math.round(rect.top + rect.height / 2) }
+        //錨點語義: 兩指中點處之內容座標於縮放前後不變(與滾輪縮放同一 zoomAroundPoint)
+        const flowAt = (pt) => evalVm(page, `
+            const r = vm.$refs.canvas.getContainerRect()
+            return { x: (arg.x - r.left - vm.viewport.x) / vm.viewport.zoom, y: (arg.y - r.top - vm.viewport.y) / vm.viewport.zoom }
+        `, pt)
+
+        const before = await getViewport(page)
+        const anchorBefore = await flowAt(center)
+        await touchPinch(cdp, page, center, 60, 108)
+        const after = await getViewport(page)
+        const anchorAfter = await flowAt(center)
+
+        expectOk('E2E-049 zoom 依兩指距離比放大(×1.8)', Math.abs(after.zoom / before.zoom - 1.8) < 0.02, `zoom=${before.zoom}→${after.zoom}`)
+        expectOk('E2E-049 兩指中點處之內容座標不變',
+            Math.abs(anchorAfter.x - anchorBefore.x) < 1 && Math.abs(anchorAfter.y - anchorBefore.y) < 1,
+            `anchor=${JSON.stringify(anchorBefore)}→${JSON.stringify(anchorAfter)}`)
+        await shot(page, 'flow-E2E-049-touch-pinch-zoom', { clip: await getCanvasClip(page) })
+
+        //opt.zoomOnPinch: false 時同一手勢不改變 zoom
+        await evalVm(page, `vm.$set(vm.opt, 'zoomOnPinch', false)`)
+        await page.waitForTimeout(200)
+        const z0 = (await getViewport(page)).zoom
+        await touchPinch(cdp, page, center, 60, 108)
+        const z1 = (await getViewport(page)).zoom
+        expectOk('E2E-049 zoomOnPinch=false 時捏合不縮放', Math.abs(z1 - z0) < 1e-6, `zoom=${z0}→${z1}`)
+    }, { touch: true }),
+
+    mkCase('E2E-050', 'touch-tap-no-gesture', async (page) => {
+        //setup(非 act): 放一個位於空白處之轉折點供 tap(點位實地掃描, 見 freeCanvasSpot)
+        const spot = await freeCanvasSpot(page)
+        await setConnField(page, 'e1-2', 'points', [spot.flow])
+        await page.waitForTimeout(400)
+
+        //tap 節點: 點按語義(選取 + 資訊 popup)由相容滑鼠事件承擔, 與滑鼠一致
+        const box = await nodeBox(page, '2')
+        await page.touchscreen.tap(centerOf(box).x, centerOf(box).y)
+        await page.waitForTimeout(500)
+        const sel = await getSelectedNodes(page)
+        const popup = await page.evaluate(() => [...document.querySelectorAll('body > div')]
+            .some(d => d.textContent && d.textContent.includes('檢查資料格式與完整性') && d.getBoundingClientRect().height > 0))
+        expectOk('E2E-050 tap 節點即選取', JSON.stringify(sel) === JSON.stringify(['2']), `selected=${JSON.stringify(sel)}`)
+        expectOk('E2E-050 tap 節點開啟資訊 popup', popup === true, 'info popup not visible')
+        await shot(page, 'flow-E2E-050-touch-tap-no-gesture', { clip: await getCanvasClip(page), parkMouse: false })
+
+        //tap 把手 / 四角 / 轉折點: 接觸當下不啟動任何手勢
+        const connsBefore = await getConnsLen(page)
+        const nodeBefore = await getNode(page, '2')
+        const ptsBefore = await evalVm(page, `return JSON.parse(JSON.stringify(vm.conns.find(c => c.id === 'e1-2').points))`)
+
+        const h = await handleBox(page, '2', 'right')
+        await page.touchscreen.tap(h.x, h.y)
+        await page.waitForTimeout(350)
+        const connecting = await evalVm(page, 'return vm.isConnecting')
+        expectOk('E2E-050 tap 把手不啟動建線', connecting === false && (await getConnsLen(page)) === connsBefore, `isConnecting=${connecting}`)
+
+        const cb = await (await page.$('.vue-flow__node[data-id="2"] .vue-flow__resize--bottom-right')).boundingBox()
+        await page.touchscreen.tap(centerOf(cb).x, centerOf(cb).y)
+        await page.waitForTimeout(350)
+        const nodeAfter = await getNode(page, '2')
+        expectOk('E2E-050 tap 四角不改變尺寸',
+            nodeAfter.width === nodeBefore.width && nodeAfter.height === nodeBefore.height,
+            `size=${nodeAfter.width}x${nodeAfter.height}`)
+
+        const wp = await (await page.$('.vue-flow__edge-waypoint:not(.vue-flow__edge-waypoint-hit)')).boundingBox()
+        await page.touchscreen.tap(centerOf(wp).x, centerOf(wp).y)
+        await page.waitForTimeout(350)
+        const ptsAfter = await evalVm(page, `return JSON.parse(JSON.stringify(vm.conns.find(c => c.id === 'e1-2').points))`)
+        expectOk('E2E-050 tap 轉折點不移動路徑', JSON.stringify(ptsAfter) === JSON.stringify(ptsBefore), `${JSON.stringify(ptsBefore)}→${JSON.stringify(ptsAfter)}`)
+
+        //tap 空白 → 清除選取(canvas-click 之合成仍由相容滑鼠事件承擔)
+        const blank = await blankPoint(page)
+        await page.touchscreen.tap(blank.x, blank.y)
+        await page.waitForTimeout(400)
+        const selAfter = await getSelectedNodes(page)
+        expectOk('E2E-050 tap 空白清除選取', selAfter.length === 0, `selected=${JSON.stringify(selAfter)}`)
+    }, { touch: true }),
 
 ]
 

@@ -33,7 +33,7 @@ Add script for vue.
 
 Add script for w-flow-vue.
 ```alias
-<script src="https://cdn.jsdelivr.net/npm/w-flow-vue@1.1.2/dist/w-flow-vue.umd.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/w-flow-vue@1.1.3/dist/w-flow-vue.umd.js"></script>
 ```
 
 ## Settings form components (for advanced use)
@@ -52,6 +52,18 @@ import { NODE_SETTING_GROUPS, CONN_SETTING_GROUPS, visibleGroups } from 'w-flow-
 - `settingsGroups.mjs` — the grouping definition (`{ key, title, fields }`, array order is display order) plus `visibleGroups(groups, excludes)`. Import it to drive your own layout, or to decide which fields to exclude.
 
 These are `.vue` / `.mjs` sources, so your build must handle Vue 2 SFCs (the same way this package consumes `w-component-vue`). The prebuilt `dist/w-flow-vue.umd.js` bundle only exports the `WFlowVue` component itself.
+
+## Touch support
+
+Touch and pen input work out of the box — the flow listens on a pointer channel that runs alongside the existing mouse one, so nothing changes for mouse users:
+
+- **Drag gestures**: pan the canvas, drag nodes, resize from the corners, drag waypoints, and draw a connection from a handle. A gesture starts once the finger has moved past the drag threshold, so tapping a handle or a corner never starts one by accident.
+- **Tap**: select, open info / settings popups and use the toolbar, exactly as a click does.
+- **Pinch**: two fingers zoom around their midpoint. Disable with `opt.zoomOnPinch: false` (`opt.zoomOnScroll` covers the wheel separately).
+- `.vue-flow` declares `touch-action: none`, so a touch that starts inside the flow drives the flow instead of scrolling the page — the same deal the wheel already had (`@wheel.prevent` means scrolling over the flow zooms it and never scrolls the page). Move off the flow and the page scrolls normally. Nothing calls `preventDefault()` on pointer/touch down, which keeps the browser's compatibility mouse events for taps intact — popups and click handlers depend on them.
+- On coarse pointers, handles, resize corners and waypoints get a larger invisible hit area (extended away from the node, so the node body stays fully draggable). Their drawn size is unchanged.
+
+**By design**: multi-select and box-select stay keyboard-driven (`opt.multiSelectionKeyCode` / `opt.boxSelectionKeyCode`, both `Shift`), so they are unavailable on touch-only devices — selection there is always single-select. No touch-reachable mode switch is planned.
 
 ## Required setup for Vue 2 apps
 

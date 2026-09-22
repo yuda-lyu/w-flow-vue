@@ -41,6 +41,8 @@ export const OPT_SPEC = {
     connsSettingsExcludes: { kind: 'truthy', def: [] },
     //視口
     zoomOnScroll: { kind: 'defined', def: true },
+    //捏合縮放(觸控雙指): 與 zoomOnScroll 各自獨立, 不想要觸控縮放者設 false
+    zoomOnPinch: { kind: 'defined', def: true },
     panOnDrag: { kind: 'defined', def: true },
     zoomMin: { kind: 'defined', def: 0.5 },
     zoomMax: { kind: 'defined', def: 2 },

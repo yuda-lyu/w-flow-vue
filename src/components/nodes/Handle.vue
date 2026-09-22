@@ -5,13 +5,15 @@
     :style="handleStyle"
     :data-handle-position="position"
     @mousedown.stop="onMouseDown"
+    @pointerdown.stop="onPointerDown"
     @click.stop
   />
 </template>
 
 <script>
 import { handlePlacementStyle } from '../../js/nodeStyle.mjs'
-import { gestureBlockedReason } from '../../js/domGesture.mjs'
+import { gestureBlockedReason, preventNativeDefault } from '../../js/domGesture.mjs'
+import pointerGesture from '../mixins/pointerGesture.mjs'
 
 /**
  * 連接點(把手): 節點四邊各一, 無連出/連入之分——任一把手皆可作為建線出發點與落點(spec/流程_互動契約.md §3-§4)。
@@ -24,6 +26,7 @@ import { gestureBlockedReason } from '../../js/domGesture.mjs'
  */
 export default {
     name: 'FlowHandle',
+    mixins: [pointerGesture],
     inject: {
         //複選模式(縱深最早邊界): 模式中把手已隱藏(CSS pointer-events:none, 真實點擊到不了這裡),
         //此守衛擋synthetic/程式化mousedown不啟動建線(模板@mousedown.stop仍生效, 僅阻手勢不改傳播語義)
@@ -58,9 +61,13 @@ export default {
             if (!this.connectable) return
             //啟動守衛(domGesture.gestureBlockedReason 單一來源): 複選模式 / 進行中手勢 / 非主鍵皆不啟動(先於 preventDefault, 不吞事件語義)
             if (gestureBlockedReason({ button: event.button, multiSelectActive: this.getMultiSelectActive(), activeGesture: this.getActiveGesture() })) return
-            //阻止文字選取隨拖線啟動(把手上按下拖曳屬建線手勢, 非選字)
-            event.preventDefault()
+            //阻止文字選取隨拖線啟動(把手上按下拖曳屬建線手勢, 非選字); 僅滑鼠通道, 理由見 domGesture.preventNativeDefault
+            preventNativeDefault(event)
             this.$emit('connect-start', { event, handlePosition: this.position })
+        },
+        //pointer 通道(觸控/觸控筆): 跨門檻才啟動建線——點一下把手不應拉出線(見 mixins/pointerGesture)
+        onPointerDown(event) {
+            this.armPointer(event, (down) => this.onMouseDown(down))
         },
     },
 }
@@ -86,6 +93,28 @@ export default {
 .vue-flow__handle--not-connectable {
   cursor: default;
   pointer-events: none;
+}
+/* 觸控裝置(粗指標)之命中區放大: 視覺尺寸不變, 僅以透明 ::after 擴大可點範圍(Material/HIG 之 touch target 慣例)。
+   把手實繪僅 10px, 手指命中率過低; 桌機(pointer: fine)不套用, 故視覺、hover 判定與既有標準圖皆不受影響。
+   ::after 隨 :hover 放大而不動: 其尺寸為固定 px 且以 translate 置中, 不依賴 --vf-hs */
+@media (pointer: coarse) {
+  .vue-flow__handle::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+  }
+  /* 命中區一律向節點外側外推, 只留 4px 吃進節點面。
+     why: 置中放大會讓瀏覽器之觸控吸附(touch adjustment)把「按在節點中央」判給鄰近把手——
+     實測 2026-09-21: 24px 置中命中區使節點中央之觸控拖曳變成建線(activeGesture 為 'connect'), 節點反而拖不動。
+     外推後把手仍好按(外側無其他可命中物), 節點面不被侵蝕。 */
+  .vue-flow__handle--top::after { transform: translate(-50%, calc(-50% - 8px)); }
+  .vue-flow__handle--bottom::after { transform: translate(-50%, calc(-50% + 8px)); }
+  .vue-flow__handle--left::after { transform: translate(calc(-50% - 8px), -50%); }
+  .vue-flow__handle--right::after { transform: translate(calc(-50% + 8px), -50%); }
 }
 /* hover 放大 2px, 圓心不動(translate 置中) */
 .vue-flow__handle:hover {

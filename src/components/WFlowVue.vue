@@ -17,6 +17,8 @@
     v-if="inited"
     ref="canvas"
     @canvas-mousedown="onCanvasMouseDown"
+    @canvas-pinch-start="onCanvasPinchStart"
+    @canvas-pinch="onCanvasPinch"
     @canvas-wheel="onCanvasWheel"
     @canvas-dblclick="onCanvasDblClick"
     @canvas-click="onCanvasClick"
@@ -151,7 +153,7 @@ import ConnectionLine from './edges/ConnectionLine.vue'
 import Controls from './ui/Controls.vue'
 import { getHandlePosition, getOverlappingNodes, snapPosition, clampPosition, resolveNodeSize } from '../js/geometry.mjs'
 import { generateId } from '../js/graph.mjs'
-import { crossedThreshold } from '../js/domGesture.mjs'
+import { crossedThreshold, isFromMouse } from '../js/domGesture.mjs'
 import { nodesBounds, resolveContainerSize, computeFitView, resolvePadding, screenToFlow, clientToLocal, zoomAroundPoint, clampZoom, computeCenterView, recenterForResize, easeInOutCubic } from '../js/viewport.mjs'
 import { assessConnection } from '../js/connectPolicy.mjs'
 import { findHandleElAt, describeHandleEndpoint, setHandleConnectStatus, setHandleConnectRole, setDomFlag } from '../js/handleDom.mjs'
@@ -221,6 +223,9 @@ import { previewDelete, applyDelete, findDuplicateIds, snapshotDeep } from '../j
  * - 鍵盤作用域: 於 input/textarea/select/contenteditable 內按鍵不觸發畫布快捷鍵(含複選鍵與 Delete);
  *   同頁多個 flow 實例監聽同一 document, 按住複選鍵時各實例同時進入模式(全域行為, 刻意)。
  * @prop {boolean}  [opt.zoomOnScroll=true]               Zoom with mouse wheel
+ * @prop {boolean}  [opt.zoomOnPinch=true]                Zoom with a two-finger pinch on touch devices (anchored at the midpoint between
+ *   the two fingers, same zoom semantics as the wheel). Independent of opt.zoomOnScroll: set both to false to disable zooming entirely.
+ *   Pinching is ignored while another gesture (node drag, connect, box select, resize, waypoint) is in progress.
  * @prop {boolean}  [opt.fitViewOnInit=true]              Fit all nodes into view on init: nodes are measured hidden, fitted, then revealed
  *   (no pre-fit frame). While true, opt.center / opt.zoom do not take part in the initial viewport. If nodes are empty at init,
  *   the first non-empty population is fitted once (unless the viewport was already changed). `init` is emitted only after
@@ -584,6 +589,11 @@ export default {
         document.addEventListener('keyup', this.onKeyUp)
         document.addEventListener('mousemove', this.onDocMouseMove)
         document.addEventListener('mouseup', this.onDocMouseUp)
+        //pointer 通道(觸控/觸控筆, 見 domGesture.isFromMouse): 拖曳期間瀏覽器不補送相容滑鼠事件,
+        //平移/拖節點/建線/框選之位移與收尾全在這條鏈上, 故四者共用同一組 pointer 監聽
+        document.addEventListener('pointermove', this.onDocPointerMove)
+        document.addEventListener('pointerup', this.onDocPointerUp)
+        document.addEventListener('pointercancel', this.onDocPointerCancel)
         window.addEventListener('blur', this.onWindowBlur)
     },
     beforeDestroy() {
@@ -595,6 +605,9 @@ export default {
         document.removeEventListener('keyup', this.onKeyUp)
         document.removeEventListener('mousemove', this.onDocMouseMove)
         document.removeEventListener('mouseup', this.onDocMouseUp)
+        document.removeEventListener('pointermove', this.onDocPointerMove)
+        document.removeEventListener('pointerup', this.onDocPointerUp)
+        document.removeEventListener('pointercancel', this.onDocPointerCancel)
         window.removeEventListener('blur', this.onWindowBlur)
         //建線進行中被銷毀: 把手上的 data-connect-* 暫態標記為 DOM 屬性, 不隨元件狀態消失,
         //須顯式清理(根 class 隨元素移除自然消失); 此處不發connect-end(元件已在銷毀流程中)
@@ -644,6 +657,10 @@ export default {
         //why: 單選之active有對應效果(開資訊popup, 宿主據node-click同步外部清單之目前項目), 檢視模式本就該保留;
         //     複選之active則無任何對應效果——選了不能整組拖曳/刪除, 只是一片亮起的框, 反而使人誤認功能故障.
         //     故此處只擋複選與框選, 不動單選; 且該鍵無效時點擊須完整退回單選路徑(照常取得active與popup)
+        //觸控裝置不支援複選/框選(業主裁定 2026-09-21, 不另做觸控版):
+        //二者之啟動條件是「複選鍵按著」而非某個輸入事件, 無實體鍵盤即恆為 false——
+        //補 pointer 通道不能解, 要支援得新增觸控可達之模式切換(長按/工具列 toggle), 屬契約新增, 裁定不做。
+        //故觸控下之選取一律為單選(點擊照常取得 active 與 popup), 契約見 spec/流程_互動契約.md §8。
         isBoxSelectActive() {
             return this.can('multiselect') && !!this.keysPressed[this.boxSelectionKeyCode]
         },
@@ -830,6 +847,25 @@ export default {
                 this.startPan(event)
             }
         },
+        //捏合(觸控雙指)之讓位: 第二指落下時單指平移之起點已無意義, 先取消平移再進入捏合
+        onCanvasPinchStart() {
+            if (this.isPanning) this.cancelPan()
+        },
+        //捏合縮放: 以兩指距離比縮放, 錨點為兩指中點(與滾輪縮放同一 zoomAroundPoint, 故縮放語義一致)
+        onCanvasPinch({ scale, clientX, clientY }) {
+            if (!this.zoomOnPinch) return
+            //一次一手勢: 拖節點/建線/框選/縮放/轉折點進行中不介入(其座標換算以當下 zoom 為基準, 中途改 zoom 會錯位)
+            if (this.activeGesture) return
+            if (!scale || !isFinite(scale)) return
+            this.cancelViewportAnimation()
+            const vp = this.viewport
+            const rect = this.$refs.canvas.getContainerRect()
+            if (!rect) return
+            //fitView 可低於 zoomMin: 以當前值為下界(與滾輪同一判準)
+            const newZoom = clampZoom(vp.zoom * scale, this.zoomMin, this.zoomMax, vp.zoom)
+            this.setViewport(zoomAroundPoint(vp, clientToLocal(clientX, clientY, rect), newZoom))
+            this.emitViewportChange()
+        },
         onCanvasWheel(event) {
             if (!this.zoomOnScroll) return
             //滾輪縮放亦為viewport寫入者, 先取消程式動畫避免二者互相覆寫
@@ -872,6 +908,22 @@ export default {
             else if (this.isSelecting) {
                 this.doSelection(event)
             }
+        },
+        //pointer 通道之位移/收尾(觸控/觸控筆): 與滑鼠共用同一套判準與狀態機, 只在入口分流
+        //(滑鼠同時送 pointer 與 mouse 兩套事件, 此處跳過滑鼠, 否則同一次移動會被處理兩遍)
+        onDocPointerMove(event) {
+            if (isFromMouse(event)) return
+            this.onDocMouseMove(event)
+        },
+        onDocPointerUp(event) {
+            if (isFromMouse(event)) return
+            this.onDocMouseUp(event)
+        },
+        //pointercancel: 手勢被系統中斷(非使用者放開)。其座標實測為 (0,0), 不得交給 endConnect 做落點判定,
+        //故一律走取消路徑(與上鎖同一分派), 與 blur 之「平移/拖曳提交」語義區隔
+        onDocPointerCancel(event) {
+            if (isFromMouse(event)) return
+            this.endActiveGesture('cancel', event)
         },
         onWindowBlur(event) {
             //視窗失焦後不會再收到mouseup與keyup, 於此統一收尾避免狀態黏住(終止分派見 endActiveGesture)

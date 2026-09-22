@@ -5,6 +5,7 @@
     :style="wrapperStyle"
     :data-id="node.id"
     @mousedown="onMouseDown"
+    @pointerdown="onPointerDown"
     @mouseup="onMouseUp"
     @mouseenter="onMouseEnter"
     @mouseleave="onMouseLeave"
@@ -115,15 +116,16 @@ import { classifyHit, isAffordanceHit } from '../../js/hitTest.mjs'
 import { resolveNodeSize, computeResize } from '../../js/geometry.mjs'
 import elementPopups from '../mixins/elementPopups.mjs'
 import { GEAR_PATH } from '../../js/icons.mjs'
-import { startDocumentGesture, crossedThreshold, gestureBlockedReason } from '../../js/domGesture.mjs'
+import { startDocumentGesture, crossedThreshold, gestureBlockedReason, preventNativeDefault } from '../../js/domGesture.mjs'
+import pointerGesture from '../mixins/pointerGesture.mjs'
 import { nodeShape, isTriangleShape } from '../../js/nodeStyle.mjs'
 
 
 export default {
     name: 'NodeWrapper',
     components: { NodeBody, NodeSettingsForm, SlotOutlet, WPopup },
-    //popup 狀態機(資訊/設定互斥、複選關閉、開啟閘門、設定入口三模式)共用 mixin
-    mixins: [elementPopups],
+    //popup 狀態機(資訊/設定互斥、複選關閉、開啟閘門、設定入口三模式)與 pointer 通道接線共用 mixin
+    mixins: [elementPopups, pointerGesture],
     inject: {
         getDragGhost: { default: () => () => null },
         //視口縮放(client 位移 → 畫布位移換算; 高頻手勢狀態走 getter)
@@ -273,6 +275,8 @@ export default {
     methods: {
         //本節點持有之 document 手勢一併取消(destroy / 上鎖共用): 縮放不提交(node-resize-cancel)
         cancelLocalGestures() {
+            //含尚未跨門檻之 pointer 閘門(觸控按住但還沒動, 此刻上鎖/銷毀不應再啟動手勢)
+            this.disposePointerArm()
             this.endMouseGesture(false)
             this.endResizeGesture(false)
         },
@@ -318,6 +322,10 @@ export default {
             }
             return true
         },
+        //pointer 通道(觸控/觸控筆): 跨門檻才以按下當下之事件走與滑鼠完全相同的 onMouseDown(見 mixins/pointerGesture)
+        onPointerDown(event) {
+            this.armPointer(event, (down) => this.onMouseDown(down))
+        },
         onMouseDown(event) {
             //新手勢開始前先收掉上一次殘留者(如上次mouseup落在視窗外未送達document), 避免監聽器疊加
             this.endMouseGesture()
@@ -354,7 +362,8 @@ export default {
             //why: 宿主節點內容若可選字(user-select:text), 拖曳中會形成選取且殘留; 之後mousedown落在選取上
             //     即啟動原生文字層drag接管事件流, mousemove斷流使節點於門檻跨越後凍結
             //     (真瀏覽器實測: mousemove 11→2次, dragstart=1, 節點僅移8px後卡住)
-            event.preventDefault()
+            //僅滑鼠通道阻止(domGesture.preventNativeDefault): 觸控之 down 事件一旦 preventDefault, 該次點按之相容滑鼠事件全被抑制
+            preventNativeDefault(event)
             this.infoPopupShow = false
             //選取仍於mousedown完成(與修正前一致): 拖曳延後但選取不可延後,
             //否則按住節點未移動時, 原本立即出現的選取回饋會拖到mouseup才出現
@@ -463,7 +472,7 @@ export default {
             this.$nextTick(() => {
                 this.infoPopupEditable = false
             })
-            event.preventDefault()
+            preventNativeDefault(event)
 
             const cursorMap = {
                 'top-left': 'nwse-resize',
@@ -491,7 +500,12 @@ export default {
                     last = computeResize(edge, start, { dx: (e.clientX - startX) / zoom, dy: (e.clientY - startY) / zoom }, { snap, minSize: snap || 10 })
                     this.$emit('node-resize', { nodeId: this.node.id, ...last })
                 },
-                onEnd: () => {
+                onEnd: (reason) => {
+                    //pointercancel(手勢被系統中斷)不提交尺寸: 使用者沒有放開過, 與上鎖/銷毀同走取消路徑
+                    if (reason === 'cancel') {
+                        this.endResizeGesture(false)
+                        return
+                    }
                     if (!this.endResizeGesture()) return
                     this.$emit('node-resize-end', { nodeId: this.node.id, ...last })
                 },

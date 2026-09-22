@@ -30,6 +30,18 @@
     <!-- 強制轉折點標記(編輯模式顯示, 可直接拖曳移動座標; 亦可經齒輪設定表單編修) -->
     <template v-if="showWaypoints">
       <!-- 不用@mousedown.stop: stopPropagation會擋掉window層WPopup互斥協調(致已開之node/conn資訊popup不關); 防canvas startPan改由onCanvasMouseDown排除.vue-flow__edge-waypoint處理 -->
+      <!-- 觸控命中區(不繪製): 轉折點實繪 r=4, 手指命中率過低; 僅粗指標裝置啟用 pointer-events,
+           桌機維持原本只有實繪圓可命中, 故視覺與既有標準圖皆不受影響。置於實繪圓之前(在其下方), 命中優先權仍歸實繪圓 -->
+      <circle
+        v-for="(p, i) in waypointPts"
+        :key="'wph' + i"
+        :cx="p.x"
+        :cy="p.y"
+        r="13"
+        class="vue-flow__edge-waypoint vue-flow__edge-waypoint-hit"
+        @mousedown="onWaypointMouseDown(i, $event)"
+        @pointerdown="onWaypointPointerDown(i, $event)"
+      />
       <circle
         v-for="(p, i) in waypointPts"
         :key="'wp' + i"
@@ -38,6 +50,7 @@
         r="4"
         class="vue-flow__edge-waypoint"
         @mousedown="onWaypointMouseDown(i, $event)"
+        @pointerdown="onWaypointPointerDown(i, $event)"
       />
     </template>
     <!-- Label + Settings icon (merged into one foreignObject for correct relative positioning) -->
@@ -66,7 +79,7 @@
             :paddingStyle="{v:8,h:12}"
           >
             <template v-slot:trigger>
-              <span v-if="conn.name" class="vue-flow__edge-label" :style="labelStyle" @mousedown="onLabelMouseDown">{{ conn.name }}</span>
+              <span v-if="conn.name" class="vue-flow__edge-label" :style="labelStyle" @mousedown="onLabelMouseDown" @pointerdown="onLabelPointerDown">{{ conn.name }}</span>
               <!-- Zero-size anchor keeps the popup positioned at the label midpoint when the conn has no name -->
               <span v-else class="vue-flow__edge-popup-anchor"></span>
             </template>
@@ -148,7 +161,8 @@ import { resolveMarker, markerUrl } from '../../js/edgeMarker.mjs'
 import { classifyHit, isAffordanceHit } from '../../js/hitTest.mjs'
 import elementPopups from '../mixins/elementPopups.mjs'
 import { GEAR_PATH } from '../../js/icons.mjs'
-import { startDocumentGesture, crossedThreshold, gestureBlockedReason } from '../../js/domGesture.mjs'
+import { startDocumentGesture, crossedThreshold, gestureBlockedReason, preventNativeDefault } from '../../js/domGesture.mjs'
+import pointerGesture from '../mixins/pointerGesture.mjs'
 import ConnSettingsForm from '../ui/ConnSettingsForm.vue'
 import SlotOutlet from '../ui/SlotOutlet.vue'
 import WPopup from 'w-component-vue/src/components/WPopup.vue'
@@ -159,7 +173,7 @@ export default {
     name: 'EdgeWrapper',
     //修Vue2 #7330: 本元件位於<svg>內且含foreignObject, 需清除$vnode.ns否則其內HTML元素(含WPopup之slot內容)被建為SVGElement而0x0不可見
     //popup 狀態機共用 mixin(elementPopups, 與 NodeWrapper 同一份判準)
-    mixins: [fixSvgNs, elementPopups],
+    mixins: [fixSvgNs, elementPopups, pointerGesture],
     components: { ConnSettingsForm, SlotOutlet, WPopup },
     inject: {
         getDragGhost: { default: () => () => null },
@@ -404,9 +418,13 @@ export default {
         onContextMenu(event) {
             this.$emit('conn-context-menu', { conn: this.conn, event })
         },
+        //pointer 通道(觸控/觸控筆): 跨門檻才視為 label 位移追蹤(見 mixins/pointerGesture)
+        onLabelPointerDown(event) {
+            this.armPointer(event, (down) => this.onLabelMouseDown(down))
+        },
         onLabelMouseDown(event) {
-            //label 文字不可選取亦不可原生拖曳(圖台內文字拖曳無語義; 原生 drag 會接管事件流)
-            event.preventDefault()
+            //label 文字不可選取亦不可原生拖曳(圖台內文字拖曳無語義; 原生 drag 會接管事件流); 僅滑鼠通道, 見 domGesture.preventNativeDefault
+            preventNativeDefault(event)
             //僅主鍵(與其他手勢同一判準); 重入先收上一輪(mouseup 遺失時之殘留)
             if (event.button !== 0) return
             this.endLabelGesture()
@@ -446,6 +464,8 @@ export default {
         //why: 原版只掛 document mouseup, 視窗失焦或元件銷毀時監聽器與 `* { cursor: move }` 全域樣式殘留整頁
         //本連線持有之 document 手勢一併取消(destroy / 上鎖共用): 轉折點不提交, 通知 WFlowVue 清手勢與 ghost
         cancelLocalGestures() {
+            //含尚未跨門檻之 pointer 閘門(觸控按住但還沒動, 此刻上鎖/銷毀不應再啟動手勢)
+            this.disposePointerArm()
             this.endLabelGesture()
             if (this.endWaypointGesture()) {
                 this.dragPts = null
@@ -459,12 +479,16 @@ export default {
             g.dispose()
             return true
         },
+        //pointer 通道(觸控/觸控筆): 跨門檻才啟動轉折點拖曳——點一下轉折點不應改變路徑(見 mixins/pointerGesture)
+        onWaypointPointerDown(i, event) {
+            this.armPointer(event, (down) => this.onWaypointMouseDown(i, down))
+        },
         onWaypointMouseDown(i, event) {
             if (!this.interactive || this.locked || !this.settingsEnabled) return
             //啟動守衛(domGesture.gestureBlockedReason 單一來源): 複選模式 / 進行中手勢 / 非主鍵不啟動(先於 preventDefault/樣式建立)
             if (gestureBlockedReason({ button: event.button, multiSelectActive: this.getMultiSelectActive(), activeGesture: this.getActiveGesture() })) return
             this.endWaypointGesture()
-            event.preventDefault()
+            preventNativeDefault(event)
             //手勢生命週期上報(WFlowVue 據此設 activeGesture / 關閉全部 popup / 標記擁有者)
             this.$emit('conn-waypoint-start', { conn: this.conn, event, el: this.$el })
 
@@ -483,7 +507,14 @@ export default {
                     //僅更新本元件之ghost, 路徑即時重繪; 不mutate conn.points(prop)以免波及宿主之deep watcher
                     this.dragPts = np
                 },
-                onEnd: () => {
+                onEnd: (reason) => {
+                    //pointercancel(手勢被系統中斷)不提交路徑: 與上鎖/銷毀同走取消路徑, ghost 復原
+                    if (reason === 'cancel') {
+                        if (!this.endWaypointGesture()) return
+                        this.dragPts = null
+                        this.$emit('conn-waypoint-end', { conn: this.conn, cancelled: true })
+                        return
+                    }
                     if (!this.endWaypointGesture()) return
                     //放開才發更新事件(與齒輪表單同一事件流, 由宿主持久化); 事件流為同步, 回來時conn.points已更新故可安全清ghost
                     const value = this.waypointPts.map(p => [p.x, p.y])
@@ -531,6 +562,19 @@ export default {
 }
 .vue-flow__edge-waypoint:active {
   cursor: grabbing;
+}
+/* 觸控命中區: 不繪製(含 hover 態), 且桌機完全不可命中——共用 .vue-flow__edge-waypoint 以沿用隱藏規則
+   (建線中/複選中之 opacity:0 + pointer-events:none 一併生效), 故此處只需取消繪製與桌機命中 */
+.vue-flow__edge-waypoint.vue-flow__edge-waypoint-hit,
+.vue-flow__edge-waypoint.vue-flow__edge-waypoint-hit:hover {
+  fill: none;
+  stroke: none;
+  pointer-events: none;
+}
+@media (pointer: coarse) {
+  .vue-flow__edge-waypoint.vue-flow__edge-waypoint-hit {
+    pointer-events: all;
+  }
 }
 /* hover 視覺由 --hovered class 驅動(非 :hover), 理由見模板 <g> 註解 */
 .vue-flow__edge--hovered > path {
