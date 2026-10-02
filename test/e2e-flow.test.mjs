@@ -18,7 +18,7 @@
 import fs from 'fs'
 import path from 'path'
 import { fileURLToPath } from 'url'
-import { chromium } from 'playwright'
+import launchChromium from 'w-package-tools-e2e/src/launchChromium.mjs'
 import { baseUrl, captureStable, assertBaselineMatch } from './e2e-setup.mjs'
 import { nodesBounds, computeFitView } from '../src/js/viewport.mjs'
 
@@ -2183,7 +2183,8 @@ async function run() {
         if (onlyNames && !onlyNames.includes(c.id)) continue
         console.log(`  ${c.id} ${c.kebab}`)
         //per-case fresh browser: 每個 case 全新 browser/context/page, 不帶前一 case 狀態
-        const browser = await chromium.launch()
+        //launchChromium, 缺Playwright指定版本之瀏覽器時首次啟動自動下載(與本機同版), 由w-package-tools-e2e提供
+        const browser = await launchChromium()
         try {
             const page = await openPage(browser, c.opts)
             await c.run(page)
