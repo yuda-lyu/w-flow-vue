@@ -36,3 +36,26 @@ export function infoOpenPlan({ trigger, settingsAllowed, popupOpen }) {
 export function settingsOpensOn(trigger, eventKind) {
     return (trigger === 'click' || trigger === 'dblclick') && trigger === eventKind
 }
+
+/**
+ * 節點設定 popup 之開啟方向(node.popupDirection → defNode.popupDirection)→ 齒輪錨點所在角 + WPopup placement。
+ *
+ * 為何移動錨點而不是放大參考框: WPopup(popper)以觸發元素(齒輪錨點)為定位參考, 且以「觸發元素之矩形」判定點擊是否在外
+ * (buildPopper 之 domIsClientXYIn); 若把參考框放大成整個節點, 點節點本體就不再關閉 popup, 行為會變。
+ * 故錨點留 20px 齒輪大小, 改放到彈窗那一側之角, 彈窗即落在節點外: 齒輪外凸 8px, 再加 WPopup 預設之 5px 距離。
+ *   right  → 右上角 + right-start(即原本寫死之定位, 預設值不變)
+ *   top    → 右上角 + top-end(彈窗右緣對齊齒輪右緣, 往上開)
+ *   left   → 左上角 + left-start(right 之鏡像)
+ *   bottom → 右下角 + bottom-end(彈窗右緣對齊齒輪右緣, 往下開)
+ * 空間不足時 popper 之 flip 會翻到另一側(既有行為, 與方向無關)。非四方位之值回退 right。
+ */
+export const SETTINGS_POPUP_LAYOUTS = Object.freeze({
+    right: Object.freeze({ corner: 'top-right', placement: 'right-start' }),
+    top: Object.freeze({ corner: 'top-right', placement: 'top-end' }),
+    left: Object.freeze({ corner: 'top-left', placement: 'left-start' }),
+    bottom: Object.freeze({ corner: 'bottom-right', placement: 'bottom-end' }),
+})
+
+export function settingsPopupLayout(direction) {
+    return Object.prototype.hasOwnProperty.call(SETTINGS_POPUP_LAYOUTS, direction) ? SETTINGS_POPUP_LAYOUTS[direction] : SETTINGS_POPUP_LAYOUTS.right
+}

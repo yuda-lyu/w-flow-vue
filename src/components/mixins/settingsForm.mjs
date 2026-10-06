@@ -1,14 +1,16 @@
 /**
- * 設定表單共用(NodeSettingsForm / ConnSettingsForm): 注入文字/刪除確認態、排除欄位、有效值解析、數值 clamp、
- * 屬性分群之展開態。
+ * 設定表單共用(NodeSettingsForm / ConnSettingsForm): 顯示文字之回退(文字 props → txt)、注入刪除確認態、排除欄位、
+ * 有效值解析、數值 clamp、屬性分群之展開態。
  *
  * 使用元件須提供:
  *   computed item(): 被編輯之節點/連線; defaults(): defNode / defConn
  *   computed groupDefs(): 分群定義(js/settingsGroups.mjs 之 NODE_SETTING_GROUPS / CONN_SETTING_GROUPS)
- *   deleteTextKey: 'nodeDelete' | 'connDelete'
+ *   computed textsKind(): 'node' | 'conn'(選用哪一組文字, 見 js/settingsTexts.mjs)
+ *   props: ...settingsTextProps(textsKind)(每句顯示文字一個 String prop)
  */
 import { EDGE_WIDTH_MAX } from '../../js/defaults.mjs'
 import { DEFAULT_OPEN_GROUPS, visibleGroups } from '../../js/settingsGroups.mjs'
+import { resolveSettingsTexts, groupTitleProp, fieldLabelProp, optionTextProp, defaultOptionText } from '../../js/settingsTexts.mjs'
 
 /**
  * 每欄位之有效值(item → defaults)回退政策(不同欄位之「空值」語義不同, 不用通用規則抹平):
@@ -72,8 +74,6 @@ export default {
     inject: {
         //刪除確認進行中(getter注入, 預設值使本元件可獨立掛載): 等待宿主回覆期間刪除鈕 disabled
         getDeleteConfirming: { default: () => () => false },
-        //設定表單文字(刪除鈕/色票確認鈕; 由 WFlowVue 依 opt 注入, 預設英文)
-        getSettingsText: { default: () => () => ({}) },
     },
     props: {
         textFontSize: { type: String, default: '' },
@@ -110,11 +110,9 @@ export default {
         deleteConfirming() {
             return this.getDeleteConfirming()
         },
-        deleteText() {
-            return this.getSettingsText()[this.deleteTextKey] || 'Delete'
-        },
-        colorConfirmText() {
-            return this.getSettingsText().colorConfirm || 'Confirm'
+        //顯示文字(文字 prop 名 → 文字): 各文字 prop 未給、非字串或空字串即回退英文預設(故表單可獨立掛載)
+        txt() {
+            return resolveSettingsTexts(this.textsKind, this)
         },
         formStyle() {
             const s = {}
@@ -161,6 +159,19 @@ export default {
         //有效值(item → defaults; 逐欄位政策 FIELD_POLICY)
         eff(key) {
             return effectiveField(key, this.item, this.defaults)
+        },
+        //群標題、欄位標籤: 文字 prop 名之組法只在 settingsTexts 定義一次, 模板不自行拼字
+        groupTitle(groupKey) {
+            return this.txt[groupTitleProp(groupKey)]
+        },
+        fieldLabel(fieldKey) {
+            return this.txt[fieldLabelProp(fieldKey)]
+        },
+        //下拉選項(值與顯示文字分離, 見 SettingsSelect): 值一律取自值域模組(單一來源, 不在表單另抄);
+        //顯示文字取 {類別}TextFor{值} 之文字 prop(宿主覆寫 → 例外表 → Title Case)。文字 prop 由同一值域產生,
+        //故正常必有; 萬一缺(值域與文字表不同步)仍以預設轉寫顯示, 不出現空白項
+        optItems(category, values) {
+            return values.map(v => ({ value: v, text: this.txt[optionTextProp(category, v)] || defaultOptionText(v) }))
         },
         onFontSizeInput(val) {
             let n = Number(val)

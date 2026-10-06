@@ -84,6 +84,7 @@
 
             <AppBasic v-if="cmpPick==='size'"></AppBasic>
             <AppConnectivity v-if="cmpPick==='connectivity'"></AppConnectivity>
+            <AppSettingsTexts v-if="cmpPick==='texts'"></AppSettingsTexts>
 
         </div>
 
@@ -99,6 +100,7 @@ import urlParse from 'wsemi/src/urlParse.mjs'
 import WListHorizontal from 'w-component-vue/src/components/WListHorizontal.vue'
 import AppBasic from './AppBasic.vue'
 import AppConnectivity from './AppConnectivity.vue'
+import AppSettingsTexts from './AppSettingsTexts.vue'
 
 
 export default {
@@ -106,6 +108,7 @@ export default {
         WListHorizontal,
         AppBasic,
         AppConnectivity,
+        AppSettingsTexts,
     },
     data: function() {
         let cmps = [
@@ -114,6 +117,7 @@ export default {
                 cmps: [
                     { name: 'size' },
                     { name: 'connectivity' },
+                    { name: 'texts' },
                 ],
             },
         ]

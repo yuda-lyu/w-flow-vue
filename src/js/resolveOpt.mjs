@@ -1,6 +1,6 @@
 /**
  * opt 解析 —— 單一來源。WFlowVue 之每個 opt 鍵對應一個 computed(名稱即鍵名, 由 OPT_SPEC 生成),
- * 不再逐鍵手寫 fallback 樣板; 群組型(defNode / defConn / settingsText / menu)以具名解析函式提供。
+ * 不再逐鍵手寫 fallback 樣板; 群組型(defNode / defConn / menu)以具名解析函式提供。
  *
  * kind(回退規則, 依 JSDoc 契約逐鍵指定):
  *   defined  : opt 值 !== undefined 即採用(布林/數值 0 為合法值)
@@ -11,9 +11,11 @@
  *   notFalse : 只有明確 false 才關閉(預設開)
  *   nullable : truthy 即採用, 否則 null
  *   fn       : 須為函式, 否則 null
+ *   text     : 非空字串即採用, 否則(非字串、空字串)回退 def; 純空白照收(顯示文字用)
  */
 import { NODE_DEFAULTS, CONN_DEFAULTS, SETTINGS_TRIGGERS } from './defaults.mjs'
 import { resolvePadding } from './viewport.mjs'
+import { settingsTextOptSpec } from './settingsTexts.mjs'
 
 export const OPT_SPEC = {
     //尺寸
@@ -39,6 +41,8 @@ export const OPT_SPEC = {
     connsSettingsTrigger: { kind: 'enum', values: SETTINGS_TRIGGERS, def: 'dblclick' },
     nodesSettingsExcludes: { kind: 'truthy', def: [] },
     connsSettingsExcludes: { kind: 'truthy', def: [] },
+    //設定彈窗之顯示文字: 一句一鍵(節點 26 / 連線 42, 如 nodesSettingsTextLabelName), 鍵名與英文預設由 settingsTexts 產生
+    ...settingsTextOptSpec(),
     //視口
     zoomOnScroll: { kind: 'defined', def: true },
     //捏合縮放(觸控雙指): 與 zoomOnScroll 各自獨立, 不想要觸控縮放者設 false
@@ -94,8 +98,49 @@ export function resolveOptValue(opt, name) {
     case 'notFalse': return v !== false
     case 'nullable': return v || null
     case 'fn': return typeof v === 'function' ? v : null
+    case 'text': return (typeof v === 'string' && v !== '') ? v : spec.def
     default: throw new Error(`resolveOpt: unknown kind '${spec.kind}'`)
     }
+}
+
+/** 已移除之 opt 鍵 → 取代之鍵(墓碑: 只用於點名新鍵, 不讀其值、不生效, 故非相容層) */
+export const REMOVED_OPT_KEYS = Object.freeze({
+    //色票確認鈕文字由節點、連線共用一個鍵改為各一個(節點與連線分開命名)
+    settingsColorConfirmText: 'opt.nodesSettingsColorConfirmText and opt.connsSettingsColorConfirmText',
+})
+
+//拼錯即無聲失效之鍵族: 以此前綴開頭而不在 OPT_SPEC 者視為未知鍵(其他 opt 鍵另有具名解析, 不在此檢查範圍)
+const CHECKED_PREFIXES = ['nodesSettings', 'connsSettings', 'settings']
+
+/**
+ * opt 之誤用(供 WFlowVue 逐則警告一次): 已移除之鍵、上列鍵族中之未知鍵、顯示文字鍵之值非字串。
+ * 只讀取需檢查之鍵之值(不碰 nodes / conns 等資料鍵), 避免警告之 computed 依賴到圖資料。
+ */
+export function collectOptIssues(opt) {
+    const o = Object.prototype.toString.call(opt) === '[object Object]' ? opt : {}
+    const specByKey = {}
+    for (const name of Object.keys(OPT_SPEC)) specByKey[OPT_SPEC[name].key || name] = OPT_SPEC[name]
+    const msgs = []
+    const unknown = []
+    const notText = []
+    for (const k of Object.keys(o)) {
+        if (Object.prototype.hasOwnProperty.call(REMOVED_OPT_KEYS, k)) {
+            if (o[k] !== undefined) msgs.push(`opt.${k} has been removed and has no effect; use ${REMOVED_OPT_KEYS[k]} instead`)
+            continue
+        }
+        const spec = Object.prototype.hasOwnProperty.call(specByKey, k) ? specByKey[k] : null
+        if (!spec) {
+            if (CHECKED_PREFIXES.some(p => k.indexOf(p) === 0)) unknown.push(k)
+            continue
+        }
+        if (spec.kind === 'text') {
+            const v = o[k]
+            if (v !== undefined && v !== null && typeof v !== 'string') notText.push(k)
+        }
+    }
+    if (unknown.length) msgs.push(`unknown opt keys ignored: ${unknown.join(', ')}`)
+    if (notText.length) msgs.push(`opt texts must be strings, defaults used for: ${notText.join(', ')}`)
+    return msgs
 }
 
 /** 全部純量鍵一次解析(測試/除錯用; 元件內以 optComputeds 逐鍵 computed, 避免整包失效) */
@@ -114,17 +159,6 @@ export function optComputeds() {
         }
     }
     return c
-}
-
-/** 設定表單可改文字(非字串或空字串回退預設) */
-export function resolveSettingsText(opt) {
-    const o = opt || {}
-    const str = (v, d) => (typeof v === 'string' && v !== '' ? v : d)
-    return {
-        nodeDelete: str(o.nodesSettingsDeleteText, 'Delete'),
-        connDelete: str(o.connsSettingsDeleteText, 'Delete'),
-        colorConfirm: str(o.settingsColorConfirmText, 'Confirm'),
-    }
 }
 
 /** 節點預設(opt.defNode* / opt.defHandle* → NODE_DEFAULTS); 數值型以 !== undefined 判斷(0 為合法之框線寬) */

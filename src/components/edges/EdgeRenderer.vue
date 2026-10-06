@@ -27,6 +27,7 @@
       :settings-enabled="settingsEnabled"
       :settings-trigger="settingsTrigger"
       :settings-excludes="settingsExcludes"
+      :form-texts="formTexts"
       @conn-click="$emit('conn-click', $event)"
       @conn-double-click="$emit('conn-double-click', $event)"
       @conn-context-menu="$emit('conn-context-menu', $event)"
@@ -73,6 +74,8 @@ export default {
         settingsEnabled: { type: Boolean, default: true },
         settingsTrigger: { type: String, default: 'dblclick' },
         settingsExcludes: { type: Array, default: () => [] },
+        //設定表單之顯示文字(內部傳遞, 見 EdgeWrapper.formTexts)
+        formTexts: { type: Object, default: () => ({}) },
     },
     computed: {
         visibleConns() {

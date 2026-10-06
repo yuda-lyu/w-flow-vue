@@ -36,6 +36,75 @@ Add script for w-flow-vue.
 <script src="https://cdn.jsdelivr.net/npm/w-flow-vue@1.1.5/dist/w-flow-vue.umd.js"></script>
 ```
 
+## Settings popup texts
+
+The node and connection settings popups ship with English texts and no language pack. Every visible text is its own `opt` key — set only the ones you want to change; each key you leave out keeps its English default. Node and connection popups have separate keys, so the same group or field can read differently in the two popups.
+
+```js
+opt: {
+    nodesSettingsBasicGroupTitle: '節點',
+    nodesSettingsTextLabelName: '名稱',
+    nodesSettingsTextLabelShape: '形狀',
+    nodesSettingsShapeTextForDiamond: '菱形',
+    nodesSettingsDeleteText: '刪除節點',
+    nodesSettingsColorConfirmText: '確定',
+    connsSettingsBasicGroupTitle: '連線',
+    connsSettingsTextLabelType: '線型',
+    connsSettingsTypeTextForBezier: '貝茲曲線',
+    connsSettingsMarkerTextForNone: '無',
+    connsSettingsPointsAddBtnTooltip: '新增轉折點',
+    connsSettingsPointsRemoveBtnTooltip: '移除轉折點',
+    connsSettingsPointsTextEmpty: '無(自動路由)',
+    connsSettingsDeleteText: '刪除連線',
+}
+```
+
+Node settings popup (26 keys; `/` lists several keys sharing the first one's prefix, e.g. `nodesSettingsShapeTextForDiamond`):
+
+| Key | Default |
+|---|---|
+| `nodesSettingsBasicGroupTitle` / `AppearanceGroupTitle` / `TextGroupTitle` / `AdvancedGroupTitle` | Basic / Appearance / Text / Advanced |
+| `nodesSettingsTextLabelName` / `TextLabelDescription` | Name / Description |
+| `nodesSettingsTextLabelShape` / `TextLabelFaceColor` / `TextLabelEdgeColor` / `TextLabelEdgeWidth` | Shape / Face Color / Edge Color / Edge Width |
+| `nodesSettingsTextLabelFontSize` / `TextLabelFontColor` / `TextLabelPopupDirection` | Font Size / Font Color / Popup Direction |
+| `nodesSettingsShapeTextForRectangle` / `ForDiamond` / `ForEllipse` | Rectangle / Diamond / Ellipse |
+| `nodesSettingsShapeTextForTriangleUp` / `ForTriangleRight` / `ForTriangleDown` / `ForTriangleLeft` | Triangle Up / Triangle Right / Triangle Down / Triangle Left |
+| `nodesSettingsPopupDirectionTextForTop` / `ForRight` / `ForBottom` / `ForLeft` | Top / Right / Bottom / Left |
+| `nodesSettingsDeleteText` (delete button) / `nodesSettingsColorConfirmText` (color picker confirm button) | Delete / Confirm |
+
+Connection settings popup (42 keys):
+
+| Key | Default |
+|---|---|
+| `connsSettingsBasicGroupTitle` / `PathGroupTitle` / `AppearanceGroupTitle` / `ArrowsGroupTitle` / `TextGroupTitle` | Basic / Path / Appearance / Arrows / Text |
+| `connsSettingsTextLabelName` / `TextLabelDescription` | Name / Description |
+| `connsSettingsTextLabelType` / `TextLabelFromPosition` / `TextLabelToPosition` / `TextLabelPoints` | Type / From Anchor / To Anchor / Waypoints |
+| `connsSettingsTextLabelEdgeColor` / `TextLabelEdgeWidth` / `TextLabelAnimated` | Edge Color / Edge Width / Animated |
+| `connsSettingsTextLabelMarkerFrom` / `TextLabelMarkerFromSize` / `TextLabelMarkerFromFaceColor` / `TextLabelMarkerFromEdgeColor` | From Marker / From Marker Size / From Marker Face Color / From Marker Edge Color |
+| `connsSettingsTextLabelMarkerTo` / `TextLabelMarkerToSize` / `TextLabelMarkerToFaceColor` / `TextLabelMarkerToEdgeColor` | To Marker / To Marker Size / To Marker Face Color / To Marker Edge Color |
+| `connsSettingsTextLabelFontSize` / `TextLabelFontColor` | Font Size / Font Color |
+| `connsSettingsTypeTextForBezier` / `ForStraight` / `ForStep` / `ForSmoothstep` | Bezier / Straight / Step / Smooth Step |
+| `connsSettingsPositionTextForTop` / `ForRight` / `ForBottom` / `ForLeft` | Top / Right / Bottom / Left |
+| `connsSettingsMarkerTextForNone` / `ForArrow` / `ForArrowclosed` | None / Arrow / Arrow Closed |
+| `connsSettingsPointsAddBtnTooltip` / `PointsRemoveBtnTooltip` | Add Waypoint / Remove Waypoint |
+| `connsSettingsPointsTextEmpty` | None (auto-routed) |
+| `connsSettingsPointsXTooltip` / `PointsYTooltip` | X / Y |
+| `connsSettingsDeleteText` / `connsSettingsColorConfirmText` | Delete / Confirm |
+
+- **Naming** follows the text props of `w-component-vue`: `…GroupTitle` (group titles), `…TextLabel{Field}` (field labels), `…{Field}TextFor{Value}` (dropdown options), `…BtnTooltip`, `…TextEmpty`. `connsSettingsPositionTextFor*` serves both anchor dropdowns and `connsSettingsMarkerTextFor*` both arrow dropdowns; `MarkerTextForNone` is the "no arrow" option.
+- **Fallback**: a value that is not a string, or `''`, keeps the default. A whitespace-only string is used as given.
+- `connsSettingsPointsAddBtnTooltip` / `PointsRemoveBtnTooltip` are both the tooltip and the accessible name (`aria-label`) of the ＋ / × waypoint buttons; `PointsXTooltip` / `PointsYTooltip` are the tooltips of the coordinate inputs; `PointsTextEmpty` is the hint shown while a connection has no waypoints.
+- **Typos are reported**: an unknown key starting with `nodesSettings` / `connsSettings` / `settings`, or a non-string text, is listed once via `console.warn`.
+- **Changing texts at runtime**: assign to a key that already exists in `opt`; adding a key that was not there before needs `Vue.set` / `this.$set` (Vue 2 cannot detect new properties).
+- **Length**: longer texts widen the popup or wrap; group titles are cut with an ellipsis.
+- **Not covered**: the color picker's own `RGBA` / `HSVA` tabs and `R` `G` `B` `A` / `H` `S` `V` `A` labels come from `w-component-vue` and cannot be changed here. The toolbar tooltips are set with `opt.menu*Tooltip`.
+
+### Migration from earlier versions
+
+- `opt.nodesSettingsDeleteText` and `opt.connsSettingsDeleteText` are unchanged.
+- `opt.settingsColorConfirmText` (shared by both popups) has been removed: use `opt.nodesSettingsColorConfirmText` and `opt.connsSettingsColorConfirmText`. The old key no longer has any effect; if it is still present, a one-time `console.warn` names the replacements.
+- The waypoint texts that used to be hard-coded in Chinese now default to English (`Add Waypoint`, `Remove Waypoint`, `None (auto-routed)`). To keep the Chinese wording, set `connsSettingsPointsAddBtnTooltip`, `connsSettingsPointsRemoveBtnTooltip` and `connsSettingsPointsTextEmpty` as in the example above.
+
 ## Settings form components (for advanced use)
 
 The node / connection settings popups are built from standalone components that can be imported directly, so a host app can embed the same form in its own panel, or assemble a custom one:
@@ -47,10 +116,9 @@ import SettingsGroup from 'w-flow-vue/src/components/ui/SettingsGroup.vue'
 import { NODE_SETTING_GROUPS, CONN_SETTING_GROUPS, visibleGroups } from 'w-flow-vue/src/js/settingsGroups.mjs'
 ```
 
-- `NodeSettingsForm` / `ConnSettingsForm` — the full form. Props: `node` / `conn`, `defNode` / `defConn`, `excludes` (field keys to hide), `defaultOpenGroups` (which groups start expanded, default `['basic']` — read once on create, not a controlled prop), `maxHeight` (CSS length; the form scrolls inside itself past this, `opt.settingsPopupMaxHeight` defaults to `'400px'`), `textFontSize`. Emits `update(key, value)` and `delete`. Both mount standalone — every `inject` has a default, and each form imports its own `settingsForm.css` — so they work and look right outside `WFlowVue`.
+- `NodeSettingsForm` / `ConnSettingsForm` — the full form. Props: `node` / `conn`, `defNode` / `defConn`, one prop per visible text (the opt key without the `nodesSettings` / `connsSettings` prefix, first letter lower-cased — e.g. `textLabelName`, `shapeTextForDiamond`, `pointsAddBtnTooltip`, `deleteText`; see [Settings popup texts](#settings-popup-texts); omit a prop for its English default), `excludes` (field keys to hide), `defaultOpenGroups` (which groups start expanded, default `['basic']` — read once on create, not a controlled prop), `maxHeight` (CSS length; the form scrolls inside itself past this, `opt.settingsPopupMaxHeight` defaults to `'400px'`), `textFontSize`, `backgroundColor` (the popup background; group headers switch to a light-on-dark style on a dark color). `ConnSettingsForm` also takes `defaultPoint` (`{ x, y }` where the ＋ button puts the first waypoint, e.g. the path midpoint) and `targetPoint` (`{ x, y }` of the to-anchor; each further waypoint goes halfway between the last one and it). Emits `update(key, value)` and `delete`. Both mount standalone — every `inject` has a default, and each form imports its own `settingsForm.css` — so they work and look right outside `WFlowVue`.
 - `SettingsGroup` — one collapsible group. Props: `title`, `open`, `headingLevel` (default 3); emits `update:open` (so `:open.sync` works). The disclosure triangle points right when collapsed and down when expanded (the symbol shows the current state, as in macOS Finder), and the whole header row is clickable. Markup follows the [W3C ARIA APG accordion pattern](https://www.w3.org/WAI/ARIA/apg/patterns/accordion/): the header button is wrapped in a `role="heading"` element with `aria-level`.
 - `settingsGroups.mjs` — the grouping definition (`{ key, title, fields }`, array order is display order) plus `visibleGroups(groups, excludes)`. Import it to drive your own layout, or to decide which fields to exclude.
-
 These are `.vue` / `.mjs` sources, so your build must handle Vue 2 SFCs (the same way this package consumes `w-component-vue`). The prebuilt `dist/w-flow-vue.umd.js` bundle only exports the `WFlowVue` component itself.
 
 ## Touch support

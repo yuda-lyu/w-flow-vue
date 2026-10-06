@@ -10,7 +10,8 @@
  *
  * 每群: { key, title, fields }
  *   key    — 展開態之識別鍵(表單內部用)
- *   title  — 群標題(英文, 與表單內既有欄位標籤同語彙)
+ *   title  — 群標題之預設文字(英文, 與表單內欄位標籤同語彙); 宿主以 opt.{nodes|conns}Settings{群鍵}GroupTitle 逐鍵覆寫,
+ *            鍵名由 js/settingsTexts.mjs 產生 —— 本模組維持零依賴, 不反向 import 文字模組
  *   fields — 該群所含之欄位鍵, 與 opt.nodesSettingsExcludes / connsSettingsExcludes 同一組鍵。
  *            排除後該群若無任何可見欄位, 表單不渲染該群(不留空群)。
  *

@@ -5,9 +5,12 @@
  * G3 hover 模式: 移入出齒輪、移出收(既有行為); 點擊/雙擊本體不直接開設定.
  * G4 非法值回退 dblclick; 把手上之雙擊不開; 手勢/複選中拒開; locked 不開.
  * G5 dblclick 模式: 單擊之資訊 popup 延後 250ms 再開(雙擊前必先派發 click, 不得閃現); 期間雙擊即取消, 只開設定.
+ * G6 設定 popup 之開啟方向(node.popupDirection → opt.defNodePopupDirection → right): 錨點角與 WPopup placement 依方向;
+ *    非四方位回退 right; popup 開啟期間凍結方向(表單改方向於下次開啟生效).
  */
 import { mount } from '@vue/test-utils'
 import WFlowVue from '../src/components/WFlowVue.vue'
+import WPopup from 'w-component-vue/src/components/WPopup.vue'
 
 const base = () => ({
     nodes: [
@@ -151,6 +154,89 @@ describe('G5 dblclick 模式: 資訊 popup 延後, 雙擊取消', () => {
         jest.advanceTimersByTime(300)
         expect(ew(w).infoPopupShow).toBe(false)
         expect(ew(w).settingsPopupShow).toBe(true)
+        w.destroy()
+    })
+})
+
+describe('G6 設定 popup 之開啟方向', () => {
+    const settingsPopup = (w, id) => nodeAnchor(w, id).findComponent(WPopup)
+    const openSettings = async (w, id) => {
+        nw(w, id).settingsPopupShow = true
+        await tick(w)
+    }
+
+    test.each([
+        ['right', 'top-right', 'right-start'],
+        ['top', 'top-right', 'top-end'],
+        ['left', 'top-left', 'left-start'],
+        ['bottom', 'bottom-right', 'bottom-end'],
+    ])('node.popupDirection=%s → 錨點 %s、placement %s', async (dir, corner, placement) => {
+        const opt = base()
+        opt.nodes[0].popupDirection = dir
+        const w = mountFlow(opt)
+        await tick(w)
+        await openSettings(w, 'a')
+        expect(nodeAnchor(w, 'a').classes()).toContain('vue-flow__node-settings-anchor--' + corner)
+        expect(settingsPopup(w, 'a').props('placement')).toBe(placement)
+        w.destroy()
+    })
+
+    test('未給 → opt.defNodePopupDirection; 皆未給 → right(原定位); 非四方位 → right', async () => {
+        const w1 = mountFlow(base())
+        await tick(w1)
+        await openSettings(w1, 'a')
+        expect(settingsPopup(w1, 'a').props('placement')).toBe('right-start')
+        expect(nodeAnchor(w1, 'a').classes()).toContain('vue-flow__node-settings-anchor--top-right')
+        w1.destroy()
+
+        const opt2 = { ...base(), defNodePopupDirection: 'left' }
+        opt2.nodes[1].popupDirection = 'bottom'
+        const w2 = mountFlow(opt2)
+        await tick(w2)
+        await openSettings(w2, 'a')
+        expect(settingsPopup(w2, 'a').props('placement')).toBe('left-start')
+        for (const c of w2.vm.$refs.nodeRenderer.$refs.wrappers) c.settingsPopupShow = false
+        await openSettings(w2, 'b')
+        expect(settingsPopup(w2, 'b').props('placement')).toBe('bottom-end')
+        w2.destroy()
+
+        const opt3 = base()
+        opt3.nodes[0].popupDirection = 'diagonal'
+        const w3 = mountFlow(opt3)
+        await tick(w3)
+        await openSettings(w3, 'a')
+        expect(settingsPopup(w3, 'a').props('placement')).toBe('right-start')
+        w3.destroy()
+    })
+
+    test('開啟期間改方向不移動錨點與 placement; 關閉後下次開啟即用新方向', async () => {
+        const w = mountFlow(base())
+        await tick(w)
+        await openSettings(w, 'a')
+        expect(settingsPopup(w, 'a').props('placement')).toBe('right-start')
+        //經表單改方向(與使用者於 Advanced 群選 Left 同一路徑: 表單 update → node-settings-update → 寫回 node)
+        nw(w, 'a').onSettingsUpdate('popupDirection', 'left')
+        await tick(w)
+        expect(w.vm.nodes[0].popupDirection).toBe('left')
+        expect(nodeAnchor(w, 'a').classes()).toContain('vue-flow__node-settings-anchor--top-right')
+        expect(settingsPopup(w, 'a').props('placement')).toBe('right-start')
+        nw(w, 'a').settingsPopupShow = false
+        await tick(w)
+        await openSettings(w, 'a')
+        expect(nodeAnchor(w, 'a').classes()).toContain('vue-flow__node-settings-anchor--top-left')
+        expect(settingsPopup(w, 'a').props('placement')).toBe('left-start')
+        w.destroy()
+    })
+
+    test('hover 模式: 齒輪(錨點)於開啟前即位於方向對應之角', async () => {
+        const opt = { ...base(), nodesSettingsTrigger: 'hover' }
+        opt.nodes[0].popupDirection = 'bottom'
+        const w = mountFlow(opt)
+        await tick(w)
+        nw(w, 'a').hovered = true
+        await tick(w)
+        expect(nodeAnchor(w, 'a').exists()).toBe(true)
+        expect(nodeAnchor(w, 'a').classes()).toContain('vue-flow__node-settings-anchor--bottom-right')
         w.destroy()
     })
 })

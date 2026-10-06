@@ -309,7 +309,10 @@ const PATH_FUNCTIONS = {
     smoothstep: getSmoothStepPath,
 }
 
-/** 支援之邊型值域(設定表單之 Type 下拉即由此衍生, 不另抄一份; 新增路徑函式時選項自動跟上) */
+/**
+ * 支援之邊型值域(設定表單之 Type 下拉即由此衍生, 不另抄一份; 新增路徑函式時選項自動跟上)。
+ * 每個值之顯示文字為一個 opt 鍵 connsSettingsTypeTextFor{值}(由 settingsTexts 依本值域產生, 預設由值轉寫), 新值不必另行登記。
+ */
 export const EDGE_TYPES = Object.keys(PATH_FUNCTIONS)
 
 /** 邊型 → 路徑函式(未知邊型回 bezier); EdgeWrapper 與 ConnectionLine 共用同一對照表 */

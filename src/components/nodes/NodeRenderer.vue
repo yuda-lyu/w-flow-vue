@@ -26,6 +26,7 @@
       :settings-enabled="settingsEnabled"
       :settings-trigger="settingsTrigger"
       :settings-excludes="settingsExcludes"
+      :form-texts="formTexts"
       @drag-prepare="$emit('drag-prepare', $event)"
       @drag-start="$emit('drag-start', $event)"
       @node-click="$emit('node-click', $event)"
@@ -80,6 +81,8 @@ export default {
         settingsEnabled: { type: Boolean, default: true },
         settingsTrigger: { type: String, default: 'dblclick' },
         settingsExcludes: { type: Array, default: () => [] },
+        //設定表單之顯示文字(內部傳遞, 見 NodeWrapper.formTexts)
+        formTexts: { type: Object, default: () => ({}) },
     },
     computed: {
         visibleNodes() {

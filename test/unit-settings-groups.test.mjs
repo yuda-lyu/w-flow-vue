@@ -7,7 +7,8 @@
  *   G5 表單預設只展開 DEFAULT_OPEN_GROUPS
  *   G6 各群獨立顯隱: 開一群不會關掉別群
  *   G7 excludes 之群層行為: 整群排除該群消失; 部分排除該群仍在
- *   G8 節點/連線兩表單之對稱性: 共用群鍵一致, 刪除區皆不歸入任何群
+ *   G8 節點/連線兩表單之對稱性: 共用群鍵之預設標題一致(宿主可經 nodesSettings*GroupTitle / connsSettings*GroupTitle 分開覆寫,
+ *      見 unit-settings-texts X5), 刪除區皆不歸入任何群
  */
 import { mount } from '@vue/test-utils'
 import NodeSettingsForm from '../src/components/ui/NodeSettingsForm.vue'
@@ -386,7 +387,7 @@ describe('G7 excludes 之群層行為(表單)', () => {
 })
 
 describe('G8 節點/連線兩表單之對稱性', () => {
-    test('共用群鍵之標題一致(同一件事在兩個 popup 用同一語彙)', () => {
+    test('共用群鍵之預設標題一致(同一件事在兩個 popup 用同一語彙; 宿主覆寫可不同)', () => {
         const nodeMap = Object.fromEntries(NODE_SETTING_GROUPS.map(g => [g.key, g.title]))
         const connMap = Object.fromEntries(CONN_SETTING_GROUPS.map(g => [g.key, g.title]))
         const shared = Object.keys(nodeMap).filter(k => k in connMap)

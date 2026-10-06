@@ -137,6 +137,7 @@
                     :max-height="settingsPopupMaxHeight"
                     :background-color="settingsPopupBackgroundColor"
                     :excludes="settingsExcludes"
+                    v-bind="formTexts"
                     :default-point="waypointDefaultPoint"
                     :target-point="waypointTargetPoint"
                     @update="onSettingsUpdate"
@@ -208,6 +209,8 @@ export default {
         //設定入口方式: 'hover'(移入顯示齒輪, 點齒輪開設定) | 'click' | 'dblclick'(該動作直接開設定 popup, 不顯示齒輪)
         settingsTrigger: { type: String, default: 'dblclick' },
         settingsExcludes: { type: Array, default: () => [] },
+        //設定表單之顯示文字(內部傳遞: 表單文字 prop 名 → 文字, 由 WFlowVue 依 opt.connsSettings* 文字鍵組成), 展開為表單之各文字 prop
+        formTexts: { type: Object, default: () => ({}) },
     },
     data() {
         return {

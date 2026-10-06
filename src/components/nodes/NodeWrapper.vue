@@ -63,7 +63,8 @@
     <transition name="vue-flow__fade">
     <!-- 齒輪錨區: hover 模式=移入顯示齒輪, 點齒輪開設定; click/dblclick 模式=不顯示齒輪, 該動作直接開設定 popup
          (錨區仍於 popup 開啟時渲染供 WPopup 定位, 但齒輪 icon 以 --silent 隱藏) -->
-    <div v-if="(gearVisible || settingsPopupShow) && draggable && !locked && settingsEnabled" class="vue-flow__node-settings-anchor" :class="{ 'vue-flow__node-settings-anchor--silent': settingsTrigger !== 'hover' }" @click="onSettingsAnchorClick">
+    <!-- 錨點(齒輪)所在角隨設定 popup 之開啟方向(popupDirection)而定, popup 才會開在節點外之該側, 見 popupPolicy.settingsPopupLayout -->
+    <div v-if="(gearVisible || settingsPopupShow) && draggable && !locked && settingsEnabled" class="vue-flow__node-settings-anchor" :class="['vue-flow__node-settings-anchor--' + popupLayout.corner, { 'vue-flow__node-settings-anchor--silent': settingsTrigger !== 'hover' }]" @click="onSettingsAnchorClick">
       <!-- 受控而非v-model: 開啟請求須經onSettingsPopupInput裁決(複選模式中拒開);
            WPopup非isolated, trigger點擊只是$emit請求, @show跟隨實際開啟故拒開時不會幽靈emit。
            paddingStyle 歸零: 設定表單之內距由 ui/settingsForm.css 掌管, 使群標題列能 full-bleed 貼齊 popup
@@ -71,7 +72,7 @@
       <WPopup
         :value="settingsPopupShow"
         @input="onSettingsPopupInput"
-        placement="right-start"
+        :placement="popupLayout.placement"
         modeHide="mousedown"
         :minWidth="null"
         :maxWidth="null"
@@ -97,6 +98,7 @@
             :max-height="settingsPopupMaxHeight"
             :background-color="settingsPopupBackgroundColor"
             :excludes="settingsExcludes"
+            v-bind="formTexts"
             @update="onSettingsUpdate"
             @delete="onSettingsDelete"
           />
@@ -115,6 +117,7 @@ import WPopup from 'w-component-vue/src/components/WPopup.vue'
 import { classifyHit, isAffordanceHit } from '../../js/hitTest.mjs'
 import { resolveNodeSize, computeResize } from '../../js/geometry.mjs'
 import elementPopups from '../mixins/elementPopups.mjs'
+import { settingsPopupLayout } from '../../js/popupPolicy.mjs'
 import { GEAR_PATH } from '../../js/icons.mjs'
 import { startDocumentGesture, crossedThreshold, gestureBlockedReason, preventNativeDefault } from '../../js/domGesture.mjs'
 import pointerGesture from '../mixins/pointerGesture.mjs'
@@ -163,6 +166,8 @@ export default {
         //設定入口方式: 'hover'(移入顯示齒輪, 點齒輪開設定) | 'click' | 'dblclick'(該動作直接開設定 popup, 不顯示齒輪)
         settingsTrigger: { type: String, default: 'dblclick' },
         settingsExcludes: { type: Array, default: () => [] },
+        //設定表單之顯示文字(內部傳遞: 表單文字 prop 名 → 文字, 由 WFlowVue 依 opt.nodesSettings* 文字鍵組成), 展開為表單之各文字 prop
+        formTexts: { type: Object, default: () => ({}) },
     },
     computed: {
         dn() {
@@ -187,6 +192,16 @@ export default {
         //設定 popup 之可互動旗標(elementPopups.canOpenSettings): 節點以 draggable 為準
         settingsInteractive() {
             return this.draggable
+        },
+        //設定 popup 之開啟方向: node.popupDirection → defNode.popupDirection(opt.defNodePopupDirection)→ right
+        settingsPopupDirection() {
+            return this.node.popupDirection || this.dn.popupDirection
+        },
+        //方向 → 齒輪錨點所在角 + WPopup placement(popupPolicy.settingsPopupLayout)。popup 開啟期間凍結於開啟當下之方向:
+        //WPopup 只在開啟時以 placement 建立定位, 期間在表單改方向若即時移動錨點, 後續之重新定位會以舊 placement 對新錨點,
+        //彈窗即疊到節點上; 故新方向於下次開啟生效
+        popupLayout() {
+            return settingsPopupLayout(this.settingsPopupOpenedDirection || this.settingsPopupDirection)
         },
         gearPath() {
             return GEAR_PATH
@@ -253,12 +268,18 @@ export default {
             //實測尺寸快取初值 null: 首次量測即使為 0×0 亦回報一次(初始尺寸 barrier 需要每個節點皆回報)
             cachedW: null,
             cachedH: null,
+            //設定 popup 開啟當下之方向(開啟期間凍結, 關閉即清空; 見 popupLayout)
+            settingsPopupOpenedDirection: null,
         }
     },
     watch: {
         //上鎖切換(契約 §5): 本節點持有之 document 手勢(拖曳追蹤/縮放)取消提交——縮放經 node-resize-cancel 通知 WFlowVue 清手勢與 ghost
         locked(val) {
             if (val) this.cancelLocalGestures()
+        },
+        //開啟當下凍結方向, 關閉即解凍(與 mixins/elementPopups 之同名 watcher 併存, Vue 依序呼叫)
+        settingsPopupShow(val) {
+            this.settingsPopupOpenedDirection = val ? (this.settingsPopupDirection || null) : null
         },
     },
     mounted() {
@@ -548,12 +569,24 @@ export default {
 
 /* Settings icon anchor (positioning only) */
 /* click/dblclick 模式: 錨區只供 popup 定位, 齒輪 icon 不可見亦不可點 */
+/* 齒輪錨點: 外凸 8px 坐在節點之一角; 哪一角由設定 popup 之開啟方向決定(popupPolicy.settingsPopupLayout),
+   popup 以錨點為定位參考, 錨點在彈窗那一側之角, 彈窗才會開在節點外而不蓋住節點 */
 .vue-flow__node-settings-anchor {
   position: absolute;
-  top: -8px;
-  right: -8px;
   z-index: 2;
   pointer-events: all;
+}
+.vue-flow__node-settings-anchor--top-right {
+  top: -8px;
+  right: -8px;
+}
+.vue-flow__node-settings-anchor--top-left {
+  top: -8px;
+  left: -8px;
+}
+.vue-flow__node-settings-anchor--bottom-right {
+  bottom: -8px;
+  right: -8px;
 }
 /* Settings icon (appearance only) */
 .vue-flow__node-settings {

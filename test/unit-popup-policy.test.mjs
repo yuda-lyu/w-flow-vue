@@ -5,8 +5,10 @@
  * Q3 infoOpenPlan: 閘門拒 → reject; click+可開設定 → yield; dblclick+可開設定 → defer; 其餘 open。settingsOpensOn 僅同模式事件。
  * Q4 effectiveField(FIELD_POLICY): raw 不繼承且空字串有效; defined 之 0/false 明確; explicit-empty 之 '' 明確; truthy 之 '' 回退。
  * Q5 兩 wrapper 共用 mixin: NodeWrapper / EdgeWrapper 皆含 elementPopups 之方法(對稱性: 同名方法同一實作)。
+ * Q6 settingsPopupLayout(節點設定 popup 之開啟方向, 契約 §6): right → 右上角 + right-start(原定位不變); top → 右上角 + top-end;
+ *    left → 左上角 + left-start; bottom → 右下角 + bottom-end; 非四方位(含 undefined、原型屬性名)回退 right。
  */
-import { gearVisible, canOpenPopup, canOpenSettings, infoOpenPlan, settingsOpensOn } from '../src/js/popupPolicy.mjs'
+import { gearVisible, canOpenPopup, canOpenSettings, infoOpenPlan, settingsOpensOn, settingsPopupLayout, SETTINGS_POPUP_LAYOUTS } from '../src/js/popupPolicy.mjs'
 import { effectiveField, FIELD_POLICY } from '../src/components/mixins/settingsForm.mjs'
 import elementPopups from '../src/components/mixins/elementPopups.mjs'
 import NodeWrapper from '../src/components/nodes/NodeWrapper.vue'
@@ -72,5 +74,29 @@ describe('Q5 兩 wrapper 共用同一 popup 狀態機', () => {
         }
         expect(typeof NodeWrapper.methods.emitActivate).toBe('function')
         expect(typeof EdgeWrapper.methods.emitActivate).toBe('function')
+    })
+})
+
+describe('Q6 節點設定 popup 之開啟方向 → 錨點所在角 + placement', () => {
+    test('四方位各自之角與 placement; right 即原本寫死之 right-start', () => {
+        expect(settingsPopupLayout('right')).toEqual({ corner: 'top-right', placement: 'right-start' })
+        expect(settingsPopupLayout('top')).toEqual({ corner: 'top-right', placement: 'top-end' })
+        expect(settingsPopupLayout('left')).toEqual({ corner: 'top-left', placement: 'left-start' })
+        expect(settingsPopupLayout('bottom')).toEqual({ corner: 'bottom-right', placement: 'bottom-end' })
+        expect(Object.keys(SETTINGS_POPUP_LAYOUTS)).toEqual(['right', 'top', 'left', 'bottom'])
+    })
+
+    test('placement 之主方向 = 開啟方向(彈窗落在該側), 錨點角落在該側之邊上', () => {
+        for (const dir of ['top', 'right', 'bottom', 'left']) {
+            const { corner, placement } = settingsPopupLayout(dir)
+            expect(placement.split('-')[0]).toBe(dir)
+            expect(corner.split('-')).toContain(dir)
+        }
+    })
+
+    test.each([
+        ['undefined', undefined], ['null', null], ['空字串', ''], ['非方位字串', 'diagonal'], ['大寫', 'Left'], ['原型屬性名', 'constructor'], ['數值', 1],
+    ])('非四方位(%s)→ right', (name, v) => {
+        expect(settingsPopupLayout(v)).toBe(SETTINGS_POPUP_LAYOUTS.right)
     })
 })

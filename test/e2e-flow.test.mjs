@@ -1,5 +1,5 @@
 /**
- * E2E 圖台互動測試(Playwright)—— 單檔雙模式,對應 spec/流程_圖台互動.md 之 E2E-001 ~ E2E-050。
+ * E2E 圖台互動測試(Playwright)—— 單檔雙模式,對應 spec/流程_圖台互動.md 之 E2E-001 ~ E2E-052。
  *
  * 前置: npm run serve(dev server 須在 127.0.0.1:8080)
  *
@@ -206,6 +206,13 @@ async function clickMenu(page, which) {
     const btns = await menuButtons(page)
     const idx = MENU[which]
     if (btns.length <= idx) throw new Error(`選單按鈕不足: 需要 index ${idx}, 實有 ${btns.length}`)
+    //真實使用者先把滑鼠移到目標鈕再點: 上一顆鈕之 tooltip 開在其正下方、恰蓋住下一顆鈕(pointer-events:auto),
+    //滑鼠移開即收起。ElementHandle.click 於命中檢查前不移動滑鼠, 該 tooltip 便一直判為遮擋而重試至逾時
+    //(2026-10-06 實測: w-component-vue 升至 2.5.26 後 E2E-022 於此 3/3 失敗, 2.5.21 時之全跑為通過; 上游 2.5.26 改了
+    // WButtonCircle 之命中層(圖示層 pointer-events:none), 推測與此有關, 未逐版驗證)
+    const b = await btns[idx].boundingBox()
+    await page.mouse.move(b.x + b.width / 2, b.y + b.height / 2, { steps: 5 })
+    await page.waitForTimeout(150)
     await btns[idx].click()
     await page.waitForTimeout(500)
 }
@@ -281,21 +288,21 @@ async function selectByClick(page, labelText, optionText) {
  * 色票面板(WColorSelect)之定位。
  *
  * 該元件之面板 Teleport 至 body, 且**無 class、無 aria-label**(第三方元件, 不便侵入加 data-*),
- * 故以「面板內的文字」語意定位: 唯一同時含 RGBA 與 Confirm 的 body 直屬節點。
+ * 故以「面板內的文字」語意定位: 唯一同時含 RGBA 與確認鈕文字(預設 Confirm; 宿主可經 labels.colorConfirm 改)的 body 直屬節點。
  * 面板內 R/G/B/A 為前四個可見 text input(其後尚有寬度 0 的 HSVA 隱藏欄), 此處為結構定位 —— 已於
  * tmp 探查確認順序, 並由「填值後 conn 未變、按 Confirm 後才變」之斷言反向保護: 若面板結構改版,
  * 這些斷言會直接紅燈而非靜默失效。
  */
-const colorPanel = (page) => page.locator('body > div').filter({ hasText: 'RGBA' }).filter({ hasText: 'Confirm' }).last()
+const colorPanel = (page, confirmText = 'Confirm') => page.locator('body > div').filter({ hasText: 'RGBA' }).filter({ hasText: confirmText }).last()
 
 /** 點某欄位之色塊開啟色票面板(色塊位於該 label 之右端) */
-async function openColorPanel(page, labelText) {
+async function openColorPanel(page, labelText, confirmText = 'Confirm') {
     const lbl = page.locator(`.vue-flow__settings-form label:has-text("${labelText}")`).first()
     await lbl.waitFor({ state: 'visible', timeout: 5000 })
     const box = await lbl.boundingBox()
     await page.mouse.click(box.x + box.width - 10, box.y + box.height / 2)
     await page.waitForTimeout(700)
-    if (await colorPanel(page).count() !== 1) throw new Error(`openColorPanel: 「${labelText}」之色票面板未開啟`)
+    if (await colorPanel(page, confirmText).count() !== 1) throw new Error(`openColorPanel: 「${labelText}」之色票面板未開啟`)
 }
 
 /** 於已開啟之面板填入 R/G/B(Vue v-model → 以 insertText 一次注入, 避免逐字 re-render 漏字) */
@@ -437,6 +444,52 @@ function settingsGroupState(page) {
             })(),
         }
     })
+}
+
+/**
+ * 讀目前設定表單之文字站點(契約 §12): 群標題、欄位標籤(依 data-field-key; label 之第一個文字節點, 轉折點為其標題列 span)、
+ * 刪除鈕、轉折點 ＋/× 之 title 與 aria-label、座標框 title、空狀態、下拉目前顯示之文字。
+ * 以 data-field-key 定位而非以文字定位 —— 本 helper 正是要驗「文字被換掉了」, 不能拿文字當錨點。
+ */
+const settingsFormTexts = (page) => page.evaluate(() => {
+    const form = document.querySelector('.vue-flow__settings-form')
+    if (!form) return null
+    const fields = {}
+    for (const el of form.querySelectorAll('[data-field-key]')) {
+        const head = el.querySelector('.vue-flow__waypoints-head > span')
+        fields[el.getAttribute('data-field-key')] = el.tagName === 'LABEL' ? el.childNodes[0].textContent.trim() : (head ? head.textContent.trim() : null)
+    }
+    const attr = (sel, a) => {
+        const e = form.querySelector(sel)
+        return e ? e.getAttribute(a) : null
+    }
+    const text = (sel) => {
+        const e = form.querySelector(sel)
+        return e ? e.textContent.trim() : null
+    }
+    return {
+        groups: [...form.querySelectorAll('.vue-flow__settings-group-title')].map(e => e.textContent.trim()),
+        fields,
+        del: text('.vue-flow__delete-btn'),
+        addTitle: attr('.vue-flow__waypoints-add', 'title'),
+        addAria: attr('.vue-flow__waypoints-add', 'aria-label'),
+        removeTitle: attr('.vue-flow__waypoints-del', 'title'),
+        removeAria: attr('.vue-flow__waypoints-del', 'aria-label'),
+        xyTitles: [...form.querySelectorAll('.vue-flow__waypoints-row input')].map(i => i.getAttribute('title')),
+        empty: text('.vue-flow__waypoints-empty'),
+        selectShown: Object.fromEntries([...form.querySelectorAll('[data-field-key] .vue-flow__settings-select')]
+            .map(s => [s.closest('[data-field-key]').getAttribute('data-field-key'), s.textContent.trim()])),
+    }
+})
+
+/** 設定 popup 之截圖範圍: 表單外框(含 popup 邊緣)外擴少許 —— 不拍全頁, 免得綁上 demo 右側隨 opt 變動之 JSON 樹 */
+const settingsPopupClip = async (page) => {
+    const box = await page.evaluate(() => {
+        const f = document.querySelector('.vue-flow__settings-form')
+        const r = f.getBoundingClientRect()
+        return { x: r.x, y: r.y, width: r.width, height: r.height }
+    })
+    return clipAround(box, 12)
 }
 
 /** 以宿主 opt 切換齒輪顯示方式(setup 階段允許程式化設定 opt; hover 專屬之 case 用) */
@@ -1826,6 +1879,12 @@ const CASES = [
             return { exists: !!el, visible: seen(el), inPath: !!el && el.closest('.vue-flow__settings-group-panel') !== null }
         })
         expectOk('E2E-041 Waypoints 子區塊在 Path 群內且展開後可見', wp.exists && wp.visible && wp.inPath, `wp=${JSON.stringify(wp)}`)
+        //無轉折點時之提示為英文預設(契約 §12; 原為寫死之中文, 2026-10-06 改)
+        const wpEmpty = await page.evaluate(() => {
+            const el = document.querySelector('.vue-flow__settings-form .vue-flow__waypoints-empty')
+            return el ? el.textContent.trim() : null
+        })
+        expectOk('E2E-041 轉折點空狀態提示為預設文字', wpEmpty === 'None (auto-routed)', `empty=${wpEmpty}`)
         expectOk('E2E-041 連線表單展開前後寬度不變', !!c1 && Math.abs(c1.formWidth - c0.formWidth) < 0.5, `before=${c0 && c0.formWidth} after=${c1 && c1.formWidth}`)
         await shot(page, 'flow-E2E-041-settings-groups-conn-path', { parkMouse: false })
 
@@ -2168,6 +2227,239 @@ const CASES = [
         const selAfter = await getSelectedNodes(page)
         expectOk('E2E-050 tap 空白清除選取', selAfter.length === 0, `selected=${JSON.stringify(selAfter)}`)
     }, { touch: true }),
+
+    mkCase('E2E-051', 'settings-texts', async (page) => {
+        //spec 契約 §12: 設定彈窗文字由宿主逐鍵覆寫(不內建語系包); 節點與連線各一包, 同鍵可不同文字; 未給之鍵維持英文預設。
+        //真實 user path: ①雙擊節點開設定 popup ②點「外觀」群標題展開 ③點「形狀」下拉 → 看到中文選項 → 點「菱形」
+        //               ④點「填色」色塊開色票 → 確認鈕為中文 ⑤雙擊連線 label 開設定 popup ⑥點「路徑」群標題展開 ⑦點 ＋ 新增轉折點
+        //各鍵刻意留幾個不給(節點 advanced / fontSize、連線 text / edgeColor / 方位選項 / colorConfirm), 驗逐鍵回退。
+        const SHAPE_TEXT = { 'rectangle': '矩形', 'diamond': '菱形', 'ellipse': '橢圓', 'triangle-up': '上三角形', 'triangle-right': '右三角形', 'triangle-down': '下三角形', 'triangle-left': '左三角形' }
+        //每句文字一個 opt 鍵(契約 §12), 宿主逐鍵個別給
+        const textKeys = {
+            nodesSettingsBasicGroupTitle: '節點基本',
+            nodesSettingsAppearanceGroupTitle: '外觀',
+            nodesSettingsTextGroupTitle: '文字',
+            nodesSettingsTextLabelName: '名稱',
+            nodesSettingsTextLabelDescription: '說明',
+            nodesSettingsTextLabelShape: '形狀',
+            nodesSettingsTextLabelFaceColor: '填色',
+            nodesSettingsTextLabelEdgeColor: '框線色',
+            nodesSettingsTextLabelEdgeWidth: '框線寬',
+            nodesSettingsShapeTextForRectangle: SHAPE_TEXT['rectangle'],
+            nodesSettingsShapeTextForDiamond: SHAPE_TEXT['diamond'],
+            nodesSettingsShapeTextForEllipse: SHAPE_TEXT['ellipse'],
+            nodesSettingsShapeTextForTriangleUp: SHAPE_TEXT['triangle-up'],
+            nodesSettingsShapeTextForTriangleRight: SHAPE_TEXT['triangle-right'],
+            nodesSettingsShapeTextForTriangleDown: SHAPE_TEXT['triangle-down'],
+            nodesSettingsShapeTextForTriangleLeft: SHAPE_TEXT['triangle-left'],
+            nodesSettingsDeleteText: '刪除節點',
+            nodesSettingsColorConfirmText: '確定',
+            connsSettingsBasicGroupTitle: '連線基本',
+            connsSettingsPathGroupTitle: '路徑',
+            connsSettingsAppearanceGroupTitle: '外觀',
+            connsSettingsArrowsGroupTitle: '箭頭',
+            connsSettingsTextLabelName: '名稱',
+            connsSettingsTextLabelDescription: '說明',
+            connsSettingsTextLabelType: '線型',
+            connsSettingsTextLabelFromPosition: '起點錨',
+            connsSettingsTextLabelToPosition: '終點錨',
+            connsSettingsTextLabelPoints: '轉折點',
+            connsSettingsTypeTextForBezier: '貝茲曲線',
+            connsSettingsTypeTextForStraight: '直線',
+            connsSettingsTypeTextForStep: '階梯',
+            connsSettingsTypeTextForSmoothstep: '圓角階梯',
+            connsSettingsPointsAddBtnTooltip: '新增轉折點',
+            connsSettingsPointsRemoveBtnTooltip: '移除轉折點',
+            connsSettingsPointsTextEmpty: '無(自動路由)',
+            connsSettingsPointsXTooltip: 'X 座標',
+            connsSettingsPointsYTooltip: 'Y 座標',
+            connsSettingsDeleteText: '刪除連線',
+        }
+        //setup(非 act): 文字屬宿主組態, 不是使用者操作
+        await evalVm(page, `
+            for (const k of Object.keys(arg)) vm.$set(vm.opt, k, arg[k])
+            return true
+        `, textKeys)
+        await page.waitForTimeout(300)
+
+        //① 節點設定 popup
+        await centerOnNode(page, '1')
+        await page.waitForTimeout(300)
+        await openNodeSettings(page, '1')
+        await page.waitForTimeout(400)
+        const n0 = await settingsFormTexts(page)
+        expectOk('E2E-051 節點群標題為宿主文字, 未給之 advanced 維持英文',
+            !!n0 && JSON.stringify(n0.groups) === JSON.stringify(['節點基本', '外觀', '文字', 'Advanced']),
+            `groups=${JSON.stringify(n0 && n0.groups)}`)
+        expectOk('E2E-051 節點欄位標籤為宿主文字, 未給之 fontSize 維持英文',
+            !!n0 && n0.fields.name === '名稱' && n0.fields.description === '說明' && n0.fields.shape === '形狀' &&
+                n0.fields.faceColor === '填色' && n0.fields.fontSize === 'Font Size' && n0.fields.popupDirection === 'Popup Direction',
+            `fields=${JSON.stringify(n0 && n0.fields)}`)
+        expectOk('E2E-051 節點刪除鈕為宿主文字', !!n0 && n0.del === '刪除節點', `del=${n0 && n0.del}`)
+        expectOk('E2E-051 形狀下拉顯示宿主文字(值仍為 rectangle)', !!n0 && n0.selectShown.shape === '矩形', `shown=${n0 && n0.selectShown.shape}`)
+
+        //② 真實點擊群標題文字展開(以使用者看到的新文字定位)
+        await page.locator('.vue-flow__settings-group-title:text-is("外觀")').first().click()
+        await page.waitForTimeout(400)
+        const g1 = await settingsGroupState(page)
+        expectOk('E2E-051 點「外觀」即展開該群', !!g1 && g1.groups[1].expanded === true, `expanded=${JSON.stringify(g1 && g1.groups.map(g => g.expanded))}`)
+
+        //③ 開形狀下拉: 7 個選項皆為宿主文字、英文選項不出現; 點「菱形」→ 資料值為 diamond
+        const shapeCtrl = page.locator('.vue-flow__settings-form [data-field-key="shape"] .vue-flow__settings-select').first()
+        const sb = await shapeCtrl.boundingBox()
+        await page.mouse.click(sb.x + sb.width / 2, sb.y + sb.height / 2)
+        await page.waitForTimeout(500)
+        const visibleLeaf = (texts) => page.evaluate((ts) => ts.map(t => [...document.querySelectorAll('body *')]
+            .some(el => el.children.length === 0 && el.textContent.trim() === t && el.getBoundingClientRect().height > 0 && getComputedStyle(el).visibility !== 'hidden')), texts)
+        const zhShown = await visibleLeaf(Object.values(SHAPE_TEXT))
+        const enShown = await visibleLeaf(['Rectangle', 'Diamond', 'Ellipse', 'Triangle Up', 'Triangle Right', 'Triangle Down', 'Triangle Left'])
+        expectOk('E2E-051 形狀下拉之 7 個選項皆為宿主文字', zhShown.every(Boolean), `zh=${JSON.stringify(zhShown)}`)
+        expectOk('E2E-051 形狀下拉不再出現英文選項', enShown.every(v => !v), `en=${JSON.stringify(enShown)}`)
+        const diamond = page.locator('body *').filter({ hasText: /^菱形$/ }).last()
+        const db = await diamond.boundingBox()
+        await page.mouse.click(db.x + db.width / 2, db.y + db.height / 2)
+        await page.waitForTimeout(400)
+        const n1 = await getNode(page, '1')
+        const n1t = await settingsFormTexts(page)
+        expectOk('E2E-051 點選中文選項 → 資料值為 diamond', n1.shape === 'diamond', `shape=${n1.shape}`)
+        expectOk('E2E-051 下拉改顯示所選之宿主文字', !!n1t && n1t.selectShown.shape === '菱形', `shown=${n1t && n1t.selectShown.shape}`)
+        await page.mouse.move(0, 0)
+        await page.waitForTimeout(400)
+        await shot(page, 'flow-E2E-051-settings-texts-node', { clip: await settingsPopupClip(page), parkMouse: false })
+
+        //④ 色票面板之確認鈕: 節點包給了 colorConfirm
+        await openColorPanel(page, '填色', '確定')
+        const confirmTexts = await colorPanel(page, '確定').evaluate((el) => [...el.querySelectorAll('*')]
+            .filter(e => e.children.length === 0 && /^(確定|Confirm)$/.test(e.textContent.trim())).map(e => e.textContent.trim()))
+        expectOk('E2E-051 色票確認鈕為宿主文字', confirmTexts.includes('確定') && !confirmTexts.includes('Confirm'), `texts=${JSON.stringify(confirmTexts)}`)
+        await page.mouse.click(5, 5) //點面板外關閉(未按確認, 不寫回)
+        await page.waitForTimeout(500)
+
+        //⑤ 連線設定 popup: 同一群鍵 basic 於兩個 popup 顯示不同文字
+        await openEdgeSettings(page, 'e1-2')
+        await page.waitForTimeout(500)
+        const c0 = await settingsFormTexts(page)
+        expectOk('E2E-051 連線群標題為宿主文字, 與節點之 basic 不同, 未給之 text 維持英文',
+            !!c0 && JSON.stringify(c0.groups) === JSON.stringify(['連線基本', '路徑', '外觀', '箭頭', 'Text']),
+            `groups=${JSON.stringify(c0 && c0.groups)}`)
+        expectOk('E2E-051 連線欄位標籤與刪除鈕為宿主文字, 未給之 edgeColor 維持英文',
+            !!c0 && c0.fields.name === '名稱' && c0.fields.type === '線型' && c0.fields.fromPosition === '起點錨' &&
+                c0.fields.toPosition === '終點錨' && c0.fields.points === '轉折點' && c0.fields.edgeColor === 'Edge Color' && c0.del === '刪除連線',
+            `fields=${JSON.stringify(c0 && c0.fields)} del=${c0 && c0.del}`)
+
+        //⑥ 展開「路徑」: 邊型下拉顯示宿主文字; 方位選項未給 → 英文; 轉折點區塊之 ＋ 名稱與空狀態
+        await page.locator('.vue-flow__settings-group-title:text-is("路徑")').first().click()
+        await page.waitForTimeout(400)
+        const c1 = await settingsFormTexts(page)
+        expectOk('E2E-051 邊型下拉顯示宿主文字; 未覆寫之方位選項維持英文',
+            !!c1 && c1.selectShown.type === '貝茲曲線' && c1.selectShown.fromPosition === 'Bottom' && c1.selectShown.toPosition === 'Top',
+            `shown=${JSON.stringify(c1 && c1.selectShown)}`)
+        expectOk('E2E-051 ＋ 鈕之 title 與 aria-label 皆為宿主文字(圖示鈕之可及名稱)',
+            !!c1 && c1.addTitle === '新增轉折點' && c1.addAria === '新增轉折點', `title=${c1 && c1.addTitle} aria=${c1 && c1.addAria}`)
+        expectOk('E2E-051 無轉折點時之提示為宿主文字', !!c1 && c1.empty === '無(自動路由)', `empty=${c1 && c1.empty}`)
+
+        //⑦ 真實點 ＋ 新增一點 → × 鈕與座標框之名稱亦為宿主文字
+        await page.locator('.vue-flow__settings-form .vue-flow__waypoints-add').first().click()
+        await page.waitForTimeout(400)
+        const c2 = await settingsFormTexts(page)
+        const pts = await evalVm(page, `return JSON.parse(JSON.stringify(vm.conns.find(c => c.id === 'e1-2').points || null))`)
+        expectOk('E2E-051 點 ＋ 後新增一個轉折點', Array.isArray(pts) && pts.length === 1, `points=${JSON.stringify(pts)}`)
+        expectOk('E2E-051 × 鈕之 title 與 aria-label 皆為宿主文字',
+            !!c2 && c2.removeTitle === '移除轉折點' && c2.removeAria === '移除轉折點', `title=${c2 && c2.removeTitle} aria=${c2 && c2.removeAria}`)
+        expectOk('E2E-051 座標框之 title 為宿主文字', !!c2 && JSON.stringify(c2.xyTitles) === JSON.stringify(['X 座標', 'Y 座標']), `xy=${JSON.stringify(c2 && c2.xyTitles)}`)
+        expectOk('E2E-051 有轉折點後空狀態提示消失', !!c2 && c2.empty === null, `empty=${c2 && c2.empty}`)
+        await page.mouse.move(0, 0)
+        await page.waitForTimeout(400)
+        await shot(page, 'flow-E2E-051-settings-texts-conn', { clip: await settingsPopupClip(page), parkMouse: false })
+    }),
+
+    mkCase('E2E-052', 'popup-direction', async (page) => {
+        //spec 契約 §6: 節點設定 popup 開在 popupDirection 所指之節點外側, 錨點位於該側之角; 開啟期間凍結, 下次開啟生效。
+        //真實 user path: ①雙擊節點開設定 popup(預設右側) ②點 Advanced 群標題展開 ③點 Popup Direction 下拉選方向
+        //               ④點空白關閉 ⑤再雙擊開啟 → 看 popup 開在哪一側; 依序 Left → Bottom → Top
+        const layout = () => page.evaluate(() => {
+            const form = document.querySelector('.vue-flow__settings-form')
+            const n = document.querySelector('.vue-flow__node[data-id="1"]')
+            const a = n && n.querySelector('.vue-flow__node-settings-anchor')
+            if (!form || !n) return null
+            const p = form.getBoundingClientRect()
+            const r = n.getBoundingClientRect()
+            const box = (b) => ({ l: +b.left.toFixed(1), t: +b.top.toFixed(1), r: +b.right.toFixed(1), b: +b.bottom.toFixed(1) })
+            return {
+                popup: box(p),
+                node: box(r),
+                corner: a ? ([...a.classList].find(c => /--(top|bottom)-(left|right)$/.test(c)) || '').replace('vue-flow__node-settings-anchor--', '') : null,
+            }
+        })
+        const disjoint = (s) => s.popup.r <= s.node.l || s.popup.l >= s.node.r || s.popup.b <= s.node.t || s.popup.t >= s.node.b
+        const unionClip = (s) => {
+            const x = Math.min(s.popup.l, s.node.l)
+            const y = Math.min(s.popup.t, s.node.t)
+            return clipAround({ x, y, width: Math.max(s.popup.r, s.node.r) - x, height: Math.max(s.popup.b, s.node.b) - y }, 12)
+        }
+        //選方向: 展開 Advanced → 開下拉 → 點選項(真實點擊); 回傳選取當下之版面(驗開啟中凍結)
+        const chooseDirection = async (optionText) => {
+            await openSettingsGroup(page, 'Advanced')
+            await selectByClick(page, 'Popup Direction', optionText)
+            await page.mouse.move(0, 0)
+            await page.waitForTimeout(300)
+            return layout()
+        }
+        const reopen = async () => {
+            const blank = await blankPoint(page)
+            await page.mouse.click(blank.x, blank.y)
+            await page.waitForTimeout(400)
+            await openNodeSettings(page, '1')
+            await page.mouse.move(0, 0)
+            await page.waitForTimeout(500)
+            return layout()
+        }
+        const popupDirection = () => evalVm(page, `return vm.nodes.find(n => n.id === '1').popupDirection`)
+
+        await centerOnNode(page, '1')
+        await page.waitForTimeout(300)
+        await openNodeSettings(page, '1')
+        await page.mouse.move(0, 0)
+        await page.waitForTimeout(500)
+
+        //① 預設: 右側, 錨點右上角
+        const s0 = await layout()
+        expectOk('E2E-052 預設開在節點右側、自右上角起',
+            !!s0 && s0.popup.l > s0.node.r && s0.popup.t < s0.node.t && s0.corner === 'top-right',
+            `s0=${JSON.stringify(s0)}`)
+
+        //② 選 Left: 資料寫回, 開啟中之 popup 不移位
+        const s1 = await chooseDirection('Left')
+        expectOk('E2E-052 選 Left 後 node.popupDirection 為 left', (await popupDirection()) === 'left', `popupDirection=${await popupDirection()}`)
+        expectOk('E2E-052 開啟中改方向: popup 不移位(下次開啟生效)',
+            !!s1 && Math.abs(s1.popup.l - s0.popup.l) < 1 && Math.abs(s1.popup.t - s0.popup.t) < 1 && s1.corner === 'top-right',
+            `before=${JSON.stringify(s0 && s0.popup)} after=${JSON.stringify(s1 && s1.popup)} corner=${s1 && s1.corner}`)
+
+        //③ 重開: 左側, 錨點左上角
+        const sL = await reopen()
+        expectOk('E2E-052 Left: 開在節點左側、錨點左上角、不與節點重疊',
+            !!sL && sL.popup.r < sL.node.l && sL.corner === 'top-left' && disjoint(sL),
+            `sL=${JSON.stringify(sL)}`)
+        await shot(page, 'flow-E2E-052-popup-direction-left', { clip: unionClip(sL), parkMouse: false })
+
+        //④ Bottom: 下方, 錨點右下角
+        await chooseDirection('Bottom')
+        expectOk('E2E-052 選 Bottom 後 node.popupDirection 為 bottom', (await popupDirection()) === 'bottom', `popupDirection=${await popupDirection()}`)
+        const sB = await reopen()
+        expectOk('E2E-052 Bottom: 開在節點下方、錨點右下角、不與節點重疊',
+            !!sB && sB.popup.t > sB.node.b && sB.corner === 'bottom-right' && disjoint(sB),
+            `sB=${JSON.stringify(sB)}`)
+        await shot(page, 'flow-E2E-052-popup-direction-bottom', { clip: unionClip(sB), parkMouse: false })
+
+        //⑤ Top: 上方, 錨點右上角
+        await chooseDirection('Top')
+        expectOk('E2E-052 選 Top 後 node.popupDirection 為 top', (await popupDirection()) === 'top', `popupDirection=${await popupDirection()}`)
+        const sT = await reopen()
+        expectOk('E2E-052 Top: 開在節點上方、錨點右上角、不與節點重疊',
+            !!sT && sT.popup.b < sT.node.t && sT.corner === 'top-right' && disjoint(sT),
+            `sT=${JSON.stringify(sT)}`)
+        await shot(page, 'flow-E2E-052-popup-direction-top', { clip: unionClip(sT), parkMouse: false })
+    }),
 
 ]
 

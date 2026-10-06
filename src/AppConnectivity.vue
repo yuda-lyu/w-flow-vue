@@ -3,8 +3,8 @@
 
         <div class="bkh">
             <div style="font-size:1.5rem;">connectivity</div>
-            <a href="//yuda-lyu.github.io/w-flow-vue/examples/ex-AppExamConnectivity.html" target="_blank" class="item-link">example</a>
-            <a href="//github.com/yuda-lyu/w-flow-vue/blob/master/docs/examples/ex-AppExamConnectivity.html" target="_blank" class="item-link">code</a>
+            <a href="//yuda-lyu.github.io/w-flow-vue/examples/ex-AppConnectivity.html" target="_blank" class="item-link">example</a>
+            <a href="//github.com/yuda-lyu/w-flow-vue/blob/master/docs/examples/ex-AppConnectivity.html" target="_blank" class="item-link">code</a>
         </div>
 
         <div class="bkp">

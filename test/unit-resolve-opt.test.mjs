@@ -1,14 +1,15 @@
 /**
  * resolveOpt.mjs(opt 解析單一來源)契約:
  * O1 每個 OPT_SPEC 鍵三態: 未給 → 預設; 明確合法值 → 採用; 非法/空值 → 依 kind 回退(defined 只回退 undefined; truthy 回退 falsy;
- *    enum 回退非枚舉; nonneg 回退負數/非數; notFalse 只有 false 關閉; fn 非函式為 null)。
- * O2 群組: resolveDefNode / resolveDefConn 逐欄回退 NODE_DEFAULTS / CONN_DEFAULTS(edgeWidth 0 合法); resolveSettingsText 非字串回退。
+ *    enum 回退非枚舉; nonneg 回退負數/非數; notFalse 只有 false 關閉; fn 非函式為 null; text 非字串或空字串回退)。
+ *    (設定彈窗之 68 個文字鍵另見 unit-settings-texts)
+ * O2 群組: resolveDefNode / resolveDefConn 逐欄回退 NODE_DEFAULTS / CONN_DEFAULTS(edgeWidth 0 合法)。
  * O3 pickMenuOpt 原樣透傳(不套預設, 預設在 Controls.menuDef)。
  * O4 WFlowVue 之 computed 名稱 = OPT_SPEC 鍵名(optComputeds 展開), 值與 resolveOptValue 一致。
  */
 import { mount } from '@vue/test-utils'
 import WFlowVue from '../src/components/WFlowVue.vue'
-import { OPT_SPEC, resolveOptValue, resolveOpt, optComputeds, resolveDefNode, resolveDefConn, resolveSettingsText, pickMenuOpt, MENU_OPT_KEYS } from '../src/js/resolveOpt.mjs'
+import { OPT_SPEC, resolveOptValue, resolveOpt, optComputeds, resolveDefNode, resolveDefConn, pickMenuOpt, MENU_OPT_KEYS } from '../src/js/resolveOpt.mjs'
 import { NODE_DEFAULTS, CONN_DEFAULTS } from '../src/js/defaults.mjs'
 
 describe('O1 每鍵三態', () => {
@@ -44,6 +45,13 @@ describe('O1 每鍵三態', () => {
         expect(resolveOptValue({ zoomMin: 0 }, 'zoomMin')).toBe(0)
         expect(() => resolveOptValue({}, 'nope')).toThrow()
     })
+    test('text kind: 非空字串採用(純空白照收); 非字串或空字串回退 def', () => {
+        expect(resolveOptValue({ nodesSettingsDeleteText: '刪除' }, 'nodesSettingsDeleteText')).toBe('刪除')
+        expect(resolveOptValue({ nodesSettingsDeleteText: ' ' }, 'nodesSettingsDeleteText')).toBe(' ')
+        for (const v of [undefined, null, '', 0, 1, true, [], {}, () => 'x']) {
+            expect(resolveOptValue({ nodesSettingsDeleteText: v }, 'nodesSettingsDeleteText')).toBe('Delete')
+        }
+    })
     test('每個 spec 鍵皆可解析且 kind 合法', () => {
         for (const name of Object.keys(OPT_SPEC)) {
             expect(() => resolveOptValue({}, name)).not.toThrow()
@@ -60,10 +68,6 @@ describe('O2 群組解析', () => {
         expect(dc.edgeWidth).toBe(0); expect(dc.animated).toBe(true); expect(dc.defOffset).toBe(0)
         expect(dc.fromPosition).toBe(CONN_DEFAULTS.fromPosition); expect(dc.markerTo).toBe(CONN_DEFAULTS.markerTo)
         expect(resolveDefConn({}).defOffset).toBe(CONN_DEFAULTS.defOffset)
-    })
-    test('settingsText 非字串回退', () => {
-        expect(resolveSettingsText({ nodesSettingsDeleteText: 123, connsSettingsDeleteText: '', settingsColorConfirmText: '確定' }))
-            .toEqual({ nodeDelete: 'Delete', connDelete: 'Delete', colorConfirm: '確定' })
     })
 })
 

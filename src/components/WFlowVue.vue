@@ -60,6 +60,7 @@
         :settings-enabled="connsSettingsEnabled"
         :settings-trigger="connsSettingsTrigger"
         :settings-excludes="connsSettingsExcludes"
+        :form-texts="connFormTexts"
         @conn-click="onConnClick"
         @conn-double-click="onConnDoubleClick"
         @conn-context-menu="onConnContextMenu"
@@ -97,6 +98,7 @@
         :settings-enabled="nodesSettingsEnabled"
         :settings-trigger="nodesSettingsTrigger"
         :settings-excludes="nodesSettingsExcludes"
+        :form-texts="nodeFormTexts"
         @drag-prepare="onNodeDragPrepare"
         @drag-start="onNodeDragStart"
         @node-click="onNodeClick"
@@ -159,7 +161,8 @@ import { assessConnection } from '../js/connectPolicy.mjs'
 import { findHandleElAt, describeHandleEndpoint, setHandleConnectStatus, setHandleConnectRole, setDomFlag } from '../js/handleDom.mjs'
 import { isSide, oppositeSide, SOURCE_FALLBACK, TARGET_FALLBACK } from '../js/anchorPolicy.mjs'
 import { NODE_SETTING_KEYS, CONN_SETTING_KEYS } from '../js/defaults.mjs'
-import { optComputeds, pickMenuOpt, resolveSettingsText, resolveDefNode, resolveDefConn } from '../js/resolveOpt.mjs'
+import { optComputeds, pickMenuOpt, resolveDefNode, resolveDefConn, collectOptIssues } from '../js/resolveOpt.mjs'
+import { pickSettingsTexts } from '../js/settingsTexts.mjs'
 import { previewDelete, applyDelete, findDuplicateIds, snapshotDeep } from '../js/graphMutation.mjs'
 
 /**
@@ -309,9 +312,81 @@ import { previewDelete, applyDelete, findDuplicateIds, snapshotDeep } from '../j
  * @prop {string}   [opt.settingsPopupTextColor='#333']       Settings popup text color
  * @prop {string}   [opt.settingsPopupTextFontSize='12px']    Settings popup font size
  * @prop {string}   [opt.settingsPopupMaxHeight='400px']      Settings form max height (CSS length); scrolls inside the form when exceeded
- * @prop {string}   [opt.nodesSettingsDeleteText='Delete']    Node settings form delete-button text
- * @prop {string}   [opt.connsSettingsDeleteText='Delete']    Connection settings form delete-button text
- * @prop {string}   [opt.settingsColorConfirmText='Confirm']  Confirm-button text of the color pickers inside settings forms
+ *
+ * ─── Settings Popup Texts ──────────────────────────────────────────────
+ * Every visible text of the two settings popups is its own opt key (no language pack is bundled; all default to English).
+ * Node and connection popups have separate keys. A value that is not a string, or '', keeps the default. Unknown keys starting
+ * with nodesSettings / connsSettings / settings are ignored and reported once via console.warn.
+ * Node settings popup:
+ * @prop {string}   [opt.nodesSettingsBasicGroupTitle='Basic']                   Group title
+ * @prop {string}   [opt.nodesSettingsAppearanceGroupTitle='Appearance']         Group title
+ * @prop {string}   [opt.nodesSettingsTextGroupTitle='Text']                     Group title
+ * @prop {string}   [opt.nodesSettingsAdvancedGroupTitle='Advanced']             Group title
+ * @prop {string}   [opt.nodesSettingsTextLabelName='Name']                      Field label
+ * @prop {string}   [opt.nodesSettingsTextLabelDescription='Description']        Field label
+ * @prop {string}   [opt.nodesSettingsTextLabelShape='Shape']                    Field label
+ * @prop {string}   [opt.nodesSettingsTextLabelFaceColor='Face Color']           Field label
+ * @prop {string}   [opt.nodesSettingsTextLabelEdgeColor='Edge Color']           Field label
+ * @prop {string}   [opt.nodesSettingsTextLabelEdgeWidth='Edge Width']           Field label
+ * @prop {string}   [opt.nodesSettingsTextLabelFontSize='Font Size']             Field label
+ * @prop {string}   [opt.nodesSettingsTextLabelFontColor='Font Color']           Field label
+ * @prop {string}   [opt.nodesSettingsTextLabelPopupDirection='Popup Direction'] Field label
+ * @prop {string}   [opt.nodesSettingsShapeTextForRectangle='Rectangle']         Shape dropdown option
+ * @prop {string}   [opt.nodesSettingsShapeTextForDiamond='Diamond']             Shape dropdown option
+ * @prop {string}   [opt.nodesSettingsShapeTextForEllipse='Ellipse']             Shape dropdown option
+ * @prop {string}   [opt.nodesSettingsShapeTextForTriangleUp='Triangle Up']      Shape dropdown option
+ * @prop {string}   [opt.nodesSettingsShapeTextForTriangleRight='Triangle Right'] Shape dropdown option
+ * @prop {string}   [opt.nodesSettingsShapeTextForTriangleDown='Triangle Down']  Shape dropdown option
+ * @prop {string}   [opt.nodesSettingsShapeTextForTriangleLeft='Triangle Left']  Shape dropdown option
+ * @prop {string}   [opt.nodesSettingsPopupDirectionTextForTop='Top']            Popup Direction dropdown option
+ * @prop {string}   [opt.nodesSettingsPopupDirectionTextForRight='Right']        Popup Direction dropdown option
+ * @prop {string}   [opt.nodesSettingsPopupDirectionTextForBottom='Bottom']      Popup Direction dropdown option
+ * @prop {string}   [opt.nodesSettingsPopupDirectionTextForLeft='Left']          Popup Direction dropdown option
+ * @prop {string}   [opt.nodesSettingsDeleteText='Delete']                       Delete button
+ * @prop {string}   [opt.nodesSettingsColorConfirmText='Confirm']                Confirm button of the color pickers
+ * Connection settings popup:
+ * @prop {string}   [opt.connsSettingsBasicGroupTitle='Basic']                   Group title
+ * @prop {string}   [opt.connsSettingsPathGroupTitle='Path']                     Group title
+ * @prop {string}   [opt.connsSettingsAppearanceGroupTitle='Appearance']         Group title
+ * @prop {string}   [opt.connsSettingsArrowsGroupTitle='Arrows']                 Group title
+ * @prop {string}   [opt.connsSettingsTextGroupTitle='Text']                     Group title
+ * @prop {string}   [opt.connsSettingsTextLabelName='Name']                      Field label
+ * @prop {string}   [opt.connsSettingsTextLabelDescription='Description']        Field label
+ * @prop {string}   [opt.connsSettingsTextLabelType='Type']                      Field label
+ * @prop {string}   [opt.connsSettingsTextLabelFromPosition='From Anchor']       Field label
+ * @prop {string}   [opt.connsSettingsTextLabelToPosition='To Anchor']           Field label
+ * @prop {string}   [opt.connsSettingsTextLabelPoints='Waypoints']               Field label (waypoint block title)
+ * @prop {string}   [opt.connsSettingsTextLabelEdgeColor='Edge Color']           Field label
+ * @prop {string}   [opt.connsSettingsTextLabelEdgeWidth='Edge Width']           Field label
+ * @prop {string}   [opt.connsSettingsTextLabelAnimated='Animated']              Field label
+ * @prop {string}   [opt.connsSettingsTextLabelMarkerFrom='From Marker']         Field label
+ * @prop {string}   [opt.connsSettingsTextLabelMarkerFromSize='From Marker Size'] Field label
+ * @prop {string}   [opt.connsSettingsTextLabelMarkerFromFaceColor='From Marker Face Color'] Field label
+ * @prop {string}   [opt.connsSettingsTextLabelMarkerFromEdgeColor='From Marker Edge Color'] Field label
+ * @prop {string}   [opt.connsSettingsTextLabelMarkerTo='To Marker']             Field label
+ * @prop {string}   [opt.connsSettingsTextLabelMarkerToSize='To Marker Size']    Field label
+ * @prop {string}   [opt.connsSettingsTextLabelMarkerToFaceColor='To Marker Face Color'] Field label
+ * @prop {string}   [opt.connsSettingsTextLabelMarkerToEdgeColor='To Marker Edge Color'] Field label
+ * @prop {string}   [opt.connsSettingsTextLabelFontSize='Font Size']             Field label
+ * @prop {string}   [opt.connsSettingsTextLabelFontColor='Font Color']           Field label
+ * @prop {string}   [opt.connsSettingsTypeTextForBezier='Bezier']                Type dropdown option
+ * @prop {string}   [opt.connsSettingsTypeTextForStraight='Straight']            Type dropdown option
+ * @prop {string}   [opt.connsSettingsTypeTextForStep='Step']                    Type dropdown option
+ * @prop {string}   [opt.connsSettingsTypeTextForSmoothstep='Smooth Step']       Type dropdown option
+ * @prop {string}   [opt.connsSettingsPositionTextForTop='Top']                  From / To Anchor dropdown option
+ * @prop {string}   [opt.connsSettingsPositionTextForRight='Right']              From / To Anchor dropdown option
+ * @prop {string}   [opt.connsSettingsPositionTextForBottom='Bottom']            From / To Anchor dropdown option
+ * @prop {string}   [opt.connsSettingsPositionTextForLeft='Left']                From / To Anchor dropdown option
+ * @prop {string}   [opt.connsSettingsMarkerTextForNone='None']                  From / To Marker dropdown option (no arrow)
+ * @prop {string}   [opt.connsSettingsMarkerTextForArrow='Arrow']                From / To Marker dropdown option
+ * @prop {string}   [opt.connsSettingsMarkerTextForArrowclosed='Arrow Closed']   From / To Marker dropdown option
+ * @prop {string}   [opt.connsSettingsPointsAddBtnTooltip='Add Waypoint']        ＋ button tooltip and aria-label
+ * @prop {string}   [opt.connsSettingsPointsRemoveBtnTooltip='Remove Waypoint']  × button tooltip and aria-label
+ * @prop {string}   [opt.connsSettingsPointsTextEmpty='None (auto-routed)']      Hint shown while there are no waypoints
+ * @prop {string}   [opt.connsSettingsPointsXTooltip='X']                        Waypoint X input tooltip
+ * @prop {string}   [opt.connsSettingsPointsYTooltip='Y']                        Waypoint Y input tooltip
+ * @prop {string}   [opt.connsSettingsDeleteText='Delete']                       Delete button
+ * @prop {string}   [opt.connsSettingsColorConfirmText='Confirm']                Confirm button of the color pickers
  *
  * ─── Infor Popup ────────────────────────────────────────────────────────
  * @prop {string}   [opt.inforPopupBackgroundColor='#fff']              Info popup background
@@ -331,7 +406,11 @@ import { previewDelete, applyDelete, findDuplicateIds, snapshotDeep } from '../j
  * @prop {string}   [opt.defNodeFaceColor='#ffffff']      Default node fill color
  * @prop {string}   [opt.defNodeEdgeColor='#bbbbbb']      Default node border color
  * @prop {number}   [opt.defNodeEdgeWidth=1]              Default node border width (px)
- * @prop {string}   [opt.defNodePopupDirection='right']   Default settings popup direction
+ * @prop {string}   [opt.defNodePopupDirection='right']   Side of the node where its settings popup opens: 'top' | 'right' | 'bottom' | 'left'
+ *   (per-node override: node.popupDirection, also editable in the popup's Advanced group; any other value means 'right').
+ *   The settings anchor (the gear in hover mode) sits on the matching corner — top-right for 'right' / 'top', top-left for
+ *   'left', bottom-right for 'bottom' — and the popup opens outside the node on that side. A direction changed while the
+ *   popup is open applies the next time it opens. If there is no room on that side, the popup flips to the opposite side.
  *
  * ─── Default Handle(連接點)───
  * 每節點四邊各一把手(無連出/連入之分, 同一組樣式); 圓心落在節點外框盒上該邊之連接點(與連線端點同一基準); hover 放大 2px 圓心不動。
@@ -436,8 +515,6 @@ export default {
     },
     provide() {
         return {
-            //設定表單文字(刪除鈕/色票確認鈕): getter 注入, 表單直接讀取, 不逐層傳 props
-            getSettingsText: () => this.settingsText,
             //視口縮放(手勢換算 client 位移 → 畫布位移): getter 注入(高頻手勢狀態, 不進渲染面), 子元件不再自 DOM transform 反解析
             getViewportZoom: () => this.viewport.zoom,
             //拖曳/縮放ghost(細粒度): 回傳該節點進行中之暫時幾何({x,y}或{x,y,width,height}), 無則null
@@ -566,6 +643,13 @@ export default {
                 this.warnDuplicateIds('conns', cs)
             },
         },
+        //opt 之誤用(已移除之鍵、設定類鍵族之未知鍵、文字鍵之值非字串): 不擋渲染, 只讓「無聲退回預設」可被觀察
+        optIssues: {
+            immediate: true,
+            handler(msgs) {
+                this.warnOptIssues(msgs)
+            },
+        },
         opt: {
             handler() {
                 if (!this.inited) {
@@ -640,8 +724,17 @@ export default {
                 strokeDasharray: this.defConnCreatingEdgeDasharray,
             }
         },
-        settingsText() {
-            return resolveSettingsText(this.opt)
+        //opt 誤用之訊息(僅供警告, 不參與渲染)
+        optIssues() {
+            return collectOptIssues(this.opt)
+        },
+        //設定表單之顯示文字(內部傳遞): 由各文字 opt 鍵之 computed(OPT_SPEC 之 text kind, 已回退)組成
+        //「表單文字 prop 名 → 文字」, 經 Renderer / Wrapper 展開為表單之各文字 prop。對外仍是一句一鍵之 opt
+        nodeFormTexts() {
+            return pickSettingsTexts('node', this)
+        },
+        connFormTexts() {
+            return pickSettingsTexts('conn', this)
         },
         defNode() {
             return resolveDefNode(this.opt)
@@ -701,6 +794,15 @@ export default {
             if (this._dupIdWarned === sig) return
             this._dupIdWarned = sig
             console.warn('[w-flow-vue] duplicate ' + kind + ' id detected: ' + ids)
+        },
+        //opt 誤用之警告: 同一則每實例只警告一次(宿主反覆改 opt 不致洗版)
+        warnOptIssues(msgs) {
+            if (!this._optIssuesWarned) this._optIssuesWarned = {}
+            for (const m of (msgs || [])) {
+                if (this._optIssuesWarned[m]) continue
+                this._optIssuesWarned[m] = true
+                console.warn('[w-flow-vue] ' + m)
+            }
         },
         addConn(conn) {
             if (!conn.id || !conn.from || !conn.to) return
