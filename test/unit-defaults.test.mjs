@@ -59,10 +59,18 @@ describe('defaults', () => {
                 'fromPosition', 'toPosition',
                 'markerFrom', 'markerFromSize', 'markerFromFaceColor',
                 'markerTo', 'markerToSize', 'markerToFaceColor',
+                'popupDirection',
             ]
             keys.forEach(k => {
                 expect(CONN_DEFAULTS).toHaveProperty(k)
             })
+        })
+
+        //設定 popup 之開啟方向: 與節點同一值域與預設(契約 §6)
+        test('popupDirection is valid and matches the node default', () => {
+            const valid = ['top', 'bottom', 'left', 'right']
+            expect(valid).toContain(CONN_DEFAULTS.popupDirection)
+            expect(CONN_DEFAULTS.popupDirection).toBe(NODE_DEFAULTS.popupDirection)
         })
 
         test('type is bezier', () => {

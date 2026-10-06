@@ -5,8 +5,9 @@
  * G3 hover 模式: 移入出齒輪、移出收(既有行為); 點擊/雙擊本體不直接開設定.
  * G4 非法值回退 dblclick; 把手上之雙擊不開; 手勢/複選中拒開; locked 不開.
  * G5 dblclick 模式: 單擊之資訊 popup 延後 250ms 再開(雙擊前必先派發 click, 不得閃現); 期間雙擊即取消, 只開設定.
- * G6 設定 popup 之開啟方向(node.popupDirection → opt.defNodePopupDirection → right): 錨點角與 WPopup placement 依方向;
- *    非四方位回退 right; popup 開啟期間凍結方向(表單改方向於下次開啟生效).
+ * G6 設定 popup 之開啟方向(節點 node.popupDirection → opt.defNodePopupDirection → right; 連線 conn.popupDirection →
+ *    opt.defConnPopupDirection → right; 同一組測試驗兩種元素): 錨點角與 WPopup placement 依方向; 非四方位回退 right;
+ *    popup 開啟期間凍結方向(表單改方向於下次開啟生效).
  */
 import { mount } from '@vue/test-utils'
 import WFlowVue from '../src/components/WFlowVue.vue'
@@ -159,84 +160,140 @@ describe('G5 dblclick 模式: 資訊 popup 延後, 雙擊取消', () => {
 })
 
 describe('G6 設定 popup 之開啟方向', () => {
-    const settingsPopup = (w, id) => nodeAnchor(w, id).findComponent(WPopup)
-    const openSettings = async (w, id) => {
-        nw(w, id).settingsPopupShow = true
+    //節點與連線同一規則(契約 §6), 以同一組測試驗兩種元素(對稱性): 第一個元素為 a / e, 第二個為 b / f
+    const ewOf = (w, id) => w.vm.$refs.edgeRenderer.$refs.wrappers.find(c => c.conn.id === id)
+    const KINDS = {
+        節點: {
+            ids: ['a', 'b'],
+            wrapper: nw,
+            anchor: nodeAnchor,
+            cls: 'vue-flow__node-settings-anchor--',
+            list: (opt) => opt.nodes,
+            data: (w, i) => w.vm.nodes[i],
+            wrappers: (w) => w.vm.$refs.nodeRenderer.$refs.wrappers,
+            defKey: 'defNodePopupDirection',
+            triggerKey: 'nodesSettingsTrigger',
+        },
+        連線: {
+            ids: ['e', 'f'],
+            wrapper: ewOf,
+            anchor: (w, id) => w.find(`.vue-flow__edge[data-id="${id}"] .vue-flow__edge-settings-anchor`),
+            cls: 'vue-flow__edge-settings-anchor--',
+            list: (opt) => opt.conns,
+            data: (w, i) => w.vm.conns[i],
+            wrappers: (w) => w.vm.$refs.edgeRenderer.$refs.wrappers,
+            defKey: 'defConnPopupDirection',
+            triggerKey: 'connsSettingsTrigger',
+        },
+    }
+    //第二條連線(反向, 有 label)供「單一元素覆寫 vs opt 預設」之比對
+    const base2 = () => {
+        const opt = base()
+        opt.conns.push({ id: 'f', from: 'b', to: 'a', name: 'F' })
+        return opt
+    }
+    const settingsPopup = (k, w, id) => k.anchor(w, id).findComponent(WPopup)
+    const openSettings = async (k, w, id) => {
+        k.wrapper(w, id).settingsPopupShow = true
         await tick(w)
     }
-
-    test.each([
+    const closeAll = async (k, w) => {
+        for (const c of k.wrappers(w)) c.settingsPopupShow = false
+        await tick(w)
+    }
+    const DIRS = [
         ['right', 'top-right', 'right-start'],
         ['top', 'top-right', 'top-end'],
         ['left', 'top-left', 'left-start'],
         ['bottom', 'bottom-right', 'bottom-end'],
-    ])('node.popupDirection=%s → 錨點 %s、placement %s', async (dir, corner, placement) => {
-        const opt = base()
-        opt.nodes[0].popupDirection = dir
+    ]
+
+    describe.each(Object.keys(KINDS))('%s', (kind) => {
+        const k = KINDS[kind]
+        const [id0, id1] = k.ids
+
+        test.each(DIRS)('popupDirection=%s → 錨點 %s、placement %s', async (dir, corner, placement) => {
+            const opt = base2()
+            k.list(opt)[0].popupDirection = dir
+            const w = mountFlow(opt)
+            await tick(w)
+            await openSettings(k, w, id0)
+            expect(k.anchor(w, id0).classes()).toContain(k.cls + corner)
+            expect(settingsPopup(k, w, id0).props('placement')).toBe(placement)
+            w.destroy()
+        })
+
+        test('未給 → opt 預設方向鍵; 皆未給 → right(原定位); 非四方位 → right', async () => {
+            const w1 = mountFlow(base2())
+            await tick(w1)
+            await openSettings(k, w1, id0)
+            expect(settingsPopup(k, w1, id0).props('placement')).toBe('right-start')
+            expect(k.anchor(w1, id0).classes()).toContain(k.cls + 'top-right')
+            w1.destroy()
+
+            const opt2 = { ...base2(), [k.defKey]: 'left' }
+            k.list(opt2)[1].popupDirection = 'bottom'
+            const w2 = mountFlow(opt2)
+            await tick(w2)
+            await openSettings(k, w2, id0)
+            expect(settingsPopup(k, w2, id0).props('placement')).toBe('left-start')
+            await closeAll(k, w2)
+            await openSettings(k, w2, id1)
+            expect(settingsPopup(k, w2, id1).props('placement')).toBe('bottom-end')
+            w2.destroy()
+
+            const opt3 = base2()
+            k.list(opt3)[0].popupDirection = 'diagonal'
+            const w3 = mountFlow(opt3)
+            await tick(w3)
+            await openSettings(k, w3, id0)
+            expect(settingsPopup(k, w3, id0).props('placement')).toBe('right-start')
+            w3.destroy()
+        })
+
+        test('開啟期間改方向不移動錨點與 placement; 關閉後下次開啟即用新方向', async () => {
+            const w = mountFlow(base2())
+            await tick(w)
+            await openSettings(k, w, id0)
+            expect(settingsPopup(k, w, id0).props('placement')).toBe('right-start')
+            //經表單改方向(與使用者於 Advanced 群選 Left 同一路徑: 表單 update → *-settings-update → 寫回資料)
+            k.wrapper(w, id0).onSettingsUpdate('popupDirection', 'left')
+            await tick(w)
+            expect(k.data(w, 0).popupDirection).toBe('left')
+            expect(k.anchor(w, id0).classes()).toContain(k.cls + 'top-right')
+            expect(settingsPopup(k, w, id0).props('placement')).toBe('right-start')
+            k.wrapper(w, id0).settingsPopupShow = false
+            await tick(w)
+            await openSettings(k, w, id0)
+            expect(k.anchor(w, id0).classes()).toContain(k.cls + 'top-left')
+            expect(settingsPopup(k, w, id0).props('placement')).toBe('left-start')
+            w.destroy()
+        })
+
+        test('hover 模式: 齒輪(錨點)於開啟前即位於方向對應之角', async () => {
+            const opt = { ...base2(), [k.triggerKey]: 'hover' }
+            k.list(opt)[0].popupDirection = 'bottom'
+            const w = mountFlow(opt)
+            await tick(w)
+            k.wrapper(w, id0).hovered = true
+            await tick(w)
+            expect(k.anchor(w, id0).exists()).toBe(true)
+            expect(k.anchor(w, id0).classes()).toContain(k.cls + 'bottom-right')
+            w.destroy()
+        })
+    })
+
+    test('連線無 name(label 不渲染, 錨點以 label 中點之零尺寸元素為參考)亦依方向', async () => {
+        const k = KINDS['連線']
+        const opt = base2()
+        delete opt.conns[0].name
+        opt.conns[0].popupDirection = 'left'
         const w = mountFlow(opt)
         await tick(w)
-        await openSettings(w, 'a')
-        expect(nodeAnchor(w, 'a').classes()).toContain('vue-flow__node-settings-anchor--' + corner)
-        expect(settingsPopup(w, 'a').props('placement')).toBe(placement)
-        w.destroy()
-    })
-
-    test('未給 → opt.defNodePopupDirection; 皆未給 → right(原定位); 非四方位 → right', async () => {
-        const w1 = mountFlow(base())
-        await tick(w1)
-        await openSettings(w1, 'a')
-        expect(settingsPopup(w1, 'a').props('placement')).toBe('right-start')
-        expect(nodeAnchor(w1, 'a').classes()).toContain('vue-flow__node-settings-anchor--top-right')
-        w1.destroy()
-
-        const opt2 = { ...base(), defNodePopupDirection: 'left' }
-        opt2.nodes[1].popupDirection = 'bottom'
-        const w2 = mountFlow(opt2)
-        await tick(w2)
-        await openSettings(w2, 'a')
-        expect(settingsPopup(w2, 'a').props('placement')).toBe('left-start')
-        for (const c of w2.vm.$refs.nodeRenderer.$refs.wrappers) c.settingsPopupShow = false
-        await openSettings(w2, 'b')
-        expect(settingsPopup(w2, 'b').props('placement')).toBe('bottom-end')
-        w2.destroy()
-
-        const opt3 = base()
-        opt3.nodes[0].popupDirection = 'diagonal'
-        const w3 = mountFlow(opt3)
-        await tick(w3)
-        await openSettings(w3, 'a')
-        expect(settingsPopup(w3, 'a').props('placement')).toBe('right-start')
-        w3.destroy()
-    })
-
-    test('開啟期間改方向不移動錨點與 placement; 關閉後下次開啟即用新方向', async () => {
-        const w = mountFlow(base())
-        await tick(w)
-        await openSettings(w, 'a')
-        expect(settingsPopup(w, 'a').props('placement')).toBe('right-start')
-        //經表單改方向(與使用者於 Advanced 群選 Left 同一路徑: 表單 update → node-settings-update → 寫回 node)
-        nw(w, 'a').onSettingsUpdate('popupDirection', 'left')
-        await tick(w)
-        expect(w.vm.nodes[0].popupDirection).toBe('left')
-        expect(nodeAnchor(w, 'a').classes()).toContain('vue-flow__node-settings-anchor--top-right')
-        expect(settingsPopup(w, 'a').props('placement')).toBe('right-start')
-        nw(w, 'a').settingsPopupShow = false
-        await tick(w)
-        await openSettings(w, 'a')
-        expect(nodeAnchor(w, 'a').classes()).toContain('vue-flow__node-settings-anchor--top-left')
-        expect(settingsPopup(w, 'a').props('placement')).toBe('left-start')
-        w.destroy()
-    })
-
-    test('hover 模式: 齒輪(錨點)於開啟前即位於方向對應之角', async () => {
-        const opt = { ...base(), nodesSettingsTrigger: 'hover' }
-        opt.nodes[0].popupDirection = 'bottom'
-        const w = mountFlow(opt)
-        await tick(w)
-        nw(w, 'a').hovered = true
-        await tick(w)
-        expect(nodeAnchor(w, 'a').exists()).toBe(true)
-        expect(nodeAnchor(w, 'a').classes()).toContain('vue-flow__node-settings-anchor--bottom-right')
+        expect(w.find('.vue-flow__edge[data-id="e"] .vue-flow__edge-label').exists()).toBe(false)
+        await openSettings(k, w, 'e')
+        expect(k.anchor(w, 'e').classes()).toContain(k.cls + 'top-left')
+        expect(settingsPopup(k, w, 'e').props('placement')).toBe('left-start')
         w.destroy()
     })
 })

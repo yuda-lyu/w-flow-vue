@@ -98,13 +98,14 @@
           <!-- activate掛@click而非@mousedown: mousedown當下改選取會於down與up之間觸發重渲染,
                foreignObject內元素被patch替換後up落在新元素上, click(popup開啟訊號)根本不發生(已於e2e重現: E2E-012表單數變0);
                click時WPopup trigger之內層handler先跑(popup先開), 冒泡至此才轉移active -->
-          <span v-if="(gearVisible || settingsPopupShow) && interactive && !locked && settingsEnabled" class="vue-flow__edge-settings-anchor" :class="{ 'vue-flow__edge-settings-anchor--silent': settingsTrigger !== 'hover' }" @click="onSettingsAnchorClick">
+          <!-- 錨點(齒輪)所在角隨設定 popup 之開啟方向(popupDirection)而定, popup 才會開在 label 外之該側, 見 popupPolicy.settingsPopupLayout -->
+          <span v-if="(gearVisible || settingsPopupShow) && interactive && !locked && settingsEnabled" class="vue-flow__edge-settings-anchor" :class="['vue-flow__edge-settings-anchor--' + popupLayout.corner, { 'vue-flow__edge-settings-anchor--silent': settingsTrigger !== 'hover' }]" @click="onSettingsAnchorClick">
               <!-- 受控而非v-model: 開啟請求經onSettingsPopupInput裁決(複選模式中拒開), @show跟隨實際開啟。
                    paddingStyle 歸零之理由同 NodeWrapper: 讓群標題列 full-bleed 貼齊 popup 邊緣 -->
               <WPopup
                 :value="settingsPopupShow"
                 @input="onSettingsPopupInput"
-                placement="right-start"
+                :placement="popupLayout.placement"
                 modeHide="mousedown"
                 :minWidth="null"
                 :maxWidth="null"
@@ -231,6 +232,11 @@ export default {
         //設定 popup 之可互動旗標(elementPopups.canOpenSettings): 連線以 interactive 為準
         settingsInteractive() {
             return this.interactive
+        },
+        //設定 popup 之開啟方向(相對 label): conn.popupDirection → defConn.popupDirection(opt.defConnPopupDirection)→ right;
+        //方向 → 錨點角 + placement 與開啟中凍結由 mixins/elementPopups 之 popupLayout 處理(與節點同一份)
+        settingsPopupDirection() {
+            return this.conn.popupDirection || this.dc.popupDirection
         },
         gearPath() {
             return GEAR_PATH
@@ -627,13 +633,24 @@ export default {
   width: 0;
   height: 0;
 }
-/* click/dblclick 模式: 錨區只供 popup 定位, 齒輪 icon 不可見亦不可點 */
+/* click/dblclick 模式: 錨區只供 popup 定位, 齒輪 icon 不可見亦不可點。
+   錨點外凸 8px 坐在 label 之一角; 哪一角由設定 popup 之開啟方向決定(popupPolicy.settingsPopupLayout, 與節點同一規則) */
 .vue-flow__edge-settings-anchor {
   position: absolute;
-  top: -8px;
-  right: -8px;
   z-index: 2;
   pointer-events: all;
+}
+.vue-flow__edge-settings-anchor--top-right {
+  top: -8px;
+  right: -8px;
+}
+.vue-flow__edge-settings-anchor--top-left {
+  top: -8px;
+  left: -8px;
+}
+.vue-flow__edge-settings-anchor--bottom-right {
+  bottom: -8px;
+  right: -8px;
 }
 .vue-flow__edge-settings {
   width: 20px;

@@ -117,7 +117,6 @@ import WPopup from 'w-component-vue/src/components/WPopup.vue'
 import { classifyHit, isAffordanceHit } from '../../js/hitTest.mjs'
 import { resolveNodeSize, computeResize } from '../../js/geometry.mjs'
 import elementPopups from '../mixins/elementPopups.mjs'
-import { settingsPopupLayout } from '../../js/popupPolicy.mjs'
 import { GEAR_PATH } from '../../js/icons.mjs'
 import { startDocumentGesture, crossedThreshold, gestureBlockedReason, preventNativeDefault } from '../../js/domGesture.mjs'
 import pointerGesture from '../mixins/pointerGesture.mjs'
@@ -193,15 +192,10 @@ export default {
         settingsInteractive() {
             return this.draggable
         },
-        //設定 popup 之開啟方向: node.popupDirection → defNode.popupDirection(opt.defNodePopupDirection)→ right
+        //設定 popup 之開啟方向: node.popupDirection → defNode.popupDirection(opt.defNodePopupDirection)→ right;
+        //方向 → 錨點角 + placement 與開啟中凍結由 mixins/elementPopups 之 popupLayout 處理(與連線同一份)
         settingsPopupDirection() {
             return this.node.popupDirection || this.dn.popupDirection
-        },
-        //方向 → 齒輪錨點所在角 + WPopup placement(popupPolicy.settingsPopupLayout)。popup 開啟期間凍結於開啟當下之方向:
-        //WPopup 只在開啟時以 placement 建立定位, 期間在表單改方向若即時移動錨點, 後續之重新定位會以舊 placement 對新錨點,
-        //彈窗即疊到節點上; 故新方向於下次開啟生效
-        popupLayout() {
-            return settingsPopupLayout(this.settingsPopupOpenedDirection || this.settingsPopupDirection)
         },
         gearPath() {
             return GEAR_PATH
@@ -268,18 +262,12 @@ export default {
             //實測尺寸快取初值 null: 首次量測即使為 0×0 亦回報一次(初始尺寸 barrier 需要每個節點皆回報)
             cachedW: null,
             cachedH: null,
-            //設定 popup 開啟當下之方向(開啟期間凍結, 關閉即清空; 見 popupLayout)
-            settingsPopupOpenedDirection: null,
         }
     },
     watch: {
         //上鎖切換(契約 §5): 本節點持有之 document 手勢(拖曳追蹤/縮放)取消提交——縮放經 node-resize-cancel 通知 WFlowVue 清手勢與 ghost
         locked(val) {
             if (val) this.cancelLocalGestures()
-        },
-        //開啟當下凍結方向, 關閉即解凍(與 mixins/elementPopups 之同名 watcher 併存, Vue 依序呼叫)
-        settingsPopupShow(val) {
-            this.settingsPopupOpenedDirection = val ? (this.settingsPopupDirection || null) : null
         },
     },
     mounted() {

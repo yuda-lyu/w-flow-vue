@@ -32,6 +32,7 @@ const COMMON_LABELS = {
     edgeWidth: 'Edge Width',
     fontSize: 'Font Size',
     fontColor: 'Font Color',
+    popupDirection: 'Popup Direction',
 }
 
 const NODE_FIELD_LABELS = {
@@ -43,7 +44,7 @@ const NODE_FIELD_LABELS = {
     edgeWidth: COMMON_LABELS.edgeWidth,
     fontSize: COMMON_LABELS.fontSize,
     fontColor: COMMON_LABELS.fontColor,
-    popupDirection: 'Popup Direction',
+    popupDirection: COMMON_LABELS.popupDirection,
 }
 
 const CONN_FIELD_LABELS = {
@@ -66,11 +67,12 @@ const CONN_FIELD_LABELS = {
     markerToEdgeColor: 'To Marker Edge Color',
     fontSize: COMMON_LABELS.fontSize,
     fontColor: COMMON_LABELS.fontColor,
+    popupDirection: COMMON_LABELS.popupDirection,
 }
 
 //下拉之選項類別 → 值域(值域單一來源在各值域模組, 此處只引用)
 const NODE_OPTION_VALUES = { shape: SHAPES, popupDirection: SIDES }
-const CONN_OPTION_VALUES = { type: EDGE_TYPES, position: SIDES, marker: MARKER_TYPES }
+const CONN_OPTION_VALUES = { type: EDGE_TYPES, position: SIDES, marker: MARKER_TYPES, popupDirection: SIDES }
 
 //轉寫不出正確英文之值才收(不得擴成完整對照表: 值域新增之值自動以 Title Case 呈現)
 const OPTION_TEXT_EXCEPTIONS = Object.freeze({
@@ -131,7 +133,7 @@ export const NODE_SETTINGS_TEXTS = build(NODE_SETTING_GROUPS, NODE_FIELD_LABELS,
     colorConfirmText: 'Confirm',
 })
 
-/** 連線設定彈窗: 文字 prop 名 → 英文預設(42 句) */
+/** 連線設定彈窗: 文字 prop 名 → 英文預設(48 句) */
 export const CONN_SETTINGS_TEXTS = build(CONN_SETTING_GROUPS, CONN_FIELD_LABELS, CONN_OPTION_VALUES, {
     pointsAddBtnTooltip: 'Add Waypoint',
     pointsRemoveBtnTooltip: 'Remove Waypoint',

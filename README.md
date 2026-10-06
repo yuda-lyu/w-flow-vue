@@ -33,7 +33,7 @@ Add script for vue.
 
 Add script for w-flow-vue.
 ```alias
-<script src="https://cdn.jsdelivr.net/npm/w-flow-vue@1.1.5/dist/w-flow-vue.umd.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/w-flow-vue@1.1.6/dist/w-flow-vue.umd.js"></script>
 ```
 
 ## Settings popup texts
@@ -72,20 +72,21 @@ Node settings popup (26 keys; `/` lists several keys sharing the first one's pre
 | `nodesSettingsPopupDirectionTextForTop` / `ForRight` / `ForBottom` / `ForLeft` | Top / Right / Bottom / Left |
 | `nodesSettingsDeleteText` (delete button) / `nodesSettingsColorConfirmText` (color picker confirm button) | Delete / Confirm |
 
-Connection settings popup (42 keys):
+Connection settings popup (48 keys):
 
 | Key | Default |
 |---|---|
-| `connsSettingsBasicGroupTitle` / `PathGroupTitle` / `AppearanceGroupTitle` / `ArrowsGroupTitle` / `TextGroupTitle` | Basic / Path / Appearance / Arrows / Text |
+| `connsSettingsBasicGroupTitle` / `PathGroupTitle` / `AppearanceGroupTitle` / `ArrowsGroupTitle` / `TextGroupTitle` / `AdvancedGroupTitle` | Basic / Path / Appearance / Arrows / Text / Advanced |
 | `connsSettingsTextLabelName` / `TextLabelDescription` | Name / Description |
 | `connsSettingsTextLabelType` / `TextLabelFromPosition` / `TextLabelToPosition` / `TextLabelPoints` | Type / From Anchor / To Anchor / Waypoints |
 | `connsSettingsTextLabelEdgeColor` / `TextLabelEdgeWidth` / `TextLabelAnimated` | Edge Color / Edge Width / Animated |
 | `connsSettingsTextLabelMarkerFrom` / `TextLabelMarkerFromSize` / `TextLabelMarkerFromFaceColor` / `TextLabelMarkerFromEdgeColor` | From Marker / From Marker Size / From Marker Face Color / From Marker Edge Color |
 | `connsSettingsTextLabelMarkerTo` / `TextLabelMarkerToSize` / `TextLabelMarkerToFaceColor` / `TextLabelMarkerToEdgeColor` | To Marker / To Marker Size / To Marker Face Color / To Marker Edge Color |
-| `connsSettingsTextLabelFontSize` / `TextLabelFontColor` | Font Size / Font Color |
+| `connsSettingsTextLabelFontSize` / `TextLabelFontColor` / `TextLabelPopupDirection` | Font Size / Font Color / Popup Direction |
 | `connsSettingsTypeTextForBezier` / `ForStraight` / `ForStep` / `ForSmoothstep` | Bezier / Straight / Step / Smooth Step |
 | `connsSettingsPositionTextForTop` / `ForRight` / `ForBottom` / `ForLeft` | Top / Right / Bottom / Left |
 | `connsSettingsMarkerTextForNone` / `ForArrow` / `ForArrowclosed` | None / Arrow / Arrow Closed |
+| `connsSettingsPopupDirectionTextForTop` / `ForRight` / `ForBottom` / `ForLeft` | Top / Right / Bottom / Left |
 | `connsSettingsPointsAddBtnTooltip` / `PointsRemoveBtnTooltip` | Add Waypoint / Remove Waypoint |
 | `connsSettingsPointsTextEmpty` | None (auto-routed) |
 | `connsSettingsPointsXTooltip` / `PointsYTooltip` | X / Y |

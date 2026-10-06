@@ -41,7 +41,7 @@ export const OPT_SPEC = {
     connsSettingsTrigger: { kind: 'enum', values: SETTINGS_TRIGGERS, def: 'dblclick' },
     nodesSettingsExcludes: { kind: 'truthy', def: [] },
     connsSettingsExcludes: { kind: 'truthy', def: [] },
-    //設定彈窗之顯示文字: 一句一鍵(節點 26 / 連線 42, 如 nodesSettingsTextLabelName), 鍵名與英文預設由 settingsTexts 產生
+    //設定彈窗之顯示文字: 一句一鍵(節點 26 / 連線 48, 如 nodesSettingsTextLabelName), 鍵名與英文預設由 settingsTexts 產生
     ...settingsTextOptSpec(),
     //視口
     zoomOnScroll: { kind: 'defined', def: true },
@@ -210,6 +210,7 @@ export function resolveDefConn(opt) {
         markerToEdgeColor: o.defConnMarkerToEdgeColor || d.markerToEdgeColor,
         animated: o.defConnAnimated !== undefined ? o.defConnAnimated : d.animated,
         defOffset: o.defOffset != null ? o.defOffset : d.defOffset,
+        popupDirection: o.defConnPopupDirection || d.popupDirection,
     }
 }
 

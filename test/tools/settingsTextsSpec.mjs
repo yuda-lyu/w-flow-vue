@@ -33,13 +33,14 @@ export const NODE_TEXT = {
     nodesSettingsColorConfirmText: 'Confirm',
 }
 
-/** 連線設定彈窗: opt 鍵 → 英文預設(42) */
+/** 連線設定彈窗: opt 鍵 → 英文預設(48) */
 export const CONN_TEXT = {
     connsSettingsBasicGroupTitle: 'Basic',
     connsSettingsPathGroupTitle: 'Path',
     connsSettingsAppearanceGroupTitle: 'Appearance',
     connsSettingsArrowsGroupTitle: 'Arrows',
     connsSettingsTextGroupTitle: 'Text',
+    connsSettingsAdvancedGroupTitle: 'Advanced',
     connsSettingsTextLabelName: 'Name',
     connsSettingsTextLabelDescription: 'Description',
     connsSettingsTextLabelType: 'Type',
@@ -59,6 +60,7 @@ export const CONN_TEXT = {
     connsSettingsTextLabelMarkerToEdgeColor: 'To Marker Edge Color',
     connsSettingsTextLabelFontSize: 'Font Size',
     connsSettingsTextLabelFontColor: 'Font Color',
+    connsSettingsTextLabelPopupDirection: 'Popup Direction',
     connsSettingsTypeTextForBezier: 'Bezier',
     connsSettingsTypeTextForStraight: 'Straight',
     connsSettingsTypeTextForStep: 'Step',
@@ -70,6 +72,10 @@ export const CONN_TEXT = {
     connsSettingsMarkerTextForNone: 'None',
     connsSettingsMarkerTextForArrow: 'Arrow',
     connsSettingsMarkerTextForArrowclosed: 'Arrow Closed',
+    connsSettingsPopupDirectionTextForTop: 'Top',
+    connsSettingsPopupDirectionTextForRight: 'Right',
+    connsSettingsPopupDirectionTextForBottom: 'Bottom',
+    connsSettingsPopupDirectionTextForLeft: 'Left',
     connsSettingsPointsAddBtnTooltip: 'Add Waypoint',
     connsSettingsPointsRemoveBtnTooltip: 'Remove Waypoint',
     connsSettingsPointsTextEmpty: 'None (auto-routed)',

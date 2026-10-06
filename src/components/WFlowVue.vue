@@ -350,6 +350,7 @@ import { previewDelete, applyDelete, findDuplicateIds, snapshotDeep } from '../j
  * @prop {string}   [opt.connsSettingsAppearanceGroupTitle='Appearance']         Group title
  * @prop {string}   [opt.connsSettingsArrowsGroupTitle='Arrows']                 Group title
  * @prop {string}   [opt.connsSettingsTextGroupTitle='Text']                     Group title
+ * @prop {string}   [opt.connsSettingsAdvancedGroupTitle='Advanced']             Group title
  * @prop {string}   [opt.connsSettingsTextLabelName='Name']                      Field label
  * @prop {string}   [opt.connsSettingsTextLabelDescription='Description']        Field label
  * @prop {string}   [opt.connsSettingsTextLabelType='Type']                      Field label
@@ -369,6 +370,7 @@ import { previewDelete, applyDelete, findDuplicateIds, snapshotDeep } from '../j
  * @prop {string}   [opt.connsSettingsTextLabelMarkerToEdgeColor='To Marker Edge Color'] Field label
  * @prop {string}   [opt.connsSettingsTextLabelFontSize='Font Size']             Field label
  * @prop {string}   [opt.connsSettingsTextLabelFontColor='Font Color']           Field label
+ * @prop {string}   [opt.connsSettingsTextLabelPopupDirection='Popup Direction'] Field label
  * @prop {string}   [opt.connsSettingsTypeTextForBezier='Bezier']                Type dropdown option
  * @prop {string}   [opt.connsSettingsTypeTextForStraight='Straight']            Type dropdown option
  * @prop {string}   [opt.connsSettingsTypeTextForStep='Step']                    Type dropdown option
@@ -380,6 +382,10 @@ import { previewDelete, applyDelete, findDuplicateIds, snapshotDeep } from '../j
  * @prop {string}   [opt.connsSettingsMarkerTextForNone='None']                  From / To Marker dropdown option (no arrow)
  * @prop {string}   [opt.connsSettingsMarkerTextForArrow='Arrow']                From / To Marker dropdown option
  * @prop {string}   [opt.connsSettingsMarkerTextForArrowclosed='Arrow Closed']   From / To Marker dropdown option
+ * @prop {string}   [opt.connsSettingsPopupDirectionTextForTop='Top']            Popup Direction dropdown option
+ * @prop {string}   [opt.connsSettingsPopupDirectionTextForRight='Right']        Popup Direction dropdown option
+ * @prop {string}   [opt.connsSettingsPopupDirectionTextForBottom='Bottom']      Popup Direction dropdown option
+ * @prop {string}   [opt.connsSettingsPopupDirectionTextForLeft='Left']          Popup Direction dropdown option
  * @prop {string}   [opt.connsSettingsPointsAddBtnTooltip='Add Waypoint']        ＋ button tooltip and aria-label
  * @prop {string}   [opt.connsSettingsPointsRemoveBtnTooltip='Remove Waypoint']  × button tooltip and aria-label
  * @prop {string}   [opt.connsSettingsPointsTextEmpty='None (auto-routed)']      Hint shown while there are no waypoints
@@ -495,6 +501,11 @@ import { previewDelete, applyDelete, findDuplicateIds, snapshotDeep } from '../j
  * @prop {string}   [opt.defConnMarkerToEdgeColor='']   Default end arrow outline colour (arrow and arrowclosed; '' = follows line colour)
  * @prop {boolean}  [opt.defConnAnimated=false]           Default conn animation (dashed flow)
  * @prop {number}   [opt.defOffset=24]                    Step/smoothstep routing buffer (px)
+ * @prop {string}   [opt.defConnPopupDirection='right']   Side of the conn label where its settings popup opens: 'top' | 'right' | 'bottom' | 'left'
+ *   (per-conn override: conn.popupDirection, also editable in the popup's Advanced group; any other value means 'right').
+ *   Same rule as opt.defNodePopupDirection, relative to the label instead of the node box: the settings anchor (the gear
+ *   in hover mode) sits on the label's matching corner, a direction changed while the popup is open applies the next time
+ *   it opens, and the popup flips to the opposite side when there is no room.
  */
 export default {
     components: {

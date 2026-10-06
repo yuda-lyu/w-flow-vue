@@ -6,10 +6,11 @@
  * 使用元件須提供:
  *   props: settingsTrigger, settingsEnabled, locked
  *   computed settingsInteractive(): 元素可互動旗標(節點 draggable / 連線 interactive)
+ *   computed settingsPopupDirection(): 設定 popup 之開啟方向(節點 node.popupDirection → defNode; 連線 conn.popupDirection → defConn)
  *   method emitActivate(event): 發 *-activate(直接開設定時該元素成為唯一 active)
  */
 import { INFO_POPUP_DEFER_MS } from '../../js/defaults.mjs'
-import { gearVisible, canOpenPopup, canOpenSettings, infoOpenPlan } from '../../js/popupPolicy.mjs'
+import { gearVisible, canOpenPopup, canOpenSettings, infoOpenPlan, settingsPopupLayout } from '../../js/popupPolicy.mjs'
 
 export default {
     inject: {
@@ -24,6 +25,8 @@ export default {
             infoPopupShow: false,
             infoPopupEditable: true,
             settingsPopupShow: false,
+            //設定 popup 開啟當下之方向(開啟期間凍結, 關閉即清空; 見 popupLayout)
+            settingsPopupOpenedDirection: null,
         }
     },
     computed: {
@@ -34,11 +37,18 @@ export default {
         gearVisible() {
             return gearVisible(this.settingsTrigger, this.hovered)
         },
+        //設定 popup 之開啟方向 → 錨點(齒輪)所在角 + WPopup placement(popupPolicy.settingsPopupLayout; 節點與連線同一規則)。
+        //popup 開啟期間凍結於開啟當下之方向: WPopup 只在開啟時以 placement 建立定位, 期間在表單改方向若即時移動錨點,
+        //後續之重新定位會以舊 placement 對新錨點, 彈窗即疊到元素上; 故新方向於下次開啟生效
+        popupLayout() {
+            return settingsPopupLayout(this.settingsPopupOpenedDirection || this.settingsPopupDirection)
+        },
     },
     watch: {
-        //資訊/設定 popup 互斥
+        //資訊/設定 popup 互斥; 開啟當下凍結方向、關閉即解凍(見 popupLayout)
         settingsPopupShow(val) {
             if (val) this.infoPopupShow = false
+            this.settingsPopupOpenedDirection = val ? (this.settingsPopupDirection || null) : null
         },
         infoPopupShow(val) {
             if (val) this.settingsPopupShow = false

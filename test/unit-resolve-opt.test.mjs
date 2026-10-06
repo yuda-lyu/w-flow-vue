@@ -2,7 +2,7 @@
  * resolveOpt.mjs(opt 解析單一來源)契約:
  * O1 每個 OPT_SPEC 鍵三態: 未給 → 預設; 明確合法值 → 採用; 非法/空值 → 依 kind 回退(defined 只回退 undefined; truthy 回退 falsy;
  *    enum 回退非枚舉; nonneg 回退負數/非數; notFalse 只有 false 關閉; fn 非函式為 null; text 非字串或空字串回退)。
- *    (設定彈窗之 68 個文字鍵另見 unit-settings-texts)
+ *    (設定彈窗之 74 個文字鍵另見 unit-settings-texts)
  * O2 群組: resolveDefNode / resolveDefConn 逐欄回退 NODE_DEFAULTS / CONN_DEFAULTS(edgeWidth 0 合法)。
  * O3 pickMenuOpt 原樣透傳(不套預設, 預設在 Controls.menuDef)。
  * O4 WFlowVue 之 computed 名稱 = OPT_SPEC 鍵名(optComputeds 展開), 值與 resolveOptValue 一致。
@@ -68,6 +68,13 @@ describe('O2 群組解析', () => {
         expect(dc.edgeWidth).toBe(0); expect(dc.animated).toBe(true); expect(dc.defOffset).toBe(0)
         expect(dc.fromPosition).toBe(CONN_DEFAULTS.fromPosition); expect(dc.markerTo).toBe(CONN_DEFAULTS.markerTo)
         expect(resolveDefConn({}).defOffset).toBe(CONN_DEFAULTS.defOffset)
+    })
+    test('設定 popup 之開啟方向: defNodePopupDirection / defConnPopupDirection 各自生效, 未給回退 right', () => {
+        expect(resolveDefNode({}).popupDirection).toBe(NODE_DEFAULTS.popupDirection)
+        expect(resolveDefConn({}).popupDirection).toBe(CONN_DEFAULTS.popupDirection)
+        const both = { defNodePopupDirection: 'left', defConnPopupDirection: 'bottom' }
+        expect(resolveDefNode(both).popupDirection).toBe('left')
+        expect(resolveDefConn(both).popupDirection).toBe('bottom')
     })
 })
 

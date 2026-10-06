@@ -33,6 +33,7 @@ const CONN_FIELDS = [
     'edgeColor', 'edgeWidth', 'animated',
     'markerFrom', 'markerFromSize', 'markerFromFaceColor', 'markerFromEdgeColor', 'markerTo', 'markerToSize', 'markerToFaceColor', 'markerToEdgeColor',
     'fontSize', 'fontColor',
+    'popupDirection',
 ]
 
 /**

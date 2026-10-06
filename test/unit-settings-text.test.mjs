@@ -61,7 +61,7 @@ describe('T1 預設文字(未給任何文字鍵)', () => {
             t.forEach(x => expect(x).toBe('Confirm'))
         }
         expect(groupTitles(nf)).toEqual(['Basic', 'Appearance', 'Text', 'Advanced'])
-        expect(groupTitles(cf)).toEqual(['Basic', 'Path', 'Appearance', 'Arrows', 'Text'])
+        expect(groupTitles(cf)).toEqual(['Basic', 'Path', 'Appearance', 'Arrows', 'Text', 'Advanced'])
         //轉折點: 無點時之提示; ＋ 鈕之 title 與 aria-label(圖示鈕之可及名稱)
         expect(cf.find('.vue-flow__waypoints-empty').text()).toBe(CONN_TEXT.connsSettingsPointsTextEmpty)
         const add = cf.find('.vue-flow__waypoints-add')
@@ -104,7 +104,7 @@ describe('T2 opt 文字鍵逐鍵個別傳入', () => {
         pickerTexts(nf).forEach(x => expect(x).toBe('確定'))
         pickerTexts(cf).forEach(x => expect(x).toBe('套用'))
         expect(groupTitles(nf)).toEqual(['節點基本', 'Appearance', 'Text', 'Advanced'])
-        expect(groupTitles(cf)).toEqual(['連線基本', 'Path', 'Appearance', 'Arrows', 'Text'])
+        expect(groupTitles(cf)).toEqual(['連線基本', 'Path', 'Appearance', 'Arrows', 'Text', 'Advanced'])
         expect(fieldLabel(nf, 'name')).toBe('節點名稱')
         expect(fieldLabel(cf, 'name')).toBe('連線名稱')
         expect(fieldLabel(nf, 'description')).toBe('Description')
@@ -210,7 +210,7 @@ describe('T5 表單之文字 prop: 每個文字站點皆取自其 prop', () => {
 
     test.each([
         ['節點', NodeSettingsForm, { node: { id: 'n' }, defNode: {} }, NODE_TEXT, ['popupDirection', 'shape']],
-        ['連線', ConnSettingsForm, { conn: { id: 'e', from: 'a', to: 'b' }, defConn: {} }, CONN_TEXT, ['marker', 'position', 'type']],
+        ['連線', ConnSettingsForm, { conn: { id: 'e', from: 'a', to: 'b' }, defConn: {} }, CONN_TEXT, ['marker', 'popupDirection', 'position', 'type']],
     ])('%s表單', async (name, Form, props, table, cats) => {
         const texts = sentinelProps(table)
         const w = mount(Form, { propsData: { ...props, ...texts } })

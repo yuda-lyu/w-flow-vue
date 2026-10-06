@@ -117,7 +117,7 @@ describe('R6 設定更新 allowlist', () => {
         warn.mockRestore()
         w.destroy()
     })
-    test('連線: 未知鍵拒絕; fromPosition/marker* 照常', async () => {
+    test('連線: 未知鍵拒絕; fromPosition/marker*/popupDirection 照常', async () => {
         const warn = jest.spyOn(console, 'warn').mockImplementation(() => {})
         const w = mountFlow({ nodes: nodesAB, conns: [{ id: 'e', from: 'a', to: 'b' }] })
         await w.vm.$nextTick()
@@ -126,8 +126,10 @@ describe('R6 設定更新 allowlist', () => {
         expect(w.emitted('conn-settings-update')).toBeUndefined()
         w.vm.onConnSettingsUpdate({ conn: { id: 'e' }, key: 'fromPosition', value: 'left' })
         w.vm.onConnSettingsUpdate({ conn: { id: 'e' }, key: 'markerToSize', value: 14 })
-        expect(w.vm.conns[0]).toMatchObject({ fromPosition: 'left', markerToSize: 14 })
-        expect(w.emitted('conn-settings-update')).toHaveLength(2)
+        //設定 popup 之開啟方向(契約 §6, 與節點同一欄位)
+        w.vm.onConnSettingsUpdate({ conn: { id: 'e' }, key: 'popupDirection', value: 'bottom' })
+        expect(w.vm.conns[0]).toMatchObject({ fromPosition: 'left', markerToSize: 14, popupDirection: 'bottom' })
+        expect(w.emitted('conn-settings-update')).toHaveLength(3)
         warn.mockRestore()
         w.destroy()
     })

@@ -1,6 +1,6 @@
 /**
  * 設定彈窗之顯示文字 —— opt 層與文字模組之契約(spec/流程_互動契約.md §12; 表單與傳遞鏈見 unit-settings-text):
- * X1 每句文字一個 opt 鍵: 鍵集與英文預設 = §12 表(節點 26、連線 42, 逐一列舉, 無多無少); 皆登記於 OPT_SPEC(kind text)
+ * X1 每句文字一個 opt 鍵: 鍵集與英文預設 = §12 表(節點 26、連線 48, 逐一列舉, 無多無少); 皆登記於 OPT_SPEC(kind text)
  * X2 逐鍵回退: 非字串或空字串 → 該鍵預設; 純空白照收; 中文照收; 只影響該鍵
  * X3 命名規則: opt 鍵 = {nodes|conns}Settings + 表單 prop 名; 群標題 {群鍵}GroupTitle、欄位標籤 textLabel{欄位}、
  *    選項 {類別}TextFor{值}(類別 = 欄位共同字根, 值 kebab → PascalCase, 空字串為 None), 鍵集 = settingsGroups 與值域之笛卡兒
@@ -30,9 +30,9 @@ const asOptKeys = (kind, texts) => {
 }
 
 describe('X1 每句文字一個 opt 鍵, 鍵集與預設 = §12 表', () => {
-    test('鍵數: 節點 26、連線 42', () => {
+    test('鍵數: 節點 26、連線 48', () => {
         expect(Object.keys(NODE_TEXT)).toHaveLength(26)
-        expect(Object.keys(CONN_TEXT)).toHaveLength(42)
+        expect(Object.keys(CONN_TEXT)).toHaveLength(48)
     })
 
     test.each(KINDS)('%s: 文字模組產生之鍵與預設 = §12 表(無多無少)', (name, kind, table, texts) => {
@@ -108,7 +108,7 @@ describe('X3 命名規則', () => {
 
     test.each([
         ['節點', 'node', { shape: SHAPES, popupDirection: SIDES }, NODE_TEXT],
-        ['連線', 'conn', { type: EDGE_TYPES, position: SIDES, marker: MARKER_TYPES }, CONN_TEXT],
+        ['連線', 'conn', { type: EDGE_TYPES, position: SIDES, marker: MARKER_TYPES, popupDirection: SIDES }, CONN_TEXT],
     ])('%s: 選項鍵 = 類別 × 值域(值域取自值域模組), 空字串為 None', (name, kind, cats, table) => {
         const want = []
         for (const c of Object.keys(cats)) for (const v of cats[c]) want.push(settingsTextOptKey(kind, optionTextProp(c, v)))
@@ -179,10 +179,18 @@ describe('X5 節點與連線各自一組鍵', () => {
 describe('X6 誤用偵測(collectOptIssues)', () => {
     test('合法 opt(含既有之設定類鍵與文字鍵)→ 無', () => {
         expect(collectOptIssues({
-            nodes: [], conns: [], width: 800,
-            nodesSettingsEnabled: true, connsSettingsTrigger: 'click', nodesSettingsExcludes: ['name'],
-            settingsPopupMaxHeight: '', settingsPopupBackgroundColor: '#222',
-            nodesSettingsTextLabelName: '名稱', connsSettingsMarkerTextForNone: '無', nodesSettingsDeleteText: '', connsSettingsDeleteText: null,
+            nodes: [],
+            conns: [],
+            width: 800,
+            nodesSettingsEnabled: true,
+            connsSettingsTrigger: 'click',
+            nodesSettingsExcludes: ['name'],
+            settingsPopupMaxHeight: '',
+            settingsPopupBackgroundColor: '#222',
+            nodesSettingsTextLabelName: '名稱',
+            connsSettingsMarkerTextForNone: '無',
+            nodesSettingsDeleteText: '',
+            connsSettingsDeleteText: null,
             menuZoomInTooltip: '放大',
         })).toEqual([])
         expect(collectOptIssues(undefined)).toEqual([])

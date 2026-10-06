@@ -87,6 +87,11 @@
           <WColorSelect :value="eff('fontColor')" :size="160" :colorBlockSize="16" :showColorText="false" :btnText="txt.colorConfirmText" @input="$emit('update', 'fontColor', $event)" />
         </label>
       </template>
+      <template v-else-if="g.key === 'advanced'">
+        <label v-if="!isEx('popupDirection')" data-field-key="popupDirection">{{ fieldLabel('popupDirection') }}
+          <SettingsSelect :items="popupDirectionItems" :value="eff('popupDirection')" @input="$emit('update', 'popupDirection', $event)" />
+        </label>
+      </template>
     </SettingsGroup>
     <!-- 刪除不做內建二次確認: 是否需要確認由宿主以 opt.funConfirmDeleting(async)決定, 未提供即直接刪除。
          等待宿主確認期間按鈕 disabled(pending), 與節點設定表單同契約。
@@ -120,7 +125,7 @@ export default {
         defConn: { type: Object, required: true },
         defaultPoint: { type: Object, default: null }, //首個轉折點預設位置(建議傳路徑中點, 新點落於既有線上不跳動)
         targetPoint: { type: Object, default: null }, //迄點錨位置(後續新增以「末點與迄點中點」細分)
-        //顯示文字: 每句一個 String prop(42 個, 名稱 = opt 鍵去掉 connsSettings 前綴, 如 textLabelType / typeTextForBezier /
+        //顯示文字: 每句一個 String prop(48 個, 名稱 = opt 鍵去掉 connsSettings 前綴, 如 textLabelType / typeTextForBezier /
         //pointsAddBtnTooltip / deleteText); 未給或空字串即英文預設。名稱與預設由 js/settingsTexts.mjs 產生
         ...settingsTextProps('conn'),
     },
@@ -153,6 +158,10 @@ export default {
         },
         sideItems() {
             return this.optItems('position', SIDES)
+        },
+        //設定 popup 之開啟方向(相對 label): 值域同四方位, 與節點表單之同名欄位對稱
+        popupDirectionItems() {
+            return this.optItems('popupDirection', SIDES)
         },
         markerSizeMin() {
             return MARKER_SIZE_MIN

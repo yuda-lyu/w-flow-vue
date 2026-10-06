@@ -37,6 +37,7 @@ const defConn = {
     markerFrom: '', markerFromSize: 10, markerFromFaceColor: '',
     markerTo: '', markerToSize: 10, markerToFaceColor: '',
     animated: false, defOffset: 24,
+    popupDirection: 'right',
 }
 
 function createWrapper(optOverrides = {}) {
@@ -107,7 +108,7 @@ describe('ConnSettingsForm', () => {
     function mountForm(ov = {}) {
         return mount(ConnSettingsForm, { propsData: { conn: { ...conn, ...ov }, defConn } })
     }
-    //select 順序(模板固定): Type(0) / From Anchor(1) / To Anchor(2) / From Marker(3) / To Marker(4)
+    //select 順序(模板固定): Type(0) / From Anchor(1) / To Anchor(2) / From Marker(3) / To Marker(4) / Popup Direction(5)
 
     test('renders text inputs', () => { const w = mountForm(); expect(w.findAll('input[type="text"]').length).toBe(2); w.destroy() })
     test('emits update on name', async () => { const w = mountForm(); await w.findAll('input[type="text"]').at(0).setValue('N'); expect(w.emitted('update')[0]).toEqual(['name', 'N']); w.destroy() })
@@ -127,6 +128,7 @@ describe('ConnSettingsForm', () => {
     })
     test('emits update on animated', async () => { const w = mountForm(); await w.find('input[type="checkbox"]').setChecked(true); expect(w.emitted('update').some(e => e[0] === 'animated')).toBe(true); w.destroy() })
     test('emits update on markerTo', () => { const w = mountForm(); selectAt(w, 4).$emit('input', 'arrowclosed'); expect(w.emitted('update')[0]).toEqual(['markerTo', 'arrowclosed']); w.destroy() })
+    test('emits update on popupDirection', () => { const w = mountForm(); selectAt(w, 5).$emit('input', 'left'); expect(w.emitted('update')[0]).toEqual(['popupDirection', 'left']); w.destroy() })
     //None 選項須 emit ''(不再是 undefined, spec 項8)
     test('markerTo None emits empty string, not undefined', () => {
         const w = mountForm({ markerTo: 'arrow' })

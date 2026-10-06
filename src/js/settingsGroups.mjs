@@ -31,7 +31,7 @@ export const NODE_SETTING_GROUPS = [
 
 /**
  * 連線設定分群(對應 ConnSettingsForm 之欄位; points 為轉折點區塊, 與路徑同群)。
- * appearance 之群鍵/標題與節點一致(成員依元素型別而異), 使兩個 popup 之語彙對稱。
+ * appearance / text / advanced 之群鍵/標題與節點一致(成員依元素型別而異), 使兩個 popup 之語彙對稱。
  */
 export const CONN_SETTING_GROUPS = [
     { key: 'basic', title: 'Basic', fields: ['name', 'description'] },
@@ -39,6 +39,7 @@ export const CONN_SETTING_GROUPS = [
     { key: 'appearance', title: 'Appearance', fields: ['edgeColor', 'edgeWidth', 'animated'] },
     { key: 'arrows', title: 'Arrows', fields: ['markerFrom', 'markerFromSize', 'markerFromFaceColor', 'markerFromEdgeColor', 'markerTo', 'markerToSize', 'markerToFaceColor', 'markerToEdgeColor'] },
     { key: 'text', title: 'Text', fields: ['fontSize', 'fontColor'] },
+    { key: 'advanced', title: 'Advanced', fields: ['popupDirection'] },
 ]
 
 /** 預設展開之群(其餘收合): 取首群, 使 popup 一開即可改最常用欄位, 又不致全部攤開 */

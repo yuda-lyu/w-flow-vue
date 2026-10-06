@@ -1,5 +1,5 @@
 /**
- * E2E 圖台互動測試(Playwright)—— 單檔雙模式,對應 spec/流程_圖台互動.md 之 E2E-001 ~ E2E-052。
+ * E2E 圖台互動測試(Playwright)—— 單檔雙模式,對應 spec/流程_圖台互動.md 之 E2E-001 ~ E2E-053。
  *
  * 前置: npm run serve(dev server 須在 127.0.0.1:8080)
  *
@@ -197,6 +197,23 @@ const centerOnNode = (page, id) => evalVm(page, `
     vm.setViewport({ x: vm.widthInp / 2 - (n.position.x + w / 2), y: vm.heightInp / 2 - (n.position.y + h / 2), zoom: 1 })
     return true
 `, id)
+
+/**
+ * 以 vm.setViewport 平移視口, 使某連線之 label 落在圖台水平中央、垂直 fy 處(0 頂 ~ 1 底; 預設正中)。
+ * 僅供外觀 case 的框取(非受測互動; zoom 不變) —— 讓開在 label 上/下方之 popup 整個落在圖台內, 截圖不帶到圖台外之 demo 頁面
+ */
+async function centerOnConnLabel(page, connId, fy = 0.5) {
+    const d = await page.evaluate(({ id, fy }) => {
+        const lb = document.querySelector(`.vue-flow__edge[data-id="${id}"] .vue-flow__edge-label`)
+        const c = document.querySelector('.vue-flow')
+        if (!lb || !c) return null
+        const a = lb.getBoundingClientRect()
+        const b = c.getBoundingClientRect()
+        return { dx: (b.left + b.width / 2) - (a.left + a.width / 2), dy: (b.top + b.height * fy) - (a.top + a.height / 2) }
+    }, { id: connId, fy })
+    if (!d) throw new Error(`centerOnConnLabel: 找不到連線 ${connId} 之 label`)
+    await evalVm(page, 'const v = vm.viewport; vm.setViewport({ x: v.x + arg.dx, y: v.y + arg.dy, zoom: v.zoom }); return true', d)
+}
 
 const MENU = { setting: 0, zoomIn: 1, zoomOut: 2, fitView: 3, interactive: 4 }
 
@@ -1853,12 +1870,12 @@ const CASES = [
             `w=${s0 && s0.formWidth}→${s7 && s7.formWidth} gaps=${JSON.stringify(s7 && s7.boundaryGaps)}`)
         await shot(page, 'flow-E2E-041-settings-groups-node-expanded', { parkMouse: false })
 
-        //連線設定表單: 群數 5, 同一機制; Path 群展開後含 Waypoints 子區塊
+        //連線設定表單: 群數 6, 同一機制; Path 群展開後含 Waypoints 子區塊
         await openEdgeSettings(page, 'e1-2')
         await page.waitForTimeout(500)
         const c0 = await settingsGroupState(page)
         expectOk('E2E-041 連線表單群標題與順序',
-            !!c0 && JSON.stringify(c0.groups.map(g => g.title)) === JSON.stringify(['Basic', 'Path', 'Appearance', 'Arrows', 'Text']),
+            !!c0 && JSON.stringify(c0.groups.map(g => g.title)) === JSON.stringify(['Basic', 'Path', 'Appearance', 'Arrows', 'Text', 'Advanced']),
             `titles=${JSON.stringify(c0 && c0.groups.map(g => g.title))}`)
         expectOk('E2E-041 連線表單預設僅 Basic 展開',
             !!c0 && c0.groups.filter(g => g.expanded).length === 1 && c0.groups[0].expanded === true,
@@ -1892,7 +1909,11 @@ const CASES = [
         await openSettingsGroup(page, 'Appearance')
         await openSettingsGroup(page, 'Arrows')
         await openSettingsGroup(page, 'Text')
+        await openSettingsGroup(page, 'Advanced')
         const c2 = await settingsGroupState(page)
+        expectOk('E2E-041 連線表單六群皆可同時展開',
+            !!c2 && c2.groups.every(g => g.expanded) && c2.groups.length === 6,
+            `expanded=${JSON.stringify(c2 && c2.groups.map(g => g.expanded))}`)
         expectOk('E2E-041 全展開後高度封頂於 400px',
             !!c2 && Math.abs(c2.formHeight - 400) < 1,
             `formHeight=${c2 && c2.formHeight}`)
@@ -2339,12 +2360,13 @@ const CASES = [
         await openEdgeSettings(page, 'e1-2')
         await page.waitForTimeout(500)
         const c0 = await settingsFormTexts(page)
-        expectOk('E2E-051 連線群標題為宿主文字, 與節點之 basic 不同, 未給之 text 維持英文',
-            !!c0 && JSON.stringify(c0.groups) === JSON.stringify(['連線基本', '路徑', '外觀', '箭頭', 'Text']),
+        expectOk('E2E-051 連線群標題為宿主文字, 與節點之 basic 不同, 未給之 text / advanced 維持英文',
+            !!c0 && JSON.stringify(c0.groups) === JSON.stringify(['連線基本', '路徑', '外觀', '箭頭', 'Text', 'Advanced']),
             `groups=${JSON.stringify(c0 && c0.groups)}`)
-        expectOk('E2E-051 連線欄位標籤與刪除鈕為宿主文字, 未給之 edgeColor 維持英文',
+        expectOk('E2E-051 連線欄位標籤與刪除鈕為宿主文字, 未給之 edgeColor / popupDirection 維持英文',
             !!c0 && c0.fields.name === '名稱' && c0.fields.type === '線型' && c0.fields.fromPosition === '起點錨' &&
-                c0.fields.toPosition === '終點錨' && c0.fields.points === '轉折點' && c0.fields.edgeColor === 'Edge Color' && c0.del === '刪除連線',
+                c0.fields.toPosition === '終點錨' && c0.fields.points === '轉折點' && c0.fields.edgeColor === 'Edge Color' &&
+                c0.fields.popupDirection === 'Popup Direction' && c0.del === '刪除連線',
             `fields=${JSON.stringify(c0 && c0.fields)} del=${c0 && c0.del}`)
 
         //⑥ 展開「路徑」: 邊型下拉顯示宿主文字; 方位選項未給 → 英文; 轉折點區塊之 ＋ 名稱與空狀態
@@ -2459,6 +2481,106 @@ const CASES = [
             !!sT && sT.popup.b < sT.node.t && sT.corner === 'top-right' && disjoint(sT),
             `sT=${JSON.stringify(sT)}`)
         await shot(page, 'flow-E2E-052-popup-direction-top', { clip: unionClip(sT), parkMouse: false })
+    }),
+
+    mkCase('E2E-053', 'conn-popup-direction', async (page) => {
+        //spec 契約 §6: 連線設定 popup 開在 popupDirection 所指之 label 外側(與節點同一規則), 錨點位於 label 該側之角;
+        //開啟期間凍結, 下次開啟生效。
+        //真實 user path: ①雙擊連線 label 開設定 popup(預設右側) ②點 Advanced 群標題展開 ③點 Popup Direction 下拉選方向
+        //               ④點空白關閉 ⑤再雙擊 label 開啟 → 看 popup 開在哪一側; 依序 Left → Bottom → Top
+        const CID = 'e1-3'
+        const layout = () => page.evaluate((cid) => {
+            const form = document.querySelector('.vue-flow__settings-form')
+            const g = document.querySelector(`.vue-flow__edge[data-id="${cid}"]`)
+            const lb = g && g.querySelector('.vue-flow__edge-label')
+            const a = g && g.querySelector('.vue-flow__edge-settings-anchor')
+            if (!form || !lb) return null
+            const box = (b) => ({ l: +b.left.toFixed(1), t: +b.top.toFixed(1), r: +b.right.toFixed(1), b: +b.bottom.toFixed(1) })
+            return {
+                popup: box(form.getBoundingClientRect()),
+                label: box(lb.getBoundingClientRect()),
+                corner: a ? ([...a.classList].find(c => /--(top|bottom)-(left|right)$/.test(c)) || '').replace('vue-flow__edge-settings-anchor--', '') : null,
+            }
+        }, CID)
+        const disjoint = (s) => s.popup.r <= s.label.l || s.popup.l >= s.label.r || s.popup.b <= s.label.t || s.popup.t >= s.label.b
+        const unionClip = (s) => {
+            const x = Math.min(s.popup.l, s.label.l)
+            const y = Math.min(s.popup.t, s.label.t)
+            return clipAround({ x, y, width: Math.max(s.popup.r, s.label.r) - x, height: Math.max(s.popup.b, s.label.b) - y }, 12)
+        }
+        //選方向: 展開 Advanced → 開下拉 → 點選項(真實點擊); 回傳選取當下之版面(驗開啟中凍結)
+        const chooseDirection = async (optionText) => {
+            await openSettingsGroup(page, 'Advanced')
+            await selectByClick(page, 'Popup Direction', optionText)
+            await page.mouse.move(0, 0)
+            await page.waitForTimeout(300)
+            return layout()
+        }
+        //連線表單(6 群)高於節點表單, label 置中時開在上/下方會超出圖台; 重開前依方向取景(setup, 非 act), 使 popup 整個落在圖台內
+        const FRAME_Y = { left: 0.4, bottom: 0.2, top: 0.8 }
+        const reopen = async (dir) => {
+            const blank = await blankPoint(page)
+            await page.mouse.click(blank.x, blank.y)
+            await page.waitForTimeout(400)
+            await centerOnConnLabel(page, CID, FRAME_Y[dir])
+            await page.waitForTimeout(300)
+            await openEdgeSettings(page, CID)
+            await page.mouse.move(0, 0)
+            await page.waitForTimeout(500)
+            return layout()
+        }
+        //截圖範圍須在圖台內(取景之前置條件, 非受測行為): 超出即表示取景失效, 直接拋錯而不拍入 demo 頁面之其他元素
+        const shotInCanvas = async (name, clip) => {
+            const c = await getContainerRect(page)
+            const ok = clip.x >= c.left && clip.y >= c.top && clip.x + clip.width <= c.left + c.width && clip.y + clip.height <= c.top + c.height
+            if (!ok) throw new Error(`${name}: 截圖範圍超出圖台 clip=${JSON.stringify(clip)} canvas=${JSON.stringify(c)}`)
+            await shot(page, name, { clip, parkMouse: false })
+        }
+        const popupDirection = () => evalVm(page, `return vm.conns.find(c => c.id === '${CID}').popupDirection`)
+
+        await centerOnConnLabel(page, CID)
+        await page.waitForTimeout(300)
+        await openEdgeSettings(page, CID)
+        await page.mouse.move(0, 0)
+        await page.waitForTimeout(500)
+
+        //① 預設: label 右側, 錨點右上角
+        const s0 = await layout()
+        expectOk('E2E-053 預設開在 label 右側、自右上角起',
+            !!s0 && s0.popup.l > s0.label.r && s0.popup.t < s0.label.t && s0.corner === 'top-right',
+            `s0=${JSON.stringify(s0)}`)
+
+        //② 選 Left: 資料寫回, 開啟中之 popup 不移位
+        const s1 = await chooseDirection('Left')
+        expectOk('E2E-053 選 Left 後 conn.popupDirection 為 left', (await popupDirection()) === 'left', `popupDirection=${await popupDirection()}`)
+        expectOk('E2E-053 開啟中改方向: popup 不移位(下次開啟生效)',
+            !!s1 && Math.abs(s1.popup.l - s0.popup.l) < 1 && Math.abs(s1.popup.t - s0.popup.t) < 1 && s1.corner === 'top-right',
+            `before=${JSON.stringify(s0 && s0.popup)} after=${JSON.stringify(s1 && s1.popup)} corner=${s1 && s1.corner}`)
+
+        //③ 重開: label 左側, 錨點左上角
+        const sL = await reopen('left')
+        expectOk('E2E-053 Left: 開在 label 左側、錨點左上角、不與 label 重疊',
+            !!sL && sL.popup.r < sL.label.l && sL.corner === 'top-left' && disjoint(sL),
+            `sL=${JSON.stringify(sL)}`)
+        await shotInCanvas('flow-E2E-053-conn-popup-direction-left', unionClip(sL))
+
+        //④ Bottom: label 下方, 錨點右下角
+        await chooseDirection('Bottom')
+        expectOk('E2E-053 選 Bottom 後 conn.popupDirection 為 bottom', (await popupDirection()) === 'bottom', `popupDirection=${await popupDirection()}`)
+        const sB = await reopen('bottom')
+        expectOk('E2E-053 Bottom: 開在 label 下方、錨點右下角、不與 label 重疊',
+            !!sB && sB.popup.t > sB.label.b && sB.corner === 'bottom-right' && disjoint(sB),
+            `sB=${JSON.stringify(sB)}`)
+        await shotInCanvas('flow-E2E-053-conn-popup-direction-bottom', unionClip(sB))
+
+        //⑤ Top: label 上方, 錨點右上角
+        await chooseDirection('Top')
+        expectOk('E2E-053 選 Top 後 conn.popupDirection 為 top', (await popupDirection()) === 'top', `popupDirection=${await popupDirection()}`)
+        const sT = await reopen('top')
+        expectOk('E2E-053 Top: 開在 label 上方、錨點右上角、不與 label 重疊',
+            !!sT && sT.popup.b < sT.label.t && sT.corner === 'top-right' && disjoint(sT),
+            `sT=${JSON.stringify(sT)}`)
+        await shotInCanvas('flow-E2E-053-conn-popup-direction-top', unionClip(sT))
     }),
 
 ]

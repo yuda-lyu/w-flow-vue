@@ -47,6 +47,8 @@ export const CONN_DEFAULTS = {
     markerToEdgeColor: '',
     animated: false,
     defOffset: 24,
+    //設定 popup 之開啟方向(相對 label; 與節點之 popupDirection 同一語義, 見 popupPolicy.settingsPopupLayout)
+    popupDirection: 'right',
 }
 
 /** 設定齒輪顯示方式 */
@@ -70,5 +72,6 @@ export const CONN_SETTING_KEYS = [
     'edgeColor', 'edgeWidth', 'edgeDasharray', 'points', 'curvature',
     'markerFrom', 'markerFromSize', 'markerFromFaceColor', 'markerFromEdgeColor',
     'markerTo', 'markerToSize', 'markerToFaceColor', 'markerToEdgeColor',
+    'popupDirection',
     'deletable', 'hidden', 'class', 'style',
 ]

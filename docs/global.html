@@ -29,7 +29,7 @@
 <nav >
     
     
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-EdgeMarkerDefs.html">EdgeMarkerDefs</a></li><li><a href="module-Handle.html">Handle</a></li><li><a href="module-NodeBody.html">NodeBody</a></li><li><a href="module-NodePorts.html">NodePorts</a></li><li><a href="module-NodeSettingsForm.html">NodeSettingsForm</a></li><li><a href="module-SettingsGroup.html">SettingsGroup</a></li><li><a href="module-SettingsSelect.html">SettingsSelect</a></li><li><a href="module-SettingsText.html">SettingsText</a></li></ul><h3>Events</h3><ul><li><a href="global.html#event:elements-deleted%25E6%2589%2580%25E6%259C%2589%25E5%2588%25AA%25E9%2599%25A4%25E8%25B7%25AF%25E5%25BE%2591%25E5%25AE%258C%25E6%2588%2590%25E5%25BE%258C%25E7%259A%2586%25E7%2599%25BC%25E5%2587%25BA(%25E6%2596%25BCupdate:*%25E4%25B9%258B%25E5%25BE%258C%25E3%2580%2581%25E6%259C%2580%25E5%25BE%258C%25E7%2599%25BC%25E5%2587%25BA),payload:%257Bfrom,requested:%257BnodeIds,connIds%257D,deleted:%257BnodeIds,connIds,nodes,conns%257D,cascades:%255B%257BnodeId,connIds%257D%255D,notFound:%257BnodeIds,connIds%257D,excluded:%257BnodeIds,connIds%257D%257D-deleted.nodes/conns%25E7%2582%25BA%25E8%25A2%25AB%25E5%2588%25AA%25E7%2595%25B6%25E4%25B8%258B%25E4%25B9%258B%25E6%25B7%25B1%25E8%25A4%2587%25E8%25A3%25BD%25E5%25BF%25AB%25E7%2585%25A7(JSON%25E5%25BE%2580%25E8%25BF%2594,%25E5%2590%258CgetFlowData);id%25E6%25B8%2585%25E5%2596%25AE%25E4%25BE%259B%25E8%25BC%2595%25E9%2587%258F%25E8%25A8%2598%25E5%25B8%25B3;-cascades%25E5%258F%25AA%25E6%258F%258F%25E8%25BF%25B0%25E5%259B%25A0%25E6%259E%259C(%25E5%2593%25AA%25E6%25A2%259D%25E9%2582%258A%25E5%259B%25A0%25E5%2593%25AA%25E5%2580%258B%25E7%25AF%2580%25E9%25BB%259E%25E8%2580%258C%25E5%2588%25AA),%25E8%25A8%2598%25E5%25B8%25B3%25E4%25BB%25A5deleted.*Ids%25E7%2582%25BA%25E6%25BA%2596(%25E5%25B7%25B2%25E5%258E%25BB%25E9%2587%258D);-%25E4%25B8%258D%25E5%2590%25AB%25E5%2588%25AA%25E5%25BE%258C%25E5%2585%25A8%25E9%2587%258F%25E5%25BF%25AB%25E7%2585%25A7(remain):%25E9%259C%2580%25E8%25A6%2581%25E8%2580%2585%25E5%2591%25BC%25E5%258F%25ABgetFlowData()%25E6%2588%2596%25E6%25B2%25BF%25E7%2594%25A8update:nodes/update:conns%25E3%2580%2582%25E5%2588%25AA%25E9%2599%25A4%25E5%258F%25AA%25E6%259C%2589%25E9%2580%2599%25E4%25B8%2580%25E5%2580%258B%25E5%25AE%258C%25E6%2588%2590%25E4%25BA%258B%25E4%25BB%25B6%25E3%2580%2582%25E6%2589%2580%25E6%259C%2589%25E5%2585%25A5%25E5%258F%25A3%25E5%2590%258C%25E4%25B8%2580%25E5%25BA%258F%25E5%2588%2597:(%25E5%2583%2585%25E5%25AF%25A6%25E9%259A%259B%25E8%25AE%258A%25E5%258B%2595%25E4%25B9%258B%25E9%259B%2586%25E5%2590%2588)update:nodes%25E2%2586%2592update:conns%25E2%2586%2592elements-deleted%25E3%2580%2582">elements-deleted 所有刪除路徑完成後皆發出(於 update:* 之後、最後發出),payload:  { from, requested:{nodeIds,connIds}, deleted:{nodeIds,connIds,nodes,conns}, cascades:[{nodeId,connIds}],    notFound:{nodeIds,connIds}, excluded:{nodeIds,connIds} }  - deleted.nodes/conns 為被刪當下之深複製快照(JSON 往返,同 getFlowData);id 清單供輕量記帳;  - cascades 只描述因果(哪條邊因哪個節點而刪),記帳以 deleted.*Ids 為準(已去重);  - 不含刪後全量快照(remain):需要者呼叫 getFlowData() 或沿用 update:nodes / update:conns。  刪除只有這一個完成事件。所有入口同一序列:(僅實際變動之集合)update:nodes → update:conns → elements-deleted。</a></li></ul><h3>Global</h3><ul><li><a href="global.html#CARET_PATH">CARET_PATH</a></li><li><a href="global.html#CONN_SETTING_GROUPS">CONN_SETTING_GROUPS</a></li><li><a href="global.html#CONN_SETTING_KEYS">CONN_SETTING_KEYS</a></li><li><a href="global.html#DEFAULT_OPEN_GROUPS">DEFAULT_OPEN_GROUPS</a></li><li><a href="global.html#DRAG_THRESHOLD_PX">DRAG_THRESHOLD_PX</a></li><li><a href="global.html#EDGE_TYPES">EDGE_TYPES</a></li><li><a href="global.html#EDGE_WIDTH_MAX">EDGE_WIDTH_MAX</a></li><li><a href="global.html#FIELD_POLICY">FIELD_POLICY</a></li><li><a href="global.html#GEAR_PATH">GEAR_PATH</a></li><li><a href="global.html#INFO_POPUP_DEFER_MS">INFO_POPUP_DEFER_MS</a></li><li><a href="global.html#MARKER_TYPES">MARKER_TYPES</a></li><li><a href="global.html#MENU_OPT_KEYS">MENU_OPT_KEYS</a></li><li><a href="global.html#NODE_DEFAULTS">NODE_DEFAULTS</a></li><li><a href="global.html#NODE_SETTING_GROUPS">NODE_SETTING_GROUPS</a></li><li><a href="global.html#NODE_SETTING_KEYS">NODE_SETTING_KEYS</a></li><li><a href="global.html#RECT_FRACTION">RECT_FRACTION</a></li><li><a href="global.html#SETTINGS_TRIGGERS">SETTINGS_TRIGGERS</a></li><li><a href="global.html#SIDES">SIDES</a></li><li><a href="global.html#applyDelete">applyDelete</a></li><li><a href="global.html#armPointerGesture">armPointerGesture</a></li><li><a href="global.html#assessConnection">assessConnection</a></li><li><a href="global.html#assessGraphConnection">assessGraphConnection</a></li><li><a href="global.html#buildConnectionCandidate">buildConnectionCandidate</a></li><li><a href="global.html#buildRoundedPath">buildRoundedPath</a></li><li><a href="global.html#canOpenPopup">canOpenPopup</a></li><li><a href="global.html#canOpenSettings">canOpenSettings</a></li><li><a href="global.html#clampInsets">clampInsets</a></li><li><a href="global.html#clampPosition">clampPosition</a></li><li><a href="global.html#clampZoom">clampZoom</a></li><li><a href="global.html#classifyHit">classifyHit</a></li><li><a href="global.html#clientToLocal">clientToLocal</a></li><li><a href="global.html#computeCenterView">computeCenterView</a></li><li><a href="global.html#computeConnStyle">computeConnStyle</a></li><li><a href="global.html#computeEdgeClasses">computeEdgeClasses</a></li><li><a href="global.html#computeFitView">computeFitView</a></li><li><a href="global.html#computeLabelStyle">computeLabelStyle</a></li><li><a href="global.html#computeResize">computeResize</a></li><li><a href="global.html#connSourceSide">connSourceSide</a></li><li><a href="global.html#connTargetSide">connTargetSide</a></li><li><a href="global.html#crossedThreshold">crossedThreshold</a></li><li><a href="global.html#darkenColor">darkenColor</a></li><li><a href="global.html#describeHandleEndpoint">describeHandleEndpoint</a></li><li><a href="global.html#easeInOutCubic">easeInOutCubic</a></li><li><a href="global.html#effectiveAnimated">effectiveAnimated</a></li><li><a href="global.html#effectiveEdgeType">effectiveEdgeType</a></li><li><a href="global.html#findDuplicateIds">findDuplicateIds</a></li><li><a href="global.html#findHandleElAt">findHandleElAt</a></li><li><a href="global.html#fixSvgNs">fixSvgNs</a></li><li><a href="global.html#flowToScreen">flowToScreen</a></li><li><a href="global.html#gearVisible">gearVisible</a></li><li><a href="global.html#generateId">generateId</a></li><li><a href="global.html#gestureBlockedReason">gestureBlockedReason</a></li><li><a href="global.html#getBezierPath">getBezierPath</a></li><li><a href="global.html#getControlOffset">getControlOffset</a></li><li><a href="global.html#getHandlePosition">getHandlePosition</a></li><li><a href="global.html#getOverlappingNodes">getOverlappingNodes</a></li><li><a href="global.html#getPathFunction">getPathFunction</a></li><li><a href="global.html#getSmoothStepPath">getSmoothStepPath</a></li><li><a href="global.html#getStepPath">getStepPath</a></li><li><a href="global.html#getStraightPath">getStraightPath</a></li><li><a href="global.html#handlePlacementStyle">handlePlacementStyle</a></li><li><a href="global.html#handleStyleVars">handleStyleVars</a></li><li><a href="global.html#infoOpenPlan">infoOpenPlan</a></li><li><a href="global.html#installGlobalCursor">installGlobalCursor</a></li><li><a href="global.html#isAffordanceHit">isAffordanceHit</a></li><li><a href="global.html#isCanvasBlank">isCanvasBlank</a></li><li><a href="global.html#isDarkColor">isDarkColor</a></li><li><a href="global.html#isFromMouse">isFromMouse</a></li><li><a href="global.html#isSide">isSide</a></li><li><a href="global.html#labelAtHalfLength">labelAtHalfLength</a></li><li><a href="global.html#labelOffsetStyle">labelOffsetStyle</a></li><li><a href="global.html#lookupRoute">lookupRoute</a></li><li><a href="global.html#markerDef">markerDef</a></li><li><a href="global.html#markerId">markerId</a></li><li><a href="global.html#markerUrl">markerUrl</a></li><li><a href="global.html#nodeBorderWidth">nodeBorderWidth</a></li><li><a href="global.html#nodeShape">nodeShape</a></li><li><a href="global.html#nodesBounds">nodesBounds</a></li><li><a href="global.html#oppositeSide">oppositeSide</a></li><li><a href="global.html#optComputeds">optComputeds</a></li><li><a href="global.html#orthogonalizeThroughPoints">orthogonalizeThroughPoints</a></li><li><a href="global.html#pairEndpoints">pairEndpoints</a></li><li><a href="global.html#parseWaypoints">parseWaypoints</a></li><li><a href="global.html#pickMenuValue">pickMenuValue</a></li><li><a href="global.html#preventNativeDefault">preventNativeDefault</a></li><li><a href="global.html#previewDelete">previewDelete</a></li><li><a href="global.html#recenterForResize">recenterForResize</a></li><li><a href="global.html#rectsOverlap">rectsOverlap</a></li><li><a href="global.html#resolveContainerSize">resolveContainerSize</a></li><li><a href="global.html#resolveDefConn">resolveDefConn</a></li><li><a href="global.html#resolveDefNode">resolveDefNode</a></li><li><a href="global.html#resolveLineStyle">resolveLineStyle</a></li><li><a href="global.html#resolveMarker">resolveMarker</a></li><li><a href="global.html#resolveNodeSize">resolveNodeSize</a></li><li><a href="global.html#resolveOpt">resolveOpt</a></li><li><a href="global.html#resolveOptValue">resolveOptValue</a></li><li><a href="global.html#resolvePadding">resolvePadding</a></li><li><a href="global.html#resolveSettingsText">resolveSettingsText</a></li><li><a href="global.html#screenToFlow">screenToFlow</a></li><li><a href="global.html#segmentFallback">segmentFallback</a></li><li><a href="global.html#setDomFlag">setDomFlag</a></li><li><a href="global.html#setHandleConnectRole">setHandleConnectRole</a></li><li><a href="global.html#setHandleConnectStatus">setHandleConnectStatus</a></li><li><a href="global.html#settingsOpensOn">settingsOpensOn</a></li><li><a href="global.html#sideAnchorFraction">sideAnchorFraction</a></li><li><a href="global.html#sideNormal">sideNormal</a></li><li><a href="global.html#snapPosition">snapPosition</a></li><li><a href="global.html#snapshotDeep">snapshotDeep</a></li><li><a href="global.html#startDocumentGesture">startDocumentGesture</a></li><li><a href="global.html#stubFallback">stubFallback</a></li><li><a href="global.html#titleCase">titleCase</a></li><li><a href="global.html#uniq">uniq</a></li><li><a href="global.html#visibleGroups">visibleGroups</a></li><li><a href="global.html#zoomAroundPoint">zoomAroundPoint</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-EdgeMarkerDefs.html">EdgeMarkerDefs</a></li><li><a href="module-Handle.html">Handle</a></li><li><a href="module-NodeBody.html">NodeBody</a></li><li><a href="module-NodePorts.html">NodePorts</a></li><li><a href="module-NodeSettingsForm.html">NodeSettingsForm</a></li><li><a href="module-SettingsGroup.html">SettingsGroup</a></li><li><a href="module-SettingsSelect.html">SettingsSelect</a></li><li><a href="module-SettingsText.html">SettingsText</a></li></ul><h3>Events</h3><ul><li><a href="global.html#event:elements-deleted%25E6%2589%2580%25E6%259C%2589%25E5%2588%25AA%25E9%2599%25A4%25E8%25B7%25AF%25E5%25BE%2591%25E5%25AE%258C%25E6%2588%2590%25E5%25BE%258C%25E7%259A%2586%25E7%2599%25BC%25E5%2587%25BA(%25E6%2596%25BCupdate:*%25E4%25B9%258B%25E5%25BE%258C%25E3%2580%2581%25E6%259C%2580%25E5%25BE%258C%25E7%2599%25BC%25E5%2587%25BA),payload:%257Bfrom,requested:%257BnodeIds,connIds%257D,deleted:%257BnodeIds,connIds,nodes,conns%257D,cascades:%255B%257BnodeId,connIds%257D%255D,notFound:%257BnodeIds,connIds%257D,excluded:%257BnodeIds,connIds%257D%257D-deleted.nodes/conns%25E7%2582%25BA%25E8%25A2%25AB%25E5%2588%25AA%25E7%2595%25B6%25E4%25B8%258B%25E4%25B9%258B%25E6%25B7%25B1%25E8%25A4%2587%25E8%25A3%25BD%25E5%25BF%25AB%25E7%2585%25A7(JSON%25E5%25BE%2580%25E8%25BF%2594,%25E5%2590%258CgetFlowData);id%25E6%25B8%2585%25E5%2596%25AE%25E4%25BE%259B%25E8%25BC%2595%25E9%2587%258F%25E8%25A8%2598%25E5%25B8%25B3;-cascades%25E5%258F%25AA%25E6%258F%258F%25E8%25BF%25B0%25E5%259B%25A0%25E6%259E%259C(%25E5%2593%25AA%25E6%25A2%259D%25E9%2582%258A%25E5%259B%25A0%25E5%2593%25AA%25E5%2580%258B%25E7%25AF%2580%25E9%25BB%259E%25E8%2580%258C%25E5%2588%25AA),%25E8%25A8%2598%25E5%25B8%25B3%25E4%25BB%25A5deleted.*Ids%25E7%2582%25BA%25E6%25BA%2596(%25E5%25B7%25B2%25E5%258E%25BB%25E9%2587%258D);-%25E4%25B8%258D%25E5%2590%25AB%25E5%2588%25AA%25E5%25BE%258C%25E5%2585%25A8%25E9%2587%258F%25E5%25BF%25AB%25E7%2585%25A7(remain):%25E9%259C%2580%25E8%25A6%2581%25E8%2580%2585%25E5%2591%25BC%25E5%258F%25ABgetFlowData()%25E6%2588%2596%25E6%25B2%25BF%25E7%2594%25A8update:nodes/update:conns%25E3%2580%2582%25E5%2588%25AA%25E9%2599%25A4%25E5%258F%25AA%25E6%259C%2589%25E9%2580%2599%25E4%25B8%2580%25E5%2580%258B%25E5%25AE%258C%25E6%2588%2590%25E4%25BA%258B%25E4%25BB%25B6%25E3%2580%2582%25E6%2589%2580%25E6%259C%2589%25E5%2585%25A5%25E5%258F%25A3%25E5%2590%258C%25E4%25B8%2580%25E5%25BA%258F%25E5%2588%2597:(%25E5%2583%2585%25E5%25AF%25A6%25E9%259A%259B%25E8%25AE%258A%25E5%258B%2595%25E4%25B9%258B%25E9%259B%2586%25E5%2590%2588)update:nodes%25E2%2586%2592update:conns%25E2%2586%2592elements-deleted%25E3%2580%2582">elements-deleted 所有刪除路徑完成後皆發出(於 update:* 之後、最後發出),payload:  { from, requested:{nodeIds,connIds}, deleted:{nodeIds,connIds,nodes,conns}, cascades:[{nodeId,connIds}],    notFound:{nodeIds,connIds}, excluded:{nodeIds,connIds} }  - deleted.nodes/conns 為被刪當下之深複製快照(JSON 往返,同 getFlowData);id 清單供輕量記帳;  - cascades 只描述因果(哪條邊因哪個節點而刪),記帳以 deleted.*Ids 為準(已去重);  - 不含刪後全量快照(remain):需要者呼叫 getFlowData() 或沿用 update:nodes / update:conns。  刪除只有這一個完成事件。所有入口同一序列:(僅實際變動之集合)update:nodes → update:conns → elements-deleted。</a></li></ul><h3>Global</h3><ul><li><a href="global.html#CARET_PATH">CARET_PATH</a></li><li><a href="global.html#CONN_SETTINGS_TEXTS">CONN_SETTINGS_TEXTS</a></li><li><a href="global.html#CONN_SETTING_GROUPS">CONN_SETTING_GROUPS</a></li><li><a href="global.html#CONN_SETTING_KEYS">CONN_SETTING_KEYS</a></li><li><a href="global.html#DEFAULT_OPEN_GROUPS">DEFAULT_OPEN_GROUPS</a></li><li><a href="global.html#DRAG_THRESHOLD_PX">DRAG_THRESHOLD_PX</a></li><li><a href="global.html#EDGE_TYPES">EDGE_TYPES</a></li><li><a href="global.html#EDGE_WIDTH_MAX">EDGE_WIDTH_MAX</a></li><li><a href="global.html#FIELD_POLICY">FIELD_POLICY</a></li><li><a href="global.html#GEAR_PATH">GEAR_PATH</a></li><li><a href="global.html#INFO_POPUP_DEFER_MS">INFO_POPUP_DEFER_MS</a></li><li><a href="global.html#MARKER_TYPES">MARKER_TYPES</a></li><li><a href="global.html#MENU_OPT_KEYS">MENU_OPT_KEYS</a></li><li><a href="global.html#NODE_DEFAULTS">NODE_DEFAULTS</a></li><li><a href="global.html#NODE_SETTINGS_TEXTS">NODE_SETTINGS_TEXTS</a></li><li><a href="global.html#NODE_SETTING_GROUPS">NODE_SETTING_GROUPS</a></li><li><a href="global.html#NODE_SETTING_KEYS">NODE_SETTING_KEYS</a></li><li><a href="global.html#RECT_FRACTION">RECT_FRACTION</a></li><li><a href="global.html#REMOVED_OPT_KEYS">REMOVED_OPT_KEYS</a></li><li><a href="global.html#SETTINGS_POPUP_LAYOUTS">SETTINGS_POPUP_LAYOUTS</a></li><li><a href="global.html#SETTINGS_TRIGGERS">SETTINGS_TRIGGERS</a></li><li><a href="global.html#SIDES">SIDES</a></li><li><a href="global.html#applyDelete">applyDelete</a></li><li><a href="global.html#armPointerGesture">armPointerGesture</a></li><li><a href="global.html#assessConnection">assessConnection</a></li><li><a href="global.html#assessGraphConnection">assessGraphConnection</a></li><li><a href="global.html#buildConnectionCandidate">buildConnectionCandidate</a></li><li><a href="global.html#buildRoundedPath">buildRoundedPath</a></li><li><a href="global.html#canOpenPopup">canOpenPopup</a></li><li><a href="global.html#canOpenSettings">canOpenSettings</a></li><li><a href="global.html#clampInsets">clampInsets</a></li><li><a href="global.html#clampPosition">clampPosition</a></li><li><a href="global.html#clampZoom">clampZoom</a></li><li><a href="global.html#classifyHit">classifyHit</a></li><li><a href="global.html#clientToLocal">clientToLocal</a></li><li><a href="global.html#collectOptIssues">collectOptIssues</a></li><li><a href="global.html#computeCenterView">computeCenterView</a></li><li><a href="global.html#computeConnStyle">computeConnStyle</a></li><li><a href="global.html#computeEdgeClasses">computeEdgeClasses</a></li><li><a href="global.html#computeFitView">computeFitView</a></li><li><a href="global.html#computeLabelStyle">computeLabelStyle</a></li><li><a href="global.html#computeResize">computeResize</a></li><li><a href="global.html#connSourceSide">connSourceSide</a></li><li><a href="global.html#connTargetSide">connTargetSide</a></li><li><a href="global.html#crossedThreshold">crossedThreshold</a></li><li><a href="global.html#darkenColor">darkenColor</a></li><li><a href="global.html#defaultOptionText">defaultOptionText</a></li><li><a href="global.html#describeHandleEndpoint">describeHandleEndpoint</a></li><li><a href="global.html#easeInOutCubic">easeInOutCubic</a></li><li><a href="global.html#effectiveAnimated">effectiveAnimated</a></li><li><a href="global.html#effectiveEdgeType">effectiveEdgeType</a></li><li><a href="global.html#fieldLabelProp">fieldLabelProp</a></li><li><a href="global.html#findDuplicateIds">findDuplicateIds</a></li><li><a href="global.html#findHandleElAt">findHandleElAt</a></li><li><a href="global.html#fixSvgNs">fixSvgNs</a></li><li><a href="global.html#flowToScreen">flowToScreen</a></li><li><a href="global.html#gearVisible">gearVisible</a></li><li><a href="global.html#generateId">generateId</a></li><li><a href="global.html#gestureBlockedReason">gestureBlockedReason</a></li><li><a href="global.html#getBezierPath">getBezierPath</a></li><li><a href="global.html#getControlOffset">getControlOffset</a></li><li><a href="global.html#getHandlePosition">getHandlePosition</a></li><li><a href="global.html#getOverlappingNodes">getOverlappingNodes</a></li><li><a href="global.html#getPathFunction">getPathFunction</a></li><li><a href="global.html#getSmoothStepPath">getSmoothStepPath</a></li><li><a href="global.html#getStepPath">getStepPath</a></li><li><a href="global.html#getStraightPath">getStraightPath</a></li><li><a href="global.html#groupTitleProp">groupTitleProp</a></li><li><a href="global.html#handlePlacementStyle">handlePlacementStyle</a></li><li><a href="global.html#handleStyleVars">handleStyleVars</a></li><li><a href="global.html#infoOpenPlan">infoOpenPlan</a></li><li><a href="global.html#installGlobalCursor">installGlobalCursor</a></li><li><a href="global.html#isAffordanceHit">isAffordanceHit</a></li><li><a href="global.html#isCanvasBlank">isCanvasBlank</a></li><li><a href="global.html#isDarkColor">isDarkColor</a></li><li><a href="global.html#isFromMouse">isFromMouse</a></li><li><a href="global.html#isSide">isSide</a></li><li><a href="global.html#labelAtHalfLength">labelAtHalfLength</a></li><li><a href="global.html#labelOffsetStyle">labelOffsetStyle</a></li><li><a href="global.html#lookupRoute">lookupRoute</a></li><li><a href="global.html#markerDef">markerDef</a></li><li><a href="global.html#markerId">markerId</a></li><li><a href="global.html#markerUrl">markerUrl</a></li><li><a href="global.html#nodeBorderWidth">nodeBorderWidth</a></li><li><a href="global.html#nodeShape">nodeShape</a></li><li><a href="global.html#nodesBounds">nodesBounds</a></li><li><a href="global.html#oppositeSide">oppositeSide</a></li><li><a href="global.html#optComputeds">optComputeds</a></li><li><a href="global.html#optionTextProp">optionTextProp</a></li><li><a href="global.html#orthogonalizeThroughPoints">orthogonalizeThroughPoints</a></li><li><a href="global.html#pairEndpoints">pairEndpoints</a></li><li><a href="global.html#parseWaypoints">parseWaypoints</a></li><li><a href="global.html#pickMenuValue">pickMenuValue</a></li><li><a href="global.html#pickSettingsTexts">pickSettingsTexts</a></li><li><a href="global.html#preventNativeDefault">preventNativeDefault</a></li><li><a href="global.html#previewDelete">previewDelete</a></li><li><a href="global.html#recenterForResize">recenterForResize</a></li><li><a href="global.html#rectsOverlap">rectsOverlap</a></li><li><a href="global.html#resolveContainerSize">resolveContainerSize</a></li><li><a href="global.html#resolveDefConn">resolveDefConn</a></li><li><a href="global.html#resolveDefNode">resolveDefNode</a></li><li><a href="global.html#resolveLineStyle">resolveLineStyle</a></li><li><a href="global.html#resolveMarker">resolveMarker</a></li><li><a href="global.html#resolveNodeSize">resolveNodeSize</a></li><li><a href="global.html#resolveOpt">resolveOpt</a></li><li><a href="global.html#resolveOptValue">resolveOptValue</a></li><li><a href="global.html#resolvePadding">resolvePadding</a></li><li><a href="global.html#resolveSettingsTexts">resolveSettingsTexts</a></li><li><a href="global.html#screenToFlow">screenToFlow</a></li><li><a href="global.html#segmentFallback">segmentFallback</a></li><li><a href="global.html#setDomFlag">setDomFlag</a></li><li><a href="global.html#setHandleConnectRole">setHandleConnectRole</a></li><li><a href="global.html#setHandleConnectStatus">setHandleConnectStatus</a></li><li><a href="global.html#settingsOpensOn">settingsOpensOn</a></li><li><a href="global.html#settingsTextOptKey">settingsTextOptKey</a></li><li><a href="global.html#settingsTextOptSpec">settingsTextOptSpec</a></li><li><a href="global.html#settingsTextProps">settingsTextProps</a></li><li><a href="global.html#sideAnchorFraction">sideAnchorFraction</a></li><li><a href="global.html#sideNormal">sideNormal</a></li><li><a href="global.html#snapPosition">snapPosition</a></li><li><a href="global.html#snapshotDeep">snapshotDeep</a></li><li><a href="global.html#startDocumentGesture">startDocumentGesture</a></li><li><a href="global.html#stubFallback">stubFallback</a></li><li><a href="global.html#titleCase">titleCase</a></li><li><a href="global.html#uniq">uniq</a></li><li><a href="global.html#visibleGroups">visibleGroups</a></li><li><a href="global.html#zoomAroundPoint">zoomAroundPoint</a></li></ul>
     
 </nav>
 
@@ -194,6 +194,73 @@
 
         
             
+<h4 class="name" id="CONN_SETTINGS_TEXTS"><span class="type-signature type-signature-constant">(constant) </span>CONN_SETTINGS_TEXTS<span class="type-signature"></span></h4>
+
+
+
+
+
+<dl class="details">
+    
+    <dt class="tag-description">Description:</dt>
+    <dd class="tag-description"><ul class="dummy"><li><p>連線設定彈窗: 文字 prop 名 → 英文預設(48 句)</p></li></ul></dd>
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="js_settingsTexts.mjs.html">js/settingsTexts.mjs</a>, <a href="js_settingsTexts.mjs.html#line137">line 137</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+<div class="description usertext">
+    <p>連線設定彈窗: 文字 prop 名 → 英文預設(48 句)</p>
+</div>
+
+
+
+
+
+
+
+
+        
+            
 <h4 class="name" id="CONN_SETTING_GROUPS"><span class="type-signature type-signature-constant">(constant) </span>CONN_SETTING_GROUPS<span class="type-signature"></span></h4>
 
 
@@ -204,13 +271,13 @@
     
     <dt class="tag-description">Description:</dt>
     <dd class="tag-description"><ul class="dummy"><li><p>連線設定分群(對應 ConnSettingsForm 之欄位; points 為轉折點區塊, 與路徑同群)。
-appearance 之群鍵/標題與節點一致(成員依元素型別而異), 使兩個 popup 之語彙對稱。</p></li></ul></dd>
+appearance / text / advanced 之群鍵/標題與節點一致(成員依元素型別而異), 使兩個 popup 之語彙對稱。</p></li></ul></dd>
     
 
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="js_settingsGroups.mjs.html">js/settingsGroups.mjs</a>, <a href="js_settingsGroups.mjs.html#line35">line 35</a>
+        <a href="js_settingsGroups.mjs.html">js/settingsGroups.mjs</a>, <a href="js_settingsGroups.mjs.html#line36">line 36</a>
     </li></ul></dd>
     
 
@@ -251,7 +318,7 @@ appearance 之群鍵/標題與節點一致(成員依元素型別而異), 使兩�
 
 <div class="description usertext">
     <p>連線設定分群(對應 ConnSettingsForm 之欄位; points 為轉折點區塊, 與路徑同群)。
-appearance 之群鍵/標題與節點一致(成員依元素型別而異), 使兩個 popup 之語彙對稱。</p>
+appearance / text / advanced 之群鍵/標題與節點一致(成員依元素型別而異), 使兩個 popup 之語彙對稱。</p>
 </div>
 
 
@@ -278,7 +345,7 @@ appearance 之群鍵/標題與節點一致(成員依元素型別而異), 使兩�
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="js_defaults.mjs.html">js/defaults.mjs</a>, <a href="js_defaults.mjs.html#line68">line 68</a>
+        <a href="js_defaults.mjs.html">js/defaults.mjs</a>, <a href="js_defaults.mjs.html#line70">line 70</a>
     </li></ul></dd>
     
 
@@ -345,7 +412,7 @@ appearance 之群鍵/標題與節點一致(成員依元素型別而異), 使兩�
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="js_settingsGroups.mjs.html">js/settingsGroups.mjs</a>, <a href="js_settingsGroups.mjs.html#line44">line 44</a>
+        <a href="js_settingsGroups.mjs.html">js/settingsGroups.mjs</a>, <a href="js_settingsGroups.mjs.html#line46">line 46</a>
     </li></ul></dd>
     
 
@@ -473,13 +540,14 @@ appearance 之群鍵/標題與節點一致(成員依元素型別而異), 使兩�
 <dl class="details">
     
     <dt class="tag-description">Description:</dt>
-    <dd class="tag-description"><ul class="dummy"><li><p>支援之邊型值域(設定表單之 Type 下拉即由此衍生, 不另抄一份; 新增路徑函式時選項自動跟上)</p></li></ul></dd>
+    <dd class="tag-description"><ul class="dummy"><li><p>支援之邊型值域(設定表單之 Type 下拉即由此衍生, 不另抄一份; 新增路徑函式時選項自動跟上)。
+每個值之顯示文字為一個 opt 鍵 connsSettingsTypeTextFor{值}(由 settingsTexts 依本值域產生, 預設由值轉寫), 新值不必另行登記。</p></li></ul></dd>
     
 
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="js_edgePath.mjs.html">js/edgePath.mjs</a>, <a href="js_edgePath.mjs.html#line313">line 313</a>
+        <a href="js_edgePath.mjs.html">js/edgePath.mjs</a>, <a href="js_edgePath.mjs.html#line316">line 316</a>
     </li></ul></dd>
     
 
@@ -519,7 +587,8 @@ appearance 之群鍵/標題與節點一致(成員依元素型別而異), 使兩�
 
 
 <div class="description usertext">
-    <p>支援之邊型值域(設定表單之 Type 下拉即由此衍生, 不另抄一份; 新增路徑函式時選項自動跟上)</p>
+    <p>支援之邊型值域(設定表單之 Type 下拉即由此衍生, 不另抄一份; 新增路徑函式時選項自動跟上)。
+每個值之顯示文字為一個 opt 鍵 connsSettingsTypeTextFor{值}(由 settingsTexts 依本值域產生, 預設由值轉寫), 新值不必另行登記。</p>
 </div>
 
 
@@ -546,7 +615,7 @@ appearance 之群鍵/標題與節點一致(成員依元素型別而異), 使兩�
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="js_defaults.mjs.html">js/defaults.mjs</a>, <a href="js_defaults.mjs.html#line59">line 59</a>
+        <a href="js_defaults.mjs.html">js/defaults.mjs</a>, <a href="js_defaults.mjs.html#line61">line 61</a>
     </li></ul></dd>
     
 
@@ -617,7 +686,7 @@ truthy(預設)   : item 為 truthy 才採用, '' 視為未給 → defaults</p></
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="components_mixins_settingsForm.mjs.html">components/mixins/settingsForm.mjs</a>, <a href="components_mixins_settingsForm.mjs.html#line20">line 20</a>
+        <a href="components_mixins_settingsForm.mjs.html">components/mixins/settingsForm.mjs</a>, <a href="components_mixins_settingsForm.mjs.html#line22">line 22</a>
     </li></ul></dd>
     
 
@@ -755,7 +824,7 @@ truthy(預設)   : item 為 truthy 才採用, '' 視為未給 → defaults</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="js_defaults.mjs.html">js/defaults.mjs</a>, <a href="js_defaults.mjs.html#line56">line 56</a>
+        <a href="js_defaults.mjs.html">js/defaults.mjs</a>, <a href="js_defaults.mjs.html#line58">line 58</a>
     </li></ul></dd>
     
 
@@ -910,7 +979,7 @@ type ∈ '' | 'arrow'(線式, 無填充) | 'arrowclosed'(實心)</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="js_resolveOpt.mjs.html">js/resolveOpt.mjs</a>, <a href="js_resolveOpt.mjs.html#line186">line 186</a>
+        <a href="js_resolveOpt.mjs.html">js/resolveOpt.mjs</a>, <a href="js_resolveOpt.mjs.html#line221">line 221</a>
     </li></ul></dd>
     
 
@@ -1030,6 +1099,73 @@ type ∈ '' | 'arrow'(線式, 無填充) | 'arrowclosed'(實心)</p>
 
         
             
+<h4 class="name" id="NODE_SETTINGS_TEXTS"><span class="type-signature type-signature-constant">(constant) </span>NODE_SETTINGS_TEXTS<span class="type-signature"></span></h4>
+
+
+
+
+
+<dl class="details">
+    
+    <dt class="tag-description">Description:</dt>
+    <dd class="tag-description"><ul class="dummy"><li><p>節點設定彈窗: 文字 prop 名 → 英文預設(26 句)</p></li></ul></dd>
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="js_settingsTexts.mjs.html">js/settingsTexts.mjs</a>, <a href="js_settingsTexts.mjs.html#line131">line 131</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+<div class="description usertext">
+    <p>節點設定彈窗: 文字 prop 名 → 英文預設(26 句)</p>
+</div>
+
+
+
+
+
+
+
+
+        
+            
 <h4 class="name" id="NODE_SETTING_GROUPS"><span class="type-signature type-signature-constant">(constant) </span>NODE_SETTING_GROUPS<span class="type-signature"></span></h4>
 
 
@@ -1046,7 +1182,7 @@ shape 與填色/框線同屬「長什麼樣」故併於 appearance —— 單獨
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="js_settingsGroups.mjs.html">js/settingsGroups.mjs</a>, <a href="js_settingsGroups.mjs.html#line24">line 24</a>
+        <a href="js_settingsGroups.mjs.html">js/settingsGroups.mjs</a>, <a href="js_settingsGroups.mjs.html#line25">line 25</a>
     </li></ul></dd>
     
 
@@ -1114,7 +1250,7 @@ shape 與填色/框線同屬「長什麼樣」故併於 appearance —— 單獨
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="js_defaults.mjs.html">js/defaults.mjs</a>, <a href="js_defaults.mjs.html#line62">line 62</a>
+        <a href="js_defaults.mjs.html">js/defaults.mjs</a>, <a href="js_defaults.mjs.html#line64">line 64</a>
     </li></ul></dd>
     
 
@@ -1241,6 +1377,156 @@ shape 與填色/框線同屬「長什麼樣」故併於 appearance —— 單獨
 
         
             
+<h4 class="name" id="REMOVED_OPT_KEYS"><span class="type-signature type-signature-constant">(constant) </span>REMOVED_OPT_KEYS<span class="type-signature"></span></h4>
+
+
+
+
+
+<dl class="details">
+    
+    <dt class="tag-description">Description:</dt>
+    <dd class="tag-description"><ul class="dummy"><li><p>已移除之 opt 鍵 → 取代之鍵(墓碑: 只用於點名新鍵, 不讀其值、不生效, 故非相容層)</p></li></ul></dd>
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="js_resolveOpt.mjs.html">js/resolveOpt.mjs</a>, <a href="js_resolveOpt.mjs.html#line107">line 107</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+<div class="description usertext">
+    <p>已移除之 opt 鍵 → 取代之鍵(墓碑: 只用於點名新鍵, 不讀其值、不生效, 故非相容層)</p>
+</div>
+
+
+
+
+
+
+
+
+        
+            
+<h4 class="name" id="SETTINGS_POPUP_LAYOUTS"><span class="type-signature type-signature-constant">(constant) </span>SETTINGS_POPUP_LAYOUTS<span class="type-signature"></span></h4>
+
+
+
+
+
+<dl class="details">
+    
+    <dt class="tag-description">Description:</dt>
+    <dd class="tag-description"><ul class="dummy"><li><p>節點設定 popup 之開啟方向(node.popupDirection → defNode.popupDirection)→ 齒輪錨點所在角 + WPopup placement。</p>
+<p>為何移動錨點而不是放大參考框: WPopup(popper)以觸發元素(齒輪錨點)為定位參考, 且以「觸發元素之矩形」判定點擊是否在外
+(buildPopper 之 domIsClientXYIn); 若把參考框放大成整個節點, 點節點本體就不再關閉 popup, 行為會變。
+故錨點留 20px 齒輪大小, 改放到彈窗那一側之角, 彈窗即落在節點外: 齒輪外凸 8px, 再加 WPopup 預設之 5px 距離。
+right  → 右上角 + right-start(即原本寫死之定位, 預設值不變)
+top    → 右上角 + top-end(彈窗右緣對齊齒輪右緣, 往上開)
+left   → 左上角 + left-start(right 之鏡像)
+bottom → 右下角 + bottom-end(彈窗右緣對齊齒輪右緣, 往下開)
+空間不足時 popper 之 flip 會翻到另一側(既有行為, 與方向無關)。非四方位之值回退 right。</p></li></ul></dd>
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="js_popupPolicy.mjs.html">js/popupPolicy.mjs</a>, <a href="js_popupPolicy.mjs.html#line52">line 52</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+<div class="description usertext">
+    <p>節點設定 popup 之開啟方向(node.popupDirection → defNode.popupDirection)→ 齒輪錨點所在角 + WPopup placement。</p>
+<p>為何移動錨點而不是放大參考框: WPopup(popper)以觸發元素(齒輪錨點)為定位參考, 且以「觸發元素之矩形」判定點擊是否在外
+(buildPopper 之 domIsClientXYIn); 若把參考框放大成整個節點, 點節點本體就不再關閉 popup, 行為會變。
+故錨點留 20px 齒輪大小, 改放到彈窗那一側之角, 彈窗即落在節點外: 齒輪外凸 8px, 再加 WPopup 預設之 5px 距離。
+right  → 右上角 + right-start(即原本寫死之定位, 預設值不變)
+top    → 右上角 + top-end(彈窗右緣對齊齒輪右緣, 往上開)
+left   → 左上角 + left-start(right 之鏡像)
+bottom → 右下角 + bottom-end(彈窗右緣對齊齒輪右緣, 往下開)
+空間不足時 popper 之 flip 會翻到另一側(既有行為, 與方向無關)。非四方位之值回退 right。</p>
+</div>
+
+
+
+
+
+
+
+
+        
+            
 <h4 class="name" id="SETTINGS_TRIGGERS"><span class="type-signature type-signature-constant">(constant) </span>SETTINGS_TRIGGERS<span class="type-signature"></span></h4>
 
 
@@ -1256,7 +1542,7 @@ shape 與填色/框線同屬「長什麼樣」故併於 appearance —— 單獨
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="js_defaults.mjs.html">js/defaults.mjs</a>, <a href="js_defaults.mjs.html#line53">line 53</a>
+        <a href="js_defaults.mjs.html">js/defaults.mjs</a>, <a href="js_defaults.mjs.html#line55">line 55</a>
     </li></ul></dd>
     
 
@@ -3037,6 +3323,92 @@ HTML元素因而無排版盒(0x0不可見)。</p>
 
     
 
+    <h4 class="name" id="collectOptIssues"><span class="type-signature"></span>collectOptIssues<span class="signature">()</span><span class="type-signature"></span></h4>
+
+    
+
+
+
+
+<dl class="details">
+    
+    <dt class="tag-description">Description:</dt>
+    <dd class="tag-description"><ul class="dummy"><li><p>opt 之誤用(供 WFlowVue 逐則警告一次): 已移除之鍵、上列鍵族中之未知鍵、顯示文字鍵之值非字串。
+只讀取需檢查之鍵之值(不碰 nodes / conns 等資料鍵), 避免警告之 computed 依賴到圖資料。</p></li></ul></dd>
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="js_resolveOpt.mjs.html">js/resolveOpt.mjs</a>, <a href="js_resolveOpt.mjs.html#line119">line 119</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+            
+
+    
+
     <h4 class="name" id="computeCenterView"><span class="type-signature"></span>computeCenterView<span class="signature">()</span><span class="type-signature"></span></h4>
 
     
@@ -4149,6 +4521,91 @@ zoom 上限 maxZoom(不設下限: 大圖可低於 zoomMin, 滾輪縮放再以當
 
     
 
+    <h4 class="name" id="defaultOptionText"><span class="type-signature"></span>defaultOptionText<span class="signature">()</span><span class="type-signature"></span></h4>
+
+    
+
+
+
+
+<dl class="details">
+    
+    <dt class="tag-description">Description:</dt>
+    <dd class="tag-description"><ul class="dummy"><li><p>選項之預設文字: 例外表 → Title Case</p></li></ul></dd>
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="js_settingsTexts.mjs.html">js/settingsTexts.mjs</a>, <a href="js_settingsTexts.mjs.html#line114">line 114</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+            
+
+    
+
     <h4 class="name" id="describeHandleEndpoint"><span class="type-signature"></span>describeHandleEndpoint<span class="signature">()</span><span class="type-signature"></span></h4>
 
     
@@ -4424,6 +4881,91 @@ elementFromPoint 可能撿到他 flow 之把手; 以最近之 [data-flow-id] 祖
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
         <a href="js_edgeStyle.mjs.html">js/edgeStyle.mjs</a>, <a href="js_edgeStyle.mjs.html#line9">line 9</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="fieldLabelProp"><span class="type-signature"></span>fieldLabelProp<span class="signature">()</span><span class="type-signature"></span></h4>
+
+    
+
+
+
+
+<dl class="details">
+    
+    <dt class="tag-description">Description:</dt>
+    <dd class="tag-description"><ul class="dummy"><li><p>欄位標籤之 prop 名(faceColor → textLabelFaceColor)</p></li></ul></dd>
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="js_settingsTexts.mjs.html">js/settingsTexts.mjs</a>, <a href="js_settingsTexts.mjs.html#line104">line 104</a>
     </li></ul></dd>
     
 
@@ -5636,7 +6178,7 @@ elementFromPoint 可能撿到他 flow 之把手; 以最近之 [data-flow-id] 祖
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="js_edgePath.mjs.html">js/edgePath.mjs</a>, <a href="js_edgePath.mjs.html#line316">line 316</a>
+        <a href="js_edgePath.mjs.html">js/edgePath.mjs</a>, <a href="js_edgePath.mjs.html#line319">line 319</a>
     </li></ul></dd>
     
 
@@ -6009,6 +6551,91 @@ elementFromPoint 可能撿到他 flow 之把手; 以最近之 [data-flow-id] 祖
 </dl>
 
     
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="groupTitleProp"><span class="type-signature"></span>groupTitleProp<span class="signature">()</span><span class="type-signature"></span></h4>
+
+    
+
+
+
+
+<dl class="details">
+    
+    <dt class="tag-description">Description:</dt>
+    <dd class="tag-description"><ul class="dummy"><li><p>群標題之 prop 名(basic → basicGroupTitle)</p></li></ul></dd>
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="js_settingsTexts.mjs.html">js/settingsTexts.mjs</a>, <a href="js_settingsTexts.mjs.html#line99">line 99</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -6553,7 +7180,7 @@ translate(-50%,-50%) 置中, 故 hover 放大時圓心不動。</p></li></ul></d
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="components_mixins_settingsForm.mjs.html">components/mixins/settingsForm.mjs</a>, <a href="components_mixins_settingsForm.mjs.html#line36">line 36</a>
+        <a href="components_mixins_settingsForm.mjs.html">components/mixins/settingsForm.mjs</a>, <a href="components_mixins_settingsForm.mjs.html#line38">line 38</a>
     </li></ul></dd>
     
 
@@ -7695,7 +8322,92 @@ Returns waypoint array or null (fallback needed).</p></li></ul></dd>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="js_resolveOpt.mjs.html">js/resolveOpt.mjs</a>, <a href="js_resolveOpt.mjs.html#line109">line 109</a>
+        <a href="js_resolveOpt.mjs.html">js/resolveOpt.mjs</a>, <a href="js_resolveOpt.mjs.html#line154">line 154</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="optionTextProp"><span class="type-signature"></span>optionTextProp<span class="signature">()</span><span class="type-signature"></span></h4>
+
+    
+
+
+
+
+<dl class="details">
+    
+    <dt class="tag-description">Description:</dt>
+    <dd class="tag-description"><ul class="dummy"><li><p>下拉選項之 prop 名(shape, triangle-up → shapeTextForTriangleUp; marker, '' → markerTextForNone)</p></li></ul></dd>
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="js_settingsTexts.mjs.html">js/settingsTexts.mjs</a>, <a href="js_settingsTexts.mjs.html#line109">line 109</a>
     </li></ul></dd>
     
 
@@ -8131,6 +8843,91 @@ Inserts at most one corner between consecutive points; skips zero-length segment
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
         <a href="components_ui_Controls.vue.html">components/ui/Controls.vue</a>, <a href="components_ui_Controls.vue.html#line64">line 64</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="pickSettingsTexts"><span class="type-signature"></span>pickSettingsTexts<span class="signature">()</span><span class="type-signature"></span></h4>
+
+    
+
+
+
+
+<dl class="details">
+    
+    <dt class="tag-description">Description:</dt>
+    <dd class="tag-description"><ul class="dummy"><li><p>WFlowVue 內部下傳用: 由各文字 opt 鍵之 computed 組成「表單 prop 名 → 文字」</p></li></ul></dd>
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="js_settingsTexts.mjs.html">js/settingsTexts.mjs</a>, <a href="js_settingsTexts.mjs.html#line189">line 189</a>
     </li></ul></dd>
     
 
@@ -8748,7 +9545,7 @@ empty: Boolean                          requested 為空</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="js_resolveOpt.mjs.html">js/resolveOpt.mjs</a>, <a href="js_resolveOpt.mjs.html#line155">line 155</a>
+        <a href="js_resolveOpt.mjs.html">js/resolveOpt.mjs</a>, <a href="js_resolveOpt.mjs.html#line189">line 189</a>
     </li></ul></dd>
     
 
@@ -8833,7 +9630,7 @@ empty: Boolean                          requested 為空</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="js_resolveOpt.mjs.html">js/resolveOpt.mjs</a>, <a href="js_resolveOpt.mjs.html#line131">line 131</a>
+        <a href="js_resolveOpt.mjs.html">js/resolveOpt.mjs</a>, <a href="js_resolveOpt.mjs.html#line165">line 165</a>
     </li></ul></dd>
     
 
@@ -9448,7 +10245,7 @@ empty: Boolean                          requested 為空</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="js_resolveOpt.mjs.html">js/resolveOpt.mjs</a>, <a href="js_resolveOpt.mjs.html#line102">line 102</a>
+        <a href="js_resolveOpt.mjs.html">js/resolveOpt.mjs</a>, <a href="js_resolveOpt.mjs.html#line147">line 147</a>
     </li></ul></dd>
     
 
@@ -9533,7 +10330,7 @@ empty: Boolean                          requested 為空</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="js_resolveOpt.mjs.html">js/resolveOpt.mjs</a>, <a href="js_resolveOpt.mjs.html#line84">line 84</a>
+        <a href="js_resolveOpt.mjs.html">js/resolveOpt.mjs</a>, <a href="js_resolveOpt.mjs.html#line88">line 88</a>
     </li></ul></dd>
     
 
@@ -9791,7 +10588,7 @@ empty: Boolean                          requested 為空</p>
 
     
 
-    <h4 class="name" id="resolveSettingsText"><span class="type-signature"></span>resolveSettingsText<span class="signature">()</span><span class="type-signature"></span></h4>
+    <h4 class="name" id="resolveSettingsTexts"><span class="type-signature"></span>resolveSettingsTexts<span class="signature">()</span><span class="type-signature"></span></h4>
 
     
 
@@ -9801,13 +10598,13 @@ empty: Boolean                          requested 為空</p>
 <dl class="details">
     
     <dt class="tag-description">Description:</dt>
-    <dd class="tag-description"><ul class="dummy"><li><p>設定表單可改文字(非字串或空字串回退預設)</p></li></ul></dd>
+    <dd class="tag-description"><ul class="dummy"><li><p>解析表單文字: 自 src(表單實例或任一物件)逐 prop 取值, 非字串或空字串回退預設; 回傳新物件</p></li></ul></dd>
     
 
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="js_resolveOpt.mjs.html">js/resolveOpt.mjs</a>, <a href="js_resolveOpt.mjs.html#line120">line 120</a>
+        <a href="js_settingsTexts.mjs.html">js/settingsTexts.mjs</a>, <a href="js_settingsTexts.mjs.html#line178">line 178</a>
     </li></ul></dd>
     
 
@@ -10321,6 +11118,261 @@ value 為空即移除。</p></li></ul></dd>
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
         <a href="js_popupPolicy.mjs.html">js/popupPolicy.mjs</a>, <a href="js_popupPolicy.mjs.html#line36">line 36</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="settingsTextOptKey"><span class="type-signature"></span>settingsTextOptKey<span class="signature">()</span><span class="type-signature"></span></h4>
+
+    
+
+
+
+
+<dl class="details">
+    
+    <dt class="tag-description">Description:</dt>
+    <dd class="tag-description"><ul class="dummy"><li><p>文字 prop 名 → opt 鍵(node, textLabelName → nodesSettingsTextLabelName)</p></li></ul></dd>
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="js_settingsTexts.mjs.html">js/settingsTexts.mjs</a>, <a href="js_settingsTexts.mjs.html#line152">line 152</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="settingsTextOptSpec"><span class="type-signature"></span>settingsTextOptSpec<span class="signature">()</span><span class="type-signature"></span></h4>
+
+    
+
+
+
+
+<dl class="details">
+    
+    <dt class="tag-description">Description:</dt>
+    <dd class="tag-description"><ul class="dummy"><li><p>OPT_SPEC 用: 每個文字 opt 鍵一筆 { kind: 'text', def }</p></li></ul></dd>
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="js_settingsTexts.mjs.html">js/settingsTexts.mjs</a>, <a href="js_settingsTexts.mjs.html#line157">line 157</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="settingsTextProps"><span class="type-signature"></span>settingsTextProps<span class="signature">()</span><span class="type-signature"></span></h4>
+
+    
+
+
+
+
+<dl class="details">
+    
+    <dt class="tag-description">Description:</dt>
+    <dd class="tag-description"><ul class="dummy"><li><p>表單之文字 props(每句一個 String prop; 未給為空字串 → 回退預設)</p></li></ul></dd>
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="js_settingsTexts.mjs.html">js/settingsTexts.mjs</a>, <a href="js_settingsTexts.mjs.html#line167">line 167</a>
     </li></ul></dd>
     
 
@@ -11204,7 +12256,7 @@ value 為空即移除。</p></li></ul></dd>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="components_ui_NodeSettingsForm.vue.html">components/ui/NodeSettingsForm.vue</a>, <a href="components_ui_NodeSettingsForm.vue.html#line49">line 49</a>
+        <a href="js_settingsTexts.mjs.html">js/settingsTexts.mjs</a>, <a href="js_settingsTexts.mjs.html#line84">line 84</a>
     </li></ul></dd>
     
 
@@ -11387,7 +12439,7 @@ value 為空即移除。</p></li></ul></dd>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="js_settingsGroups.mjs.html">js/settingsGroups.mjs</a>, <a href="js_settingsGroups.mjs.html#line47">line 47</a>
+        <a href="js_settingsGroups.mjs.html">js/settingsGroups.mjs</a>, <a href="js_settingsGroups.mjs.html#line49">line 49</a>
     </li></ul></dd>
     
 
@@ -11566,7 +12618,7 @@ value 為空即移除。</p></li></ul></dd>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="components_WFlowVue.vue.html">components/WFlowVue.vue</a>, <a href="components_WFlowVue.vue.html#line22">line 22</a>
+        <a href="components_WFlowVue.vue.html">components/WFlowVue.vue</a>, <a href="components_WFlowVue.vue.html#line23">line 23</a>
     </li></ul></dd>
     
 
@@ -14544,7 +15596,924 @@ Any value of the wrong type (or an empty string) falls back to the default liste
                 </td>
             
 
-            <td class="description last"><p>Settings form max height (CSS length); scrolls inside the form when exceeded</p></td>
+            <td class="description last"><p>Settings form max height (CSS length); scrolls inside the form when exceeded</p>
+<p>─── Settings Popup Texts ──────────────────────────────────────────────
+Every visible text of the two settings popups is its own opt key (no language pack is bundled; all default to English).
+Node and connection popups have separate keys. A value that is not a string, or '', keeps the default. Unknown keys starting
+with nodesSettings / connsSettings / settings are ignored and reported once via console.warn.
+Node settings popup:</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>nodesSettingsBasicGroupTitle</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>'Basic'</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Group title</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>nodesSettingsAppearanceGroupTitle</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>'Appearance'</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Group title</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>nodesSettingsTextGroupTitle</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>'Text'</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Group title</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>nodesSettingsAdvancedGroupTitle</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>'Advanced'</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Group title</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>nodesSettingsTextLabelName</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>'Name'</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Field label</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>nodesSettingsTextLabelDescription</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>'Description'</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Field label</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>nodesSettingsTextLabelShape</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>'Shape'</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Field label</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>nodesSettingsTextLabelFaceColor</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>'Face Color'</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Field label</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>nodesSettingsTextLabelEdgeColor</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>'Edge Color'</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Field label</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>nodesSettingsTextLabelEdgeWidth</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>'Edge Width'</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Field label</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>nodesSettingsTextLabelFontSize</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>'Font Size'</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Field label</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>nodesSettingsTextLabelFontColor</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>'Font Color'</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Field label</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>nodesSettingsTextLabelPopupDirection</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>'Popup Direction'</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Field label</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>nodesSettingsShapeTextForRectangle</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>'Rectangle'</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Shape dropdown option</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>nodesSettingsShapeTextForDiamond</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>'Diamond'</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Shape dropdown option</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>nodesSettingsShapeTextForEllipse</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>'Ellipse'</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Shape dropdown option</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>nodesSettingsShapeTextForTriangleUp</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>'Triangle Up'</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Shape dropdown option</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>nodesSettingsShapeTextForTriangleRight</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>'Triangle Right'</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Shape dropdown option</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>nodesSettingsShapeTextForTriangleDown</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>'Triangle Down'</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Shape dropdown option</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>nodesSettingsShapeTextForTriangleLeft</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>'Triangle Left'</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Shape dropdown option</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>nodesSettingsPopupDirectionTextForTop</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>'Top'</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Popup Direction dropdown option</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>nodesSettingsPopupDirectionTextForRight</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>'Right'</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Popup Direction dropdown option</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>nodesSettingsPopupDirectionTextForBottom</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>'Bottom'</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Popup Direction dropdown option</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>nodesSettingsPopupDirectionTextForLeft</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>'Left'</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Popup Direction dropdown option</p></td>
         </tr>
 
     
@@ -14582,7 +16551,1794 @@ Any value of the wrong type (or an empty string) falls back to the default liste
                 </td>
             
 
-            <td class="description last"><p>Node settings form delete-button text</p></td>
+            <td class="description last"><p>Delete button</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>nodesSettingsColorConfirmText</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>'Confirm'</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Confirm button of the color pickers
+Connection settings popup:</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>connsSettingsBasicGroupTitle</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>'Basic'</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Group title</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>connsSettingsPathGroupTitle</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>'Path'</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Group title</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>connsSettingsAppearanceGroupTitle</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>'Appearance'</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Group title</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>connsSettingsArrowsGroupTitle</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>'Arrows'</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Group title</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>connsSettingsTextGroupTitle</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>'Text'</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Group title</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>connsSettingsAdvancedGroupTitle</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>'Advanced'</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Group title</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>connsSettingsTextLabelName</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>'Name'</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Field label</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>connsSettingsTextLabelDescription</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>'Description'</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Field label</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>connsSettingsTextLabelType</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>'Type'</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Field label</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>connsSettingsTextLabelFromPosition</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>'From Anchor'</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Field label</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>connsSettingsTextLabelToPosition</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>'To Anchor'</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Field label</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>connsSettingsTextLabelPoints</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>'Waypoints'</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Field label (waypoint block title)</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>connsSettingsTextLabelEdgeColor</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>'Edge Color'</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Field label</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>connsSettingsTextLabelEdgeWidth</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>'Edge Width'</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Field label</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>connsSettingsTextLabelAnimated</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>'Animated'</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Field label</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>connsSettingsTextLabelMarkerFrom</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>'From Marker'</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Field label</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>connsSettingsTextLabelMarkerFromSize</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>'From Marker Size'</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Field label</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>connsSettingsTextLabelMarkerFromFaceColor</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>'From Marker Face Color'</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Field label</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>connsSettingsTextLabelMarkerFromEdgeColor</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>'From Marker Edge Color'</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Field label</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>connsSettingsTextLabelMarkerTo</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>'To Marker'</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Field label</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>connsSettingsTextLabelMarkerToSize</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>'To Marker Size'</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Field label</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>connsSettingsTextLabelMarkerToFaceColor</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>'To Marker Face Color'</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Field label</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>connsSettingsTextLabelMarkerToEdgeColor</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>'To Marker Edge Color'</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Field label</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>connsSettingsTextLabelFontSize</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>'Font Size'</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Field label</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>connsSettingsTextLabelFontColor</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>'Font Color'</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Field label</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>connsSettingsTextLabelPopupDirection</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>'Popup Direction'</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Field label</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>connsSettingsTypeTextForBezier</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>'Bezier'</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Type dropdown option</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>connsSettingsTypeTextForStraight</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>'Straight'</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Type dropdown option</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>connsSettingsTypeTextForStep</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>'Step'</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Type dropdown option</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>connsSettingsTypeTextForSmoothstep</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>'Smooth Step'</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Type dropdown option</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>connsSettingsPositionTextForTop</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>'Top'</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>From / To Anchor dropdown option</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>connsSettingsPositionTextForRight</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>'Right'</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>From / To Anchor dropdown option</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>connsSettingsPositionTextForBottom</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>'Bottom'</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>From / To Anchor dropdown option</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>connsSettingsPositionTextForLeft</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>'Left'</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>From / To Anchor dropdown option</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>connsSettingsMarkerTextForNone</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>'None'</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>From / To Marker dropdown option (no arrow)</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>connsSettingsMarkerTextForArrow</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>'Arrow'</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>From / To Marker dropdown option</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>connsSettingsMarkerTextForArrowclosed</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>'Arrow Closed'</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>From / To Marker dropdown option</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>connsSettingsPopupDirectionTextForTop</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>'Top'</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Popup Direction dropdown option</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>connsSettingsPopupDirectionTextForRight</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>'Right'</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Popup Direction dropdown option</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>connsSettingsPopupDirectionTextForBottom</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>'Bottom'</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Popup Direction dropdown option</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>connsSettingsPopupDirectionTextForLeft</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>'Left'</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Popup Direction dropdown option</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>connsSettingsPointsAddBtnTooltip</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>'Add Waypoint'</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>＋ button tooltip and aria-label</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>connsSettingsPointsRemoveBtnTooltip</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>'Remove Waypoint'</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>× button tooltip and aria-label</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>connsSettingsPointsTextEmpty</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>'None (auto-routed)'</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Hint shown while there are no waypoints</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>connsSettingsPointsXTooltip</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>'X'</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Waypoint X input tooltip</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>connsSettingsPointsYTooltip</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>'Y'</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Waypoint Y input tooltip</p></td>
         </tr>
 
     
@@ -14620,14 +18376,14 @@ Any value of the wrong type (or an empty string) falls back to the default liste
                 </td>
             
 
-            <td class="description last"><p>Connection settings form delete-button text</p></td>
+            <td class="description last"><p>Delete button</p></td>
         </tr>
 
     
 
         <tr>
             
-                <td class="name"><code>settingsColorConfirmText</code></td>
+                <td class="name"><code>connsSettingsColorConfirmText</code></td>
             
 
             <td class="type">
@@ -14658,7 +18414,7 @@ Any value of the wrong type (or an empty string) falls back to the default liste
                 </td>
             
 
-            <td class="description last"><p>Confirm-button text of the color pickers inside settings forms</p>
+            <td class="description last"><p>Confirm button of the color pickers</p>
 <p>─── Infor Popup ────────────────────────────────────────────────────────</p></td>
         </tr>
 
@@ -15268,7 +19024,11 @@ Any value of the wrong type (or an empty string) falls back to the default liste
                 </td>
             
 
-            <td class="description last"><p>Default settings popup direction</p>
+            <td class="description last"><p>Side of the node where its settings popup opens: 'top' | 'right' | 'bottom' | 'left'
+(per-node override: node.popupDirection, also editable in the popup's Advanced group; any other value means 'right').
+The settings anchor (the gear in hover mode) sits on the matching corner — top-right for 'right' / 'top', top-left for
+'left', bottom-right for 'bottom' — and the popup opens outside the node on that side. A direction changed while the
+popup is open applies the next time it opens. If there is no room on that side, the popup flips to the opposite side.</p>
 <p>─── Default Handle(連接點)───
 每節點四邊各一把手(無連出/連入之分, 同一組樣式); 圓心落在節點外框盒上該邊之連接點(與連線端點同一基準); hover 放大 2px 圓心不動。</p></td>
         </tr>
@@ -16443,6 +20203,48 @@ reason ∈ 'no-endpoint'|'unknown-handle'|'self'|'not-connectable'|'missing-node
         </tr>
 
     
+
+        <tr>
+            
+                <td class="name"><code>defConnPopupDirection</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>'right'</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Side of the conn label where its settings popup opens: 'top' | 'right' | 'bottom' | 'left'
+(per-conn override: conn.popupDirection, also editable in the popup's Advanced group; any other value means 'right').
+Same rule as opt.defNodePopupDirection, relative to the label instead of the node box: the settings anchor (the gear
+in hover mode) sits on the label's matching corner, a direction changed while the popup is open applies the next time
+it opens, and the popup flips to the opposite side when there is no room.</p></td>
+        </tr>
+
+    
     </tbody>
 </table>
 
@@ -16499,7 +20301,7 @@ reason ∈ 'no-endpoint'|'unknown-handle'|'self'|'not-connectable'|'missing-node
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 4.0.5</a> on Fri Oct 02 2026 20:30:07 GMT+0800 (台北標準時間) using the <a href="https://github.com/clenemt/docdash">docdash</a> theme.
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 4.0.5</a> on Tue Oct 06 2026 15:55:09 GMT+0800 (台北標準時間) using the <a href="https://github.com/clenemt/docdash">docdash</a> theme.
 </footer>
 
 <script>prettyPrint();</script>
