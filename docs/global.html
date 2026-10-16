@@ -1947,7 +1947,7 @@ HTML元素因而無排版盒(0x0不可見)。</p>
 
     
 
-    <h4 class="name" id="armPointerGesture"><span class="type-signature"></span>armPointerGesture<span class="signature">(downEvent, onStart, opt<span class="signature-attributes">opt</span>)</span><span class="type-signature"></span></h4>
+    <h4 class="name" id="armPointerGesture"><span class="type-signature"></span>armPointerGesture<span class="signature">(downEvent, onStart, opt<span class="signature-attributes">opt</span>)</span><span class="type-signature"> &rarr; {Object}</span></h4>
 
     
 
@@ -2080,6 +2080,12 @@ HTML元素因而無排版盒(0x0不可見)。</p>
 
             <td class="type">
             
+                
+<span class="param-type">function</span>
+
+
+
+            
             </td>
 
             
@@ -2094,7 +2100,7 @@ HTML元素因而無排版盒(0x0不可見)。</p>
 
             
 
-            <td class="description last"></td>
+            <td class="description last"><p>跨門檻時呼叫(恰一次), 簽名 (downEvent:PointerEvent, moveEvent:PointerEvent) =&gt; void</p></td>
         </tr>
 
     
@@ -2215,7 +2221,24 @@ HTML元素因而無排版盒(0x0不可見)。</p>
 <h5 class="h5-returns">Returns:</h5>
 
         
+<div class="param-desc">
+    <p>{ dispose: () =&gt; boolean, isArmed: () =&gt; boolean }</p>
+</div>
 
+
+
+<dl class="param-type">
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Object</span>
+
+
+
+    </dd>
+</dl>
 
     
 
@@ -2774,7 +2797,7 @@ HTML元素因而無排版盒(0x0不可見)。</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="js_viewport.mjs.html">js/viewport.mjs</a>, <a href="js_viewport.mjs.html#line99">line 99</a>
+        <a href="js_viewport.mjs.html">js/viewport.mjs</a>, <a href="js_viewport.mjs.html#line101">line 101</a>
     </li></ul></dd>
     
 
@@ -2944,7 +2967,7 @@ HTML元素因而無排版盒(0x0不可見)。</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="js_viewport.mjs.html">js/viewport.mjs</a>, <a href="js_viewport.mjs.html#line142">line 142</a>
+        <a href="js_viewport.mjs.html">js/viewport.mjs</a>, <a href="js_viewport.mjs.html#line144">line 144</a>
     </li></ul></dd>
     
 
@@ -3254,7 +3277,7 @@ HTML元素因而無排版盒(0x0不可見)。</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="js_viewport.mjs.html">js/viewport.mjs</a>, <a href="js_viewport.mjs.html#line123">line 123</a>
+        <a href="js_viewport.mjs.html">js/viewport.mjs</a>, <a href="js_viewport.mjs.html#line125">line 125</a>
     </li></ul></dd>
     
 
@@ -3425,7 +3448,7 @@ HTML元素因而無排版盒(0x0不可見)。</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="js_viewport.mjs.html">js/viewport.mjs</a>, <a href="js_viewport.mjs.html#line148">line 148</a>
+        <a href="js_viewport.mjs.html">js/viewport.mjs</a>, <a href="js_viewport.mjs.html#line150">line 150</a>
     </li></ul></dd>
     
 
@@ -3664,7 +3687,7 @@ HTML元素因而無排版盒(0x0不可見)。</p>
 
     
 
-    <h4 class="name" id="computeFitView"><span class="type-signature"></span>computeFitView<span class="signature">(bounds, container, opt)</span><span class="type-signature"> &rarr; {Object|null}</span></h4>
+    <h4 class="name" id="computeFitView"><span class="type-signature"></span>computeFitView<span class="signature">(bounds, container, opt<span class="signature-attributes">opt</span>)</span><span class="type-signature"> &rarr; {Object|null}</span></h4>
 
     
 
@@ -3684,7 +3707,7 @@ zoom 上限 maxZoom(不設下限: 大圖可低於 zoomMin, 滾輪縮放再以當
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="js_viewport.mjs.html">js/viewport.mjs</a>, <a href="js_viewport.mjs.html#line72">line 72</a>
+        <a href="js_viewport.mjs.html">js/viewport.mjs</a>, <a href="js_viewport.mjs.html#line74">line 74</a>
     </li></ul></dd>
     
 
@@ -3744,6 +3767,8 @@ zoom 上限 maxZoom(不設下限: 大圖可低於 zoomMin, 滾輪縮放再以當
         <th>Type</th>
 
         
+        <th>Attributes</th>
+        
 
         
 
@@ -3770,6 +3795,14 @@ zoom 上限 maxZoom(不設下限: 大圖可低於 zoomMin, 滾輪縮放再以當
             </td>
 
             
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
+            
 
             
 
@@ -3794,6 +3827,14 @@ zoom 上限 maxZoom(不設下限: 大圖可低於 zoomMin, 滾輪縮放再以當
             </td>
 
             
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
+            
 
             
 
@@ -3809,13 +3850,128 @@ zoom 上限 maxZoom(不設下限: 大圖可低於 zoomMin, 滾輪縮放再以當
 
             <td class="type">
             
+                
+<span class="param-type">Object</span>
+
+
+
+            
             </td>
 
             
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
 
             
 
-            <td class="description last"></td>
+            <td class="description last">
+                <h6>Properties</h6>
+                
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+        <th>Attributes</th>
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>padding</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">number</span>
+|
+
+<span class="param-type">Object</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"><p>同 resolvePadding 之輸入</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>maxZoom</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">number</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"><p>zoom 上限</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+            </td>
         </tr>
 
     
@@ -3952,7 +4108,7 @@ zoom 上限 maxZoom(不設下限: 大圖可低於 zoomMin, 滾輪縮放再以當
 
     
 
-    <h4 class="name" id="computeResize"><span class="type-signature"></span>computeResize<span class="signature">(edge, start, delta, opt)</span><span class="type-signature"> &rarr; {Object}</span></h4>
+    <h4 class="name" id="computeResize"><span class="type-signature"></span>computeResize<span class="signature">(edge, start, delta, opt<span class="signature-attributes">opt</span>)</span><span class="type-signature"> &rarr; {Object}</span></h4>
 
     
 
@@ -3968,7 +4124,7 @@ zoom 上限 maxZoom(不設下限: 大圖可低於 zoomMin, 滾輪縮放再以當
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="js_geometry.mjs.html">js/geometry.mjs</a>, <a href="js_geometry.mjs.html#line97">line 97</a>
+        <a href="js_geometry.mjs.html">js/geometry.mjs</a>, <a href="js_geometry.mjs.html#line99">line 99</a>
     </li></ul></dd>
     
 
@@ -4028,6 +4184,8 @@ zoom 上限 maxZoom(不設下限: 大圖可低於 zoomMin, 滾輪縮放再以當
         <th>Type</th>
 
         
+        <th>Attributes</th>
+        
 
         
 
@@ -4063,6 +4221,14 @@ zoom 上限 maxZoom(不設下限: 大圖可低於 zoomMin, 滾輪縮放再以當
             </td>
 
             
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
+            
 
             
 
@@ -4086,6 +4252,14 @@ zoom 上限 maxZoom(不設下限: 大圖可低於 zoomMin, 滾輪縮放再以當
             
             </td>
 
+            
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
             
 
             
@@ -4111,6 +4285,14 @@ zoom 上限 maxZoom(不設下限: 大圖可低於 zoomMin, 滾輪縮放再以當
             </td>
 
             
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
+            
 
             
 
@@ -4126,13 +4308,125 @@ zoom 上限 maxZoom(不設下限: 大圖可低於 zoomMin, 滾輪縮放再以當
 
             <td class="type">
             
+                
+<span class="param-type">Object</span>
+
+
+
+            
             </td>
 
             
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
 
             
 
-            <td class="description last"></td>
+            <td class="description last">
+                <h6>Properties</h6>
+                
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+        <th>Attributes</th>
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>snap</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">number</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"><p>snap&gt;0 時尺寸吸附格線(最小一格), 否則最小 minSize</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>minSize</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">number</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"><p>未吸附時之最小尺寸</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+            </td>
         </tr>
 
     
@@ -4710,7 +5004,7 @@ elementFromPoint 可能撿到他 flow 之把手; 以最近之 [data-flow-id] 祖
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="js_viewport.mjs.html">js/viewport.mjs</a>, <a href="js_viewport.mjs.html#line153">line 153</a>
+        <a href="js_viewport.mjs.html">js/viewport.mjs</a>, <a href="js_viewport.mjs.html#line155">line 155</a>
     </li></ul></dd>
     
 
@@ -5293,7 +5587,7 @@ elementFromPoint 可能撿到他 flow 之把手; 以最近之 [data-flow-id] 祖
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="js_viewport.mjs.html">js/viewport.mjs</a>, <a href="js_viewport.mjs.html#line118">line 118</a>
+        <a href="js_viewport.mjs.html">js/viewport.mjs</a>, <a href="js_viewport.mjs.html#line120">line 120</a>
     </li></ul></dd>
     
 
@@ -9290,7 +9584,7 @@ empty: Boolean                          requested 為空</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="js_viewport.mjs.html">js/viewport.mjs</a>, <a href="js_viewport.mjs.html#line161">line 161</a>
+        <a href="js_viewport.mjs.html">js/viewport.mjs</a>, <a href="js_viewport.mjs.html#line163">line 163</a>
     </li></ul></dd>
     
 
@@ -10497,6 +10791,15 @@ empty: Boolean                          requested 為空</p>
 
             <td class="type">
             
+                
+<span class="param-type">number</span>
+|
+
+<span class="param-type">Object</span>
+
+
+
+            
             </td>
 
             
@@ -10515,7 +10818,7 @@ empty: Boolean                          requested 為空</p>
                 </td>
             
 
-            <td class="description last"></td>
+            <td class="description last"><p>數值, 或 { top?:number, right?:number, bottom?:number, left?:number }</p></td>
         </tr>
 
     
@@ -10689,7 +10992,7 @@ empty: Boolean                          requested 為空</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="js_viewport.mjs.html">js/viewport.mjs</a>, <a href="js_viewport.mjs.html#line113">line 113</a>
+        <a href="js_viewport.mjs.html">js/viewport.mjs</a>, <a href="js_viewport.mjs.html#line115">line 115</a>
     </li></ul></dd>
     
 
@@ -11859,7 +12162,7 @@ value 為空即移除。</p></li></ul></dd>
 
     
 
-    <h4 class="name" id="startDocumentGesture"><span class="type-signature"></span>startDocumentGesture<span class="signature">(o)</span><span class="type-signature"></span></h4>
+    <h4 class="name" id="startDocumentGesture"><span class="type-signature"></span>startDocumentGesture<span class="signature">(o)</span><span class="type-signature"> &rarr; {Object}</span></h4>
 
     
 
@@ -11935,11 +12238,7 @@ value 為空即移除。</p></li></ul></dd>
         <th>Type</th>
 
         
-        <th>Attributes</th>
-        
 
-        
-        <th>Default</th>
         
 
         <th class="last">Description</th>
@@ -11965,38 +12264,57 @@ value 為空即移除。</p></li></ul></dd>
             </td>
 
             
-                <td class="attributes">
-                
-
-                
-
-                
-                </td>
-            
 
             
-                <td class="default">
+
+            <td class="description last">
+                <h6>Properties</h6>
                 
-                </td>
-            
 
-            <td class="description last"></td>
-        </tr>
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
 
+        <th>Type</th>
+
+        
+        <th>Attributes</th>
+        
+
+        
+        <th>Default</th>
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
     
 
         <tr>
             
-                <td class="name"><code></code></td>
+                <td class="name"><code>onMove</code></td>
             
 
             <td class="type">
+            
+                
+<span class="param-type">function</span>
+
+
+
             
             </td>
 
             
                 <td class="attributes">
                 
+                    &lt;optional><br>
+                
 
                 
 
@@ -12010,23 +12328,31 @@ value 為空即移除。</p></li></ul></dd>
                 </td>
             
 
-            <td class="description last"></td>
+            <td class="description last"><p>每次 mousemove / pointermove(非滑鼠來源, 主鍵仍按著時), 簽名 (e:MouseEvent|PointerEvent) =&gt; void</p></td>
         </tr>
 
     
 
         <tr>
             
-                <td class="name"><code></code></td>
+                <td class="name"><code>onEnd</code></td>
             
 
             <td class="type">
+            
+                
+<span class="param-type">function</span>
+
+
+
             
             </td>
 
             
                 <td class="attributes">
                 
+                    &lt;optional><br>
+                
 
                 
 
@@ -12040,14 +12366,14 @@ value 為空即移除。</p></li></ul></dd>
                 </td>
             
 
-            <td class="description last"></td>
+            <td class="description last"><p>終止(任一原因恰呼叫一次), 簽名 (reason:string, e?:Event) =&gt; void; reason 為 'cancel' 時呼叫端須走取消而非提交</p></td>
         </tr>
 
     
 
         <tr>
             
-                <td class="name"><code>o.cursor</code></td>
+                <td class="name"><code>cursor</code></td>
             
 
             <td class="type">
@@ -12085,7 +12411,7 @@ value 為空即移除。</p></li></ul></dd>
 
         <tr>
             
-                <td class="name"><code>o.requirePrimary</code></td>
+                <td class="name"><code>requirePrimary</code></td>
             
 
             <td class="type">
@@ -12125,6 +12451,13 @@ value 為空即移除。</p></li></ul></dd>
     </tbody>
 </table>
 
+            </td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
 
 
 
@@ -12143,7 +12476,24 @@ value 為空即移除。</p></li></ul></dd>
 <h5 class="h5-returns">Returns:</h5>
 
         
+<div class="param-desc">
+    <p>{ dispose: () =&gt; boolean, isActive: () =&gt; boolean }, dispose 回傳是否確實收掉一個進行中手勢(以 'dispose' 終止, 不呼叫 onEnd)</p>
+</div>
 
+
+
+<dl class="param-type">
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Object</span>
+
+
+
+    </dd>
+</dl>
 
     
 
@@ -12524,7 +12874,7 @@ value 為空即移除。</p></li></ul></dd>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="js_viewport.mjs.html">js/viewport.mjs</a>, <a href="js_viewport.mjs.html#line130">line 130</a>
+        <a href="js_viewport.mjs.html">js/viewport.mjs</a>, <a href="js_viewport.mjs.html#line132">line 132</a>
     </li></ul></dd>
     
 
@@ -20301,7 +20651,7 @@ it opens, and the popup flips to the opposite side when there is no room.</p></t
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 4.0.5</a> on Sun Oct 11 2026 16:13:15 GMT+0800 (台北標準時間) using the <a href="https://github.com/clenemt/docdash">docdash</a> theme.
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 4.0.5</a> on Fri Oct 16 2026 11:53:15 GMT+0800 (台北標準時間) using the <a href="https://github.com/clenemt/docdash">docdash</a> theme.
 </footer>
 
 <script>prettyPrint();</script>

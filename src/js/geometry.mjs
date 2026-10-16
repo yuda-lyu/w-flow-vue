@@ -91,7 +91,9 @@ export function snapPosition(position, gridSize) {
  * @param {'top-left'|'top-right'|'bottom-left'|'bottom-right'} edge
  * @param {{x:number,y:number,width:number,height:number}} start 起始幾何
  * @param {{dx:number,dy:number}} delta 畫布座標位移
- * @param {{snap?:number,minSize?:number}} [opt] snap>0 時尺寸吸附格線(最小一格), 否則最小 minSize
+ * @param {Object} [opt]
+ * @param {number} [opt.snap] snap>0 時尺寸吸附格線(最小一格), 否則最小 minSize
+ * @param {number} [opt.minSize] 未吸附時之最小尺寸
  * @returns {{width:number,height:number,x:number,y:number}}
  */
 export function computeResize(edge, start, delta, opt) {

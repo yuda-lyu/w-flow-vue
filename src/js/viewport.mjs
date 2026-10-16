@@ -43,7 +43,7 @@ export function resolveContainerSize(rect, fallback) {
 /**
  * padding 正規化為四邊(單位一律為**螢幕像素**, 同 Leaflet fitBounds padding 與 OpenLayers View.fit padding)。
  * 輸入可為數值(四邊同值)或 { top, right, bottom, left }(缺漏/非法之邊逐一回退 fallback 之同一邊)。
- * @param {number|{top?:number,right?:number,bottom?:number,left?:number}} padding
+ * @param {number|Object} padding 數值, 或 { top?:number, right?:number, bottom?:number, left?:number }
  * @param {number|object} [fallback=0] 同型輸入; 其自身非法者再回退 0
  */
 export function resolvePadding(padding, fallback) {
@@ -66,7 +66,9 @@ export function resolvePadding(padding, fallback) {
  * 不可行 padding(單軸兩側和 > 軸長-1)依 clampInsets 等比縮限, 保底 1px 可視區於容器內。
  * @param {{minX,minY,maxX,maxY}} bounds
  * @param {{width,height}} container
- * @param {{padding?:number|object, maxZoom?:number}} [opt]
+ * @param {Object} [opt]
+ * @param {number|Object} [opt.padding] 同 resolvePadding 之輸入
+ * @param {number} [opt.maxZoom] zoom 上限
  * @returns {{x:number,y:number,zoom:number}|null}
  */
 export function computeFitView(bounds, container, opt) {
