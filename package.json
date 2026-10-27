@@ -1,11 +1,11 @@
 {
   "name": "w-flow-vue",
-  "version": "1.1.10",
+  "version": "1.1.11",
   "main": "dist/w-flow-vue.umd.js",
   "dependencies": {
-    "w-component-vue": "^2.5.31",
+    "w-component-vue": "^2.5.32",
     "w-jsonview-tree": "^1.0.38",
-    "wsemi": "^1.9.21"
+    "wsemi": "^1.9.25"
   },
   "devDependencies": {
     "@vue/cli-plugin-babel": "^5.0.8",
@@ -25,8 +25,8 @@
     "jest-environment-jsdom": "^29.7.0",
     "vue": "^2.7.16",
     "w-package-tools": "^1.1.21",
-    "w-package-tools-e2e": "^1.0.8",
-    "w-screenctl": "^1.0.26"
+    "w-package-tools-e2e": "^1.0.10",
+    "w-screenctl": "^1.0.28"
   },
   "scripts": {
     "serve": "vue-cli-service serve",
