@@ -273,7 +273,7 @@
 - **畫面含埠之流程(E7)**:**無**。靜態:`src/` 無任何元件渲染 origin／host／port(`src/App.vue` 之 `location.href` 只供 `?cmp=` 解析,不顯示);動態:代表性 9 張(含全頁 E2E-009／011／041／042)於基準埠與位移埠各產圖,RGBA 逐像素比對,差異量級與同埠重複產圖之執行間雜訊相同(見 state／經驗 2026-11-05).日後新增含埠流程時須比對端覆蓋該處或改只能在基準埠跑(`reserveE2ePorts(…, { baseOnly: true })`),不得略過.
 - **測試**:`unit-e2ePorts` 15 案——EP-1～EP-6b(真實子行程＋真實監聽,占用情境動態期望〔占得到就占、EADDRINUSE 視為已占用〕,子行程登錄目錄隔離到 `test/_tmp/e2ePorts/`,與本機埠占用無關)、EP-7／EP-8(dev server 實際綁定埠之核對:判定函數與 `startServers` 經假 dev server 走同一條追蹤路徑)、EP-S1～EP-S5(靜態守護);另有真實占用者驅動之實跑(fv309 報告 §三).單元測試的占用者／子行程之收尾只憑 `ChildProcess` 結束狀態(`isRunning`)下殺,不憑 PID 存在性(PID 可能已被回收).
 - **變異測試**(修正處逐一暫時變異→跑 `unit-e2ePorts`→還原並以雜湊回驗):不保留、`baseUrl` 寫死、dev server `--port` 用基準埠／不帶、spawn 不傳實際埠、開 `killForeignOnRestart`、不帶 `reservation`、加依埠下殺站點、埠核對恆為 ok／不核對、新增寫死監聽埠未列 avoid、e2e 寫死網址／不 cleanup／不起服務,共 14 項,全數擊殺(M11「e2e 不再 cleanup」初版因 `cleanup()` 在 `.then`／`.catch` 各有一處、守護只比對有無該字串而存活,補強 EP-S5 為兩條路徑各自比對後擊殺;M6／M7〔開 `killForeignOnRestart`／不帶 `reservation`〕只由靜態守護 EP-S5 擊殺,因套件於未明確帶入時會退回行程內之保留,行為等價,故屬原始碼約束而非行為差異;結果見 fv309 報告 §三.4).
-- **已知限制**:①Windows 上 TIME_WAIT 殘留(剛結束的上一輪 dev server)會令套件對 `::` 之試綁定失敗而判為占用,緊接上一輪後約 2 分鐘內可能改用 8750(無害:不殺、不影響標準圖);②`E2E_PORT_OFFSET=0` 不驗被沿用者身分;③保留後被搶走時,管理器為判斷有無回應必探測 1 次 `GET /`(套件設計),無法做到對占用者 0 次請求;④8650 與 w-web-sso、w-pubsub、w-serv-broadcast 之基準埠相同(規格 §4 portGroups),本套件已能自動避開,測試閘之互斥表是否納入本套件由主控裁量.
+- **已知限制**:①基準埠之 `::` 試綁定失敗代表確有 socket 占著 `::`,會換埠(2026-11-05 實測,原載「TIME_WAIT 造成」不成立);②`E2E_PORT_OFFSET=0` 不驗被沿用者身分;③保留後被搶走時,管理器為判斷有無回應必探測 1 次 `GET /`(套件設計),無法做到對占用者 0 次請求;④8650 與 w-web-sso、w-pubsub、w-serv-broadcast 之基準埠相同(規格 §4 portGroups),本套件已能自動避開,測試閘之互斥表是否納入本套件由主控裁量.
 
 ---
 
