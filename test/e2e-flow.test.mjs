@@ -1,11 +1,14 @@
 /**
  * E2E 圖台互動測試(Playwright)—— 單檔雙模式,對應 spec/流程_圖台互動.md 之 E2E-001 ~ E2E-053。
  *
- * 前置: npm run serve(dev server 須在 127.0.0.1:8080)
+ * 前置: 無需手動起 dev server(排程第 309 項起)——本檔自行起停前端 dev server(vue-cli-service serve),
+ *   基準埠 8650(test/tools/e2ePorts.mjs); 基準埠被占用(別的套件正在跑, 或開發者手動起的 dev server)時整組換到空閒埠(8750…),
+ *   絕不殺占用者, 實際埠印於 [e2e-port]／[e2e-setup] 行。要沿用開發者已起之 dev server: 起於 8650 並設 E2E_PORT_OFFSET=0。
  *
  * 比對模式(預設):   node test/e2e-flow.test.mjs
  * 產製標準圖:        node test/e2e-flow.test.mjs --baseline
  * 手術式重產:        node test/e2e-flow.test.mjs --baseline --names E2E-014,E2E-018
+ * 產製到隔離目錄:    E2E_BASELINE_OUT_DIR=<目錄> node test/e2e-flow.test.mjs --baseline [--names …](不動 test/pics; 供等價驗證)
  *
  * 設計要點:
  * - 每個 case 各自 new 一次 browser(per-case fresh),彼此不帶狀態。
@@ -19,11 +22,13 @@ import fs from 'fs'
 import path from 'path'
 import { fileURLToPath } from 'url'
 import launchChromium from 'w-package-tools-e2e/src/launchChromium.mjs'
-import { baseUrl, captureStable, assertBaselineMatch } from './e2e-setup.mjs'
+import { baseUrl, captureStable, assertBaselineMatch, startServers, cleanup } from './e2e-setup.mjs'
 import { nodesBounds, computeFitView } from '../src/js/viewport.mjs'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const baselineDir = path.join(__dirname, 'pics')
+//--baseline 之寫檔目錄: 預設即標準圖目錄; E2E_BASELINE_OUT_DIR 導到隔離目錄(比對模式永遠讀 baselineDir)
+const baselineWriteDir = process.env.E2E_BASELINE_OUT_DIR ? path.resolve(process.env.E2E_BASELINE_OUT_DIR) : baselineDir
 
 const VW = 1280
 const VH = 900
@@ -62,7 +67,7 @@ async function shot(page, name, opts = {}) {
     const buf = await captureStable(page, opts)
     const bp = path.join(baselineDir, name + '.png')
     if (isBaseline) {
-        fs.writeFileSync(bp, buf)
+        fs.writeFileSync(path.join(baselineWriteDir, name + '.png'), buf)
         console.log(`    + ${name}`)
         return
     }
@@ -2588,10 +2593,14 @@ const CASES = [
 // ─────────────────────────── runner ───────────────────────────
 
 async function run() {
-    if (isBaseline && !fs.existsSync(baselineDir)) {
-        fs.mkdirSync(baselineDir, { recursive: true })
+    if (isBaseline && !fs.existsSync(baselineWriteDir)) {
+        fs.mkdirSync(baselineWriteDir, { recursive: true })
     }
     console.log(isBaseline ? '產製標準圖 (spec/流程_圖台互動.md)\n' : 'E2E 圖台互動測試 (spec/流程_圖台互動.md)\n')
+
+    //前端 dev server 由本檔起停(排程第 309 項): 埠經 reserveE2ePorts 保留, 被占用則換埠, 絕不沿用或下殺他人; 實際埠印於輸出
+    await startServers()
+    console.log(`  前端 ${baseUrl}\n`)
 
     for (const c of CASES) {
         if (onlyNames && !onlyNames.includes(c.id)) continue
@@ -2616,10 +2625,16 @@ async function run() {
         console.log('\nFailed:')
         errors.forEach(e => console.log('  ' + e))
     }
-    process.exit(failed > 0 ? 1 : 0)
 }
 
-run().catch((e) => {
-    console.error(e)
-    process.exit(1)
-})
+//收尾之兩條觸發來源之一: 主函式結束(含失敗)後顯式 cleanup(); 另一條為 e2e-setup 註冊之 exit／SIGINT／SIGTERM 備援
+run()
+    .then(() => {
+        cleanup()
+        process.exit(failed > 0 ? 1 : 0)
+    })
+    .catch((e) => {
+        console.error(e)
+        cleanup()
+        process.exit(1)
+    })
