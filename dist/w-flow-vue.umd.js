@@ -1,5 +1,5 @@
 /*!
- * w-flow-vue v1.1.20
+ * w-flow-vue v1.1.21
  * (c) 2018-2021 yuda-lyu(semisphere)
  * Released under the MIT License.
  */
