@@ -194,7 +194,8 @@
 ### 7.1 單元測試(jest + jsdom)
 
 - 指令:`npm test`(= `jest`);單檔 `npx jest test/<檔名>`.
-- 基準(2026-10-06,連線 popupDirection 補齊後):48 suites / 2615 tests 全綠(設定彈窗文字扁平鍵 + 節點 popupDirection 時為 48 / 2604;更早為 47 / 2544).
+- 基準(2026-11-13,e2e 啟動經 w-playwright 後):51 suites / 2644 tests 全綠(新增 `unit-e2eLaunch`、`api-e2eLaunch` 共 14 案;其間 2026-11-05 為 49 / 2630).
+- 前一基準(2026-10-06,連線 popupDirection 補齊後):48 suites / 2615 tests 全綠(設定彈窗文字扁平鍵 + 節點 popupDirection 時為 48 / 2604;更早為 47 / 2544).
 - 樣式檔由 `jest.config.js` 之 `moduleNameMapper` 換成 `test/styleMock.cjs`.
 - jsdom 20 無 `PointerEvent`:以 `MouseEvent` 補 `pointerType` / `pointerId` 模擬(見 `unit-pointer-gesture` 之 `ptr()`);監聽比對依事件型別字串,故等價.
 - 規格對應:各單元測試檔頭列其對應之契約節(`spec/流程_互動契約.md` §x)與項目代號.
@@ -207,6 +208,7 @@
 |---|---|
 | 後端 | 無(純前端套件) |
 | 前端 | webpack dev server(`vue-cli-service serve --host 127.0.0.1 --port <實際埠>`),**由 e2e 自行起停**(2026-11-05 起,不再依賴手動 `npm run serve`);基準埠 `8650`,被占用時整組換埠(8750…),見 R-E2E-PORT-01(§7.4) |
+| 瀏覽器 | 無頭 Chromium(headless shell,Playwright 1.64.1 之 revision),**一律經自有套件 `w-playwright`**(devDependencies;唯一啟動點 `test/tools/e2eLaunch.mjs`),本套件不直接依賴 `playwright`／`playwright-core`;規則 R-WPW-LAUNCH-01(§7.5) |
 | e2e 執行 | 全跑 `node test/e2e-flow.test.mjs`(單檔自帶 runner,非 mocha);單案 `--names E2E-NNN[,…]` |
 | 標準圖 | `node test/e2e-flow.test.mjs --baseline --names E2E-NNN[,…]`(案例層閘門,截圖前即篩);`E2E_BASELINE_OUT_DIR=<目錄>` 導到隔離目錄(等價驗證用,不動 `test/pics`) |
 | 共用實作 | `test/e2e-setup.mjs`(`baseUrl`、`captureStable`、`assertBaselineMatch`、`startServers`、`cleanup`、`createE2eServices`、`devServerArgs`);基準埠與埠保留 `test/tools/e2ePorts.mjs` |
@@ -216,7 +218,7 @@
 
 | 契約 | 本專案實名 / 模式 | 偏離與依據 |
 |---|---|---|
-| C1 launch wrapper | 單一入口 `w-package-tools-e2e` 之 `launchChromium()`(runner 之 per-case 迴圈;缺 Playwright 指定版本之瀏覽器時自動下載) | **缺口**:呼叫時未傳確定性渲染旗標(同套件另有 `chromiumLaunchArgs` / `launchBrowser`);現行 pixelmatch 容差下全數穩定,暫不動(動則全量重產) |
+| C1 launch wrapper | 單一入口 `test/tools/e2eLaunch.mjs` 之 `launchE2eBrowser()` → `wpw.launchChromium({ autoInstall: true })`(自有套件 `w-playwright`;runner 之 per-case 迴圈;缺 Playwright 指定版本之 headless shell 時安裝一次再啟動);2026-11-13(排程第 442 項)起取代 `w-package-tools-e2e` 之 `launchChromium()` | **缺口**:啟動時未傳確定性渲染旗標(`w-package-tools-e2e` 之 `launchBrowser` 帶六旗標,但改用它會改變像素,故不採;設計 §5.1 同此裁定);現行 pixelmatch 容差下全數穩定,暫不動(動則全量重產) |
 | C2 server lifecycle | `createServiceManager`(`e2e-setup.mjs` 之 `createE2eServices`):e2e 自行起停 dev server,埠經 `reserveE2ePorts` 保留(R-E2E-PORT-01);cleanup 兩條觸發來源(直跑主函式結束後顯式 `cleanup()`、`registerCleanupHooks` 之 exit／SIGINT／SIGTERM 備援),只殺自己 spawn 之行程樹 | 2026-11-05 前為「不自動起停」(舊:前置手動 `npm run serve`,最易撞之 8080 又無任何偵測);改為自動起停之依據:規格 `dspec/e2e埠與多套件同跑.md` §4 盤點「唯一依賴外部手動起服務者」。無 `restartBackend`(無後端) |
 | C3 換設定重啟 | 不適用(無後端) | |
 | C4 DB 重置 | 不適用(無資料庫);每案例 `openPage` 重新載入 demo 並以 setup 重設視口 | |
@@ -233,7 +235,7 @@
 
 #### 專案特有機制
 
-- 每案例全新 browser(`run()` 內 per-case `chromium.launch`);`openPage(browser, { touch })` 之 `touch` 開 `hasTouch` 情境.
+- 每案例全新 browser(`run()` 內 per-case `launchE2eBrowser()`;headless shell 不觸發登入紀錄,故不改同檔共用瀏覽器——設計 §5.2 只要求真 Chrome／完整 Chromium 每檔最多啟動一次,且 e2e 技能 §6 要求 per-case fresh);`openPage(browser, { touch })` 之 `touch` 開 `hasTouch` 情境.
 - 觸控手勢一律以 CDP `Input.dispatchTouchEvent` 送出(走真實輸入管線;Playwright 無觸控拖曳 API),helper:`touchDrag` / `touchPinch`.
 - 擺放轉折點等 setup 須以 `freeCanvasSpot(page)` 實地掃描空白點,不得寫死座標(寫死會落在節點上,測到的是拖節點).
 - e2e 期間不得修改 `src`(dev server 熱更新會使前後案例跑在不同程式碼上);中途改了就整輪重跑.
@@ -241,11 +243,11 @@
 - 驗「文字被換掉」之斷言不得以文字定位(E2E-051 以 `data-field-key` 與 class 定位,helper `settingsFormTexts`).
 - 開在元素上 / 下方之 popup 截圖須整個落在圖台內:重開前以 `centerOnConnLabel(page, id, fy)` 依方向取景(setup,非 act),截圖經 `shotInCanvas` 守門——clip 超出圖台即拋錯,不把 demo 標籤列等頁面元素拍進標準圖(E2E-053;連線表單 6 群約 281px,label 置中時開在上方會超出圖台).
 - 設定表單新增群或欄位,會改動「該 popup 開啟中」之所有截圖:盤點 `openEdgeSettings` / `openNodeSettings` 之後、關閉前即 `shot` 者(2026-10-06 連線多一群:E2E-012、037-edge、041 conn ×2、051-conn).
-- 升級自有套件(`w-component-vue` / `wsemi` / `w-package-tools-e2e`)後須跑一次全套 e2e(2.5.26 升版後未跑,致 E2E-022 之壞未被即時發現).
+- 升級自有套件(`w-component-vue` / `wsemi` / `w-package-tools-e2e` / `w-playwright`)後須跑一次全套 e2e(2.5.26 升版後未跑,致 E2E-022 之壞未被即時發現).
 
 #### 已知缺口
 
-- C1:`launchChromium()` 未帶確定性渲染旗標(2026-10-06 盤點更正:原載「`chromium.launch` 散在 runner」不成立,runner 已經單一入口).
+- C1:啟動時未帶確定性渲染旗標(2026-10-06 盤點更正:原載「`chromium.launch` 散在 runner」不成立,runner 已經單一入口;2026-11-13 起啟動經 `w-playwright`,旗標缺口不變).
 - C11:無 `waitUntilExist`.
 - 共用層位置:`test/e2e-setup.mjs` 在 `test/` 一層而非 `test/tools/`(全域規範 §16.4).
 
@@ -253,7 +255,7 @@
 
 - `spec/流程_互動契約.md`:行為契約,各節之驗收欄指向單元測試代號.
 - `spec/流程_圖台互動.md`:E2E-001~053;〈標準圖對照〉與〈斷言〉兩表為 e2e 之真理源,新增案例四處同步(spec bullet、標準圖表與合計、斷言表、`CASES` 陣列).
-- 測試共用之 spec 抄本與配套工具放 `test/tools/`(不帶 `.test.`,jest `testMatch` 只收 `unit-*` / `api-*`):`settingsTextsSpec.mjs` 為互動契約 §12 之文字鍵與預設表;`pendingAudit.mjs` 為 `./testPending` 失敗證據之盤點(判斷哪些事件已處理完可清);`e2ePorts.mjs` 為 e2e 基準埠與埠保留(R-E2E-PORT-01);`e2ePortsChild.mjs`、`e2eServicesChild.mjs`、`e2eFakeDevServer.mjs`、`e2ePortsOccupier.mjs` 為 `unit-e2ePorts` 之真實子行程／假服務／占用者配套.
+- 測試共用之 spec 抄本與配套工具放 `test/tools/`(不帶 `.test.`,jest `testMatch` 只收 `unit-*` / `api-*`):`settingsTextsSpec.mjs` 為互動契約 §12 之文字鍵與預設表;`pendingAudit.mjs` 為 `./testPending` 失敗證據之盤點(判斷哪些事件已處理完可清);`e2ePorts.mjs` 為 e2e 基準埠與埠保留(R-E2E-PORT-01);`e2eLaunch.mjs` 為 e2e 唯一啟動點(R-WPW-LAUNCH-01),`e2eLaunchChild.mjs` 為 `unit-e2eLaunch`／`api-e2eLaunch` 之子行程配套;`e2ePortsChild.mjs`、`e2eServicesChild.mjs`、`e2eFakeDevServer.mjs`、`e2ePortsOccupier.mjs` 為 `unit-e2ePorts` 之真實子行程／假服務／占用者配套.
 
 ### 7.4 R-E2E-PORT-01 e2e 埠、前端服務起停與下殺(排程第 309 項,2026-11-05 fv309)
 
@@ -274,6 +276,24 @@
 - **測試**:`unit-e2ePorts` 15 案——EP-1～EP-6b(真實子行程＋真實監聽,占用情境動態期望〔占得到就占、EADDRINUSE 視為已占用〕,子行程登錄目錄隔離到 `test/_tmp/e2ePorts/`,與本機埠占用無關)、EP-7／EP-8(dev server 實際綁定埠之核對:判定函數與 `startServers` 經假 dev server 走同一條追蹤路徑)、EP-S1～EP-S5(靜態守護);另有真實占用者驅動之實跑(fv309 報告 §三).單元測試的占用者／子行程之收尾只憑 `ChildProcess` 結束狀態(`isRunning`)下殺,不憑 PID 存在性(PID 可能已被回收).
 - **變異測試**(修正處逐一暫時變異→跑 `unit-e2ePorts`→還原並以雜湊回驗):不保留、`baseUrl` 寫死、dev server `--port` 用基準埠／不帶、spawn 不傳實際埠、開 `killForeignOnRestart`、不帶 `reservation`、加依埠下殺站點、埠核對恆為 ok／不核對、新增寫死監聽埠未列 avoid、e2e 寫死網址／不 cleanup／不起服務,共 14 項,全數擊殺(M11「e2e 不再 cleanup」初版因 `cleanup()` 在 `.then`／`.catch` 各有一處、守護只比對有無該字串而存活,補強 EP-S5 為兩條路徑各自比對後擊殺;M6／M7〔開 `killForeignOnRestart`／不帶 `reservation`〕只由靜態守護 EP-S5 擊殺,因套件於未明確帶入時會退回行程內之保留,行為等價,故屬原始碼約束而非行為差異;結果見 fv309 報告 §三.4).
 - **已知限制**:①基準埠之 `::` 試綁定失敗代表確有 socket 占著 `::`,會換埠(2026-11-05 實測,原載「TIME_WAIT 造成」不成立);②`E2E_PORT_OFFSET=0` 不驗被沿用者身分;③保留後被搶走時,管理器為判斷有無回應必探測 1 次 `GET /`(套件設計),無法做到對占用者 0 次請求;④8650 與 w-web-sso、w-pubsub、w-serv-broadcast 之基準埠相同(規格 §4 portGroups),本套件已能自動避開,測試閘之互斥表是否納入本套件由主控裁量.
+
+### 7.5 R-WPW-LAUNCH-01 e2e 啟動瀏覽器一律經 w-playwright(排程第 442 項,2026-11-13)
+
+依據:`w-playwright` 規則帳本 R-PW-ONLY、R-PW-WIRING.背景:Windows 上 Chromium 系瀏覽器(真 Chrome 153 起、完整 Chromium、Edge)每啟動一個新根行程即以錯誤密碼替目前使用者登入一次,10 分鐘內 10 次即鎖帳號;`w-playwright` 於每次啟動合併出恰一串 `--disable-features`(Playwright 預設＋`AutofillAiWalletPrivatePasses`＋呼叫端自給者)並統一 Playwright 版本(`playwright-core` 精確 1.64.1).
+
+- **規則**:
+  1. 本套件自有碼(`src`、`test`、`toolg`、`spec`、根目錄設定檔)不得以靜態匯入、動態 `import()`、`require` 引用 `playwright`／`playwright-core`;`package.json` 不宣告兩者;Chromium 系瀏覽器只經 `w-playwright`(`import wpw from 'w-playwright'`,不深層匯入其 `src/`).
+  2. 唯一啟動點 `test/tools/e2eLaunch.mjs`:`launchE2eBrowser()` → `wpw.launchChromium({ autoInstall: true })`;`test/e2e-flow.test.mjs` 經之,主檔不含任何 `.launch*(` 呼叫.不傳 `headless`／`channel`／`executablePath`(＝headless shell,與修前同種瀏覽器),**不改用** `w-package-tools-e2e` 之 `launchBrowser`(多六旗標會改變像素).
+  3. `w-playwright` 為 devDependencies(只測試使用,不入 `dist`),故 `toolg/` 之 external／globals 無須列入.
+  4. 日後若改為啟動真 Chrome／Edge／完整 Chromium:每檔最多啟動一次(`before` 起、`after` 關)、README 寫明須安裝 Google Chrome／Edge、跑前後以 `readBadPassword` 讀錯誤次數(增加即停)、`w-playwright` 之 `api-realChromeGuard` 須已實際通過(略過不算).
+- **單一擁有者**:`test/tools/e2eLaunch.mjs`.
+- **盤點**(`git grep`;新檔未追蹤時加 `--untracked`).防空集合:第 1 條以 `unit-e2eLaunch` EL-1 之正例(正則對五種寫法皆命中)與掃描範圍非空斷言;第 2 條對 `HEAD` 跑命中 1 處(修前之 `test/e2e-flow.test.mjs`);第 3 條修前為 0(修前無 `wpw` 站點),修後恰 1:
+  - `git grep --untracked -nE "(from\s+|import\(\s*|require\(\s*)['\"\`]playwright(-core)?['\"\`/]" -- "*.mjs" "*.js" "*.cjs"` → 0(R-PW-ONLY;本套件修前即 0,因 Playwright 只經 `w-package-tools-e2e` 帶入).
+  - `git grep --untracked -nE "w-package-tools-e2e/src/launchChromium" -- . ":!sgud"` → 0(修前 `test/e2e-flow.test.mjs` 1 處;該匯出將由 `w-package-tools-e2e` 移除).
+  - `git grep --untracked -nE "\bwpw\.(launchChromium|launchChromiumPersistent)\(" -- src test ":!test/unit-e2eLaunch.test.mjs"` → 僅 `test/tools/e2eLaunch.mjs` 1 處(`src` 0;被排除之 `unit-e2eLaunch` 只在說明文字與測試名稱中提及該呼叫式).
+- **站點全集**:啟動點 1(`launchE2eBrowser`);呼叫端 1(`e2e-flow.test.mjs` 之 `run()` 迴圈,每案一次,共 53 案);直接 launch 0;`src` 0;`package.json` 宣告 `playwright`／`playwright-core` 0.
+- **測試**:`unit-e2eLaunch` EL-1～EL-4(盤點含正例防空集合、依賴宣告、站點全集、`setBrowserTypeForTest` 替身斷言選項含守門且替身被呼叫 1 次,不啟動瀏覽器)、`api-e2eLaunch` EL-5(替身以 `next()` 走真路徑,啟動 headless shell 一次並關閉);配套 `test/tools/e2eLaunchChild.mjs`(真實子行程,沿用 `e2ePortsChild.mjs` 之作法:啟動點與替身取自同一份真實 node 載入之 `w-playwright`,jest 有自己的模組登錄表且為 jsdom;真路徑也在乾淨 node 行程中跑.未實測過在 jest 內直接載入).變異證據(2026-11-13):①啟動點繞過 `wpw` → EL-3 站點數與 EL-4 共 5 案轉紅;②啟動點加 `channel: 'chrome'` → EL-4 形態案轉紅(皆以替身接住,未啟動任何瀏覽器).
+- **殘餘**:`node_modules` 內仍有 `playwright`,為 `w-package-tools-e2e`、`w-screenctl` 之傳遞依賴(待其遷移輪移除),非本套件宣告;`PWDEBUG` 為 inspector 值或有 `SELENIUM_REMOTE_URL` 時 `w-playwright` 拒絕啟動(`E_ENV`).
 
 ---
 
@@ -308,4 +328,5 @@
 | `267426a`(2026-08-31) | `markerStartColor` / `markerEndColor` → `markerFromFaceColor` / `markerToFaceColor`;另增 `markerFromEdgeColor` / `markerToEdgeColor` | 鍵名替換,無相容層 |
 | `267426a`(2026-08-31) | 形狀 `'triangle'` → `'triangle-up'` | 值替換,無相容層 |
 | 未提交(2026-10-06 實作) | 移除 `opt.settingsColorConfirmText`(兩表單共用一句),改為 `opt.nodesSettingsColorConfirmText` / `opt.connsSettingsColorConfirmText`(節點與連線分開命名).`nodesSettingsDeleteText` / `connsSettingsDeleteText` 鍵名不變 | 鍵名替換;給了舊鍵會 `console.warn` 一次點名兩個新鍵,但值不生效(非相容層);README〈Migration〉 |
+| 未提交(2026-11-13 實作,排程第 442 項) | 無對外 API 或行為變更:僅 e2e 測試啟動瀏覽器改經 `w-playwright`(`devDependencies` 新增 `w-playwright ^1.0.1`;`test/tools/e2eLaunch.mjs`),`src`／`dist` 不動 | 不適用;`w-package-tools-e2e` 之 `launchChromium` 不再被本套件引用 |
 | 未提交(2026-10-06 實作) | 連線表單 3 句寫死中文改為英文預設:轉折點 ＋ 鈕 `新增轉折點` → `Add Waypoint`、× 鈕 `移除此轉折點` → `Remove Waypoint`、空狀態 `無(自動路由)` → `None (auto-routed)` | 可見 UI 變更;要中文者設 `connsSettingsPointsAddBtnTooltip` / `PointsRemoveBtnTooltip` / `PointsTextEmpty`.標準圖僅 `flow-E2E-041-settings-groups-conn-path` 重產 |

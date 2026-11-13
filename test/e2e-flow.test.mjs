@@ -21,7 +21,7 @@
 import fs from 'fs'
 import path from 'path'
 import { fileURLToPath } from 'url'
-import launchChromium from 'w-package-tools-e2e/src/launchChromium.mjs'
+import launchE2eBrowser from './tools/e2eLaunch.mjs'
 import { baseUrl, captureStable, assertBaselineMatch, startServers, cleanup } from './e2e-setup.mjs'
 import { nodesBounds, computeFitView } from '../src/js/viewport.mjs'
 
@@ -2606,8 +2606,8 @@ async function run() {
         if (onlyNames && !onlyNames.includes(c.id)) continue
         console.log(`  ${c.id} ${c.kebab}`)
         //per-case fresh browser: 每個 case 全新 browser/context/page, 不帶前一 case 狀態
-        //launchChromium, 缺Playwright指定版本之瀏覽器時首次啟動自動下載(與本機同版), 由w-package-tools-e2e提供
-        const browser = await launchChromium()
+        //launchE2eBrowser(test/tools/e2eLaunch.mjs, 本檔唯一啟動點): 一律經自有套件w-playwright啟動(守門參數, 見該檔說明), 缺Playwright指定版本之瀏覽器時首次啟動自動安裝一次
+        const browser = await launchE2eBrowser()
         try {
             const page = await openPage(browser, c.opts)
             await c.run(page)

@@ -157,3 +157,13 @@ Vue.mixin({
 ```
 
 The mixin only clears the inherited namespace on component boundaries; SVG tags still resolve to the SVG namespace via `getTagNamespace`, so normal SVG rendering is unaffected.
+
+## Testing (contributors)
+
+`npm test` runs the jest unit tests and then the end-to-end test `node test/e2e-flow.test.mjs` (pixel baselines in `test/pics`). The e2e test starts its own dev server and drives Chromium (the headless shell, not a system Chrome or Edge) through [w-playwright](https://www.npmjs.com/package/w-playwright), a dev dependency. This package never depends on `playwright` or `playwright-core` directly; `src/` and the built component do not use a browser driver at all.
+
+- **Managed browser**: the first launch installs the Chromium headless shell that matches the pinned `playwright-core` (1.64.1, brought in by `w-playwright`). To fetch it ahead of time use `await wpw.ensureChromium()` (`import wpw from 'w-playwright'`). Do not run `npx playwright install`: another copy of Playwright hoisted in the dependency tree would download a different browser revision.
+- **Offline**: on a machine with network access run `ensureChromium()`, copy the Playwright browser folder to the target machine and point the environment variable `PLAYWRIGHT_BROWSERS_PATH` at it. Set it before anything loads `w-playwright` (Playwright reads it at module load).
+- **System Chrome / Edge**: not used by these tests. If you adapt them to `channel: 'chrome'` or `'msedge'`, Google Chrome / Microsoft Edge must be installed on the machine; `wpw.findSystemChrome()` only checks that the executable exists.
+- **Launch-guard flag, always added**: on Windows, Chromium 153 and later makes one `LogonUser` call with an invalid password for the current user each time a new browser root process starts (security event 4625). Ten of them within ten minutes lock the account. Every launch through `w-playwright` therefore carries exactly one `--disable-features` switch (Playwright's default list, `AutofillAiWalletPrivatePasses`, and anything the caller adds), because Chromium only honours the last such switch. There is no option to turn this off. `PWDEBUG` (inspector mode) and `SELENIUM_REMOTE_URL` are rejected because they bypass it.
+- **Optional launch check**: set the environment variable `W_PLAYWRIGHT_LOGON_GUARD=1` and `w-playwright` refuses to start any non-headless-shell browser while the current Windows user already has a bad-password count of 1 or more.
