@@ -150,7 +150,10 @@ describe('EL-4 R-PW-WIRING: 啟動點送出之選項含守門(替身接住, 不�
 
     test('內附表與實裝之 playwright-core 版本吻合(否則 w-playwright 會拒絕啟動)', () => {
         expect(r.tableMatch).toBe(true)
-        expect(r.coreVersion).toBe('1.64.1')
+        //實裝版本須等於 w-playwright 所釘者(版本所有權在 w-playwright, 不寫死哪一版; 2026-11-21 升 1.65.1 時之殷鑑)
+        const pin = JSON.parse(fs.readFileSync(path.join(projRoot, 'node_modules', 'w-' + PW, 'package.json'), 'utf8')).dependencies[PW + '-core']
+        expect(pin).toMatch(/^\d+\.\d+\.\d+$/)
+        expect(r.coreVersion).toBe(pin)
     })
 
     test('命令列恰一串 --disable-features, 為 args 最後一個元素, 且含守門功能 AutofillAiWalletPrivatePasses', () => {
