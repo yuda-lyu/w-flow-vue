@@ -21,7 +21,8 @@
 import fs from 'fs'
 import path from 'path'
 import { fileURLToPath } from 'url'
-import launchE2eBrowser from './tools/e2eLaunch.mjs'
+import launchE2eBrowser, { ensureE2eBrowser } from './tools/e2eLaunch.mjs'
+import { cdn, ensureE2eCdn } from './tools/e2eCdn.mjs'
 import { baseUrl, captureStable, assertBaselineMatch, startServers, cleanup } from './e2e-setup.mjs'
 import { nodesBounds, computeFitView } from '../src/js/viewport.mjs'
 
@@ -2598,6 +2599,12 @@ async function run() {
     }
     console.log(isBaseline ? '產製標準圖 (spec/流程_圖台互動.md)\n' : 'E2E 圖台互動測試 (spec/流程_圖台互動.md)\n')
 
+    //開跑最前集中取得外部資源(排程第 632 項; 本檔為單檔直跑、非 mocha, 無 hook 時限, 時限由各取得函數自帶之預算約束):
+    //  ①受管瀏覽器(缺檔時安裝一次, 時限對齊 PW_INSTALL_BUDGET_MS; 其後之啟動一律 autoInstall: false, 見 test/tools/e2eLaunch.mjs, R-WPW-INSTALL-01);
+    //  ②頁面所需之 CDN 副本(首次連網下載並校驗, 其後離線可跑; 頁面不連 CDN, 見 test/tools/e2eCdn.mjs, R-CDN-01)
+    await ensureE2eBrowser()
+    await ensureE2eCdn()
+
     //前端 dev server 由本檔起停(排程第 309 項): 埠經 reserveE2ePorts 保留, 被占用則換埠, 絕不沿用或下殺他人; 實際埠印於輸出
     await startServers()
     console.log(`  前端 ${baseUrl}\n`)
@@ -2605,8 +2612,10 @@ async function run() {
     for (const c of CASES) {
         if (onlyNames && !onlyNames.includes(c.id)) continue
         console.log(`  ${c.id} ${c.kebab}`)
+        //自此標記起之外部請求(清單外之 CDN 等)於本 case 結束後斷言為 0
+        const cdnMark = cdn.violationMark()
         //per-case fresh browser: 每個 case 全新 browser/context/page, 不帶前一 case 狀態
-        //launchE2eBrowser(test/tools/e2eLaunch.mjs, 本檔唯一啟動點): 一律經自有套件w-playwright啟動(守門參數, 見該檔說明), 缺Playwright指定版本之瀏覽器時首次啟動自動安裝一次
+        //launchE2eBrowser(test/tools/e2eLaunch.mjs, 本檔唯一啟動點): 一律經自有套件w-playwright啟動(守門參數, 見該檔說明), 啟動不安裝(瀏覽器已於開跑最前取得), 回傳之 browser 已掛 CDN 本地副本路由
         const browser = await launchE2eBrowser()
         try {
             const page = await openPage(browser, c.opts)
@@ -2617,6 +2626,13 @@ async function run() {
         }
         finally {
             await browser.close()
+        }
+        //頁面不得連清單外之外部網址(測試不連 CDN, R-CDN-01); 違規使本 case 失敗, 不中斷其後各 case
+        try {
+            cdn.assertNoViolation(cdnMark)
+        }
+        catch (err) {
+            record(false, `${c.id} 頁面連了清單外之外部網址`, err.message)
         }
     }
 

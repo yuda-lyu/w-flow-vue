@@ -11,7 +11,11 @@
  *  EL-2  依賴:       package.json 不宣告 playwright／playwright-core; w-playwright 為 devDependencies(下限 1.0.1)、不入 dependencies
  *  EL-3  站點全集:   e2e-flow 不再引用 w-package-tools-e2e 之 launchChromium(該套件將移除); 直接 launch 呼叫 0; wpw.launchChromium( 只在 e2eLaunch.mjs 一處
  *  EL-4  R-PW-WIRING: 啟動點送出之選項含守門(args 最後一個元素為合併之 --disable-features 且含 AutofillAiWalletPrivatePasses、全命令列恰一串),
- *                    且為 headless shell 之形態(無頭、不給通道與執行檔); 替身確被呼叫(次數 1)
+ *                    且為 headless shell 之形態(無頭、不給通道與執行檔); 替身確被呼叫(次數 1); 啟動出口回傳之瀏覽器已掛 CDN 本地副本路由(R-CDN-01, 見 unit-e2eCdn)
+ *  EL-6  R-WPW-INSTALL-01(排程第 632 項): 受管瀏覽器集中取得、啟動不安裝
+ *        ①安裝預算 PW_INSTALL_BUDGET_MS ≥ 600000 且為 ensureChromium 之 timeout(替身子行程核對傳入之選項、同行程只取一次、真下載項數之計算)
+ *        ②autoInstall 全 repo 之程式碼只有啟動出口之 false 一處, 無 true
+ *        ③站點全集: 啟動瀏覽器之入口(呼叫 launchE2eBrowser 之非測試檔)皆先 await ensureE2eBrowser(); e2e-flow 之取得早於 startServers 早於首次啟動
  */
 import fs from 'fs'
 import path from 'path'
@@ -175,5 +179,94 @@ describe('EL-4 R-PW-WIRING: 啟動點送出之選項含守門(替身接住, 不�
         expect(r.seen[0].headless).not.toBe(false)
         expect(r.seen[0].channelUndefined).toBe(true)
         expect(r.seen[0].executablePathUndefined).toBe(true)
+    })
+
+    test('單一啟動出口回傳之瀏覽器已掛 CDN 本地副本路由(R-CDN-01; 替身瀏覽器走真實之 routeBrowser)', () => {
+        expect(r.routed).toBe(true)
+    })
+})
+
+describe('EL-6 R-WPW-INSTALL-01: 受管瀏覽器集中取得、啟動不安裝', () => {
+    const SRC_LAUNCH = fs.readFileSync(path.join(__dirname, 'tools', 'e2eLaunch.mjs'), 'utf8')
+    //去註解(行註解與區塊註解; 字串內之 // 以負向後瞻避開), 供程式碼之結構斷言
+    const strip = (s) => String(s).replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:'"`])\/\/[^\n]*/g, '$1')
+    const CODE_LAUNCH = strip(SRC_LAUNCH)
+
+    function runEnsureChild(mode = 'ok') {
+        const f = path.join(__dirname, 'tools', 'e2eEnsureChild.mjs')
+        const r = spawnSync(process.execPath, [f, mode], { cwd: projRoot, encoding: 'utf8', windowsHide: true, timeout: 100000 })
+        const line = String(r.stdout || '').split(/\r?\n/).reverse().find((s) => s.startsWith('RESULT:'))
+        if (!line) throw new Error(`子行程未回報結果 status=${r.status} stderr=${String(r.stderr || '').slice(-1500)}`)
+        return JSON.parse(line.slice('RESULT:'.length))
+    }
+
+    test('安裝預算為 900000(15 分鐘), 不低於 w-playwright 自身測試對同一操作之 600000', () => {
+        const m = /const PW_INSTALL_BUDGET_MS = (\d+)/.exec(CODE_LAUNCH)
+        expect(m).not.toBeNull()
+        expect(Number(m[1])).toBe(900000)
+        expect(Number(m[1])).toBeGreaterThanOrEqual(600000)
+    })
+
+    test('ensureE2eBrowser 以安裝預算呼叫 ensureChromium(替身接住, 不下載): 時限為預算、有 funLog、同行程只呼叫 1 次', () => {
+        const r = runEnsureChild()
+        expect(r.calls.length).toBe(1)
+        expect(r.calls[0].timeout).toBe(r.budget)
+        expect(r.budget).toBe(900000)
+        expect(r.calls[0].hasFunLog).toBe(true)
+        expect(r.samePromise).toBe(true)
+        expect(r.sameResult).toBe(true)
+        expect(r.kind).toBe('headless-shell')
+    })
+
+    test('真下載項數只計 install-output 之 Downloading 行(去終端機控制碼): 替身給 2 行有效、1 行他標籤、1 行非 Downloading → 2 項', () => {
+        expect(runEnsureChild().downloads).toBe(2)
+    })
+
+    test('取得失敗(含逾時)被記住: 同行程再呼叫得到同一個 rejected Promise, ensureChromium 只呼叫 1 次(不重跑整個預算), 錯誤原樣傳出', () => {
+        const r = runEnsureChild('fail')
+        expect(r.calls.length).toBe(1)
+        expect(r.samePromise).toBe(true)
+        expect(r.errCodes).toEqual(['E_INSTALL', 'E_INSTALL', 'E_INSTALL'])
+    })
+
+    test('autoInstall: 啟動出口為 false; 全 repo 之程式碼無 autoInstall: true(正例防空集合)', () => {
+        const re = /\bautoInstall\s*:\s*true\b/
+        expect(re.test('wpw.launchChromium({ autoInstall: true })')).toBe(true)
+        expect(re.test('wpw.launchChromium({ autoInstall: false })')).toBe(false)
+        expect((CODE_LAUNCH.match(/\bautoInstall\s*:\s*false\b/g) || []).length).toBe(1)
+        const hits = []
+        for (const f of FILES) {
+            if (/test\/(unit|api)-[^/]+\.test\.mjs$/.test(rel(f))) continue //測試檔之說明與正例不計
+            strip(fs.readFileSync(f, 'utf8')).split(/\r?\n/).forEach((ln, i) => {
+                if (re.test(ln)) hits.push(`${rel(f)}:${i + 1}`)
+            })
+        }
+        expect(hits).toEqual([])
+    })
+
+    test('站點全集: 呼叫 launchE2eBrowser 之非測試檔(e2e 主檔與兩個子行程配套)皆先 await ensureE2eBrowser(), 且不另有啟動點', () => {
+        const callRe = /await\s+launchE2eBrowser\(\)/
+        const sites = []
+        for (const f of FILES) {
+            if (/test\/(unit|api)-[^/]+\.test\.mjs$/.test(rel(f))) continue
+            const code = strip(fs.readFileSync(f, 'utf8'))
+            if (!callRe.test(code)) continue
+            sites.push(rel(f))
+            const iEnsure = code.search(/await\s+ensureE2eBrowser\(\)/)
+            expect(`${rel(f)}:${iEnsure}`).not.toBe(`${rel(f)}:-1`)
+            expect(iEnsure).toBeLessThan(code.search(callRe))
+        }
+        expect(sites.sort()).toEqual(['test/e2e-flow.test.mjs', 'test/tools/e2eCdnChild.mjs', 'test/tools/e2eLaunchChild.mjs'])
+    })
+
+    test('e2e-flow 之 run: 取得瀏覽器早於啟動伺服器早於首次啟動(取得於主流程最前, 不在每 case 之啟動中隱式安裝)', () => {
+        const main = strip(fs.readFileSync(path.join(__dirname, 'e2e-flow.test.mjs'), 'utf8'))
+        const body = main.slice(main.indexOf('async function run()'))
+        const iEnsure = body.indexOf('await ensureE2eBrowser()')
+        const iServers = body.indexOf('await startServers()')
+        const iLaunch = body.indexOf('await launchE2eBrowser()')
+        expect(iEnsure).toBeGreaterThan(-1)
+        expect(iEnsure).toBeLessThan(iServers)
+        expect(iServers).toBeLessThan(iLaunch)
     })
 })

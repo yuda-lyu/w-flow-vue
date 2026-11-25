@@ -194,7 +194,8 @@
 ### 7.1 單元測試(jest + jsdom)
 
 - 指令:`npm test`(= `jest`);單檔 `npx jest test/<檔名>`.
-- 基準(2026-11-13,e2e 啟動經 w-playwright 後):51 suites / 2644 tests 全綠(新增 `unit-e2eLaunch`、`api-e2eLaunch` 共 14 案;其間 2026-11-05 為 49 / 2630).
+- 基準(2026-11-25,e2e 取得集中、測試不連 CDN 後,排程第 632 項):53 suites / 2675 tests 全綠(新增 `unit-e2eCdn`、`api-e2eCdn`;`unit-e2eLaunch` 增 EL-6 與路由斷言;發布包解開之目錄同為 53 / 2675).
+- 前一基準(2026-11-13,e2e 啟動經 w-playwright 後):51 suites / 2644 tests 全綠(新增 `unit-e2eLaunch`、`api-e2eLaunch` 共 14 案;其間 2026-11-05 為 49 / 2630).
 - 前一基準(2026-10-06,連線 popupDirection 補齊後):48 suites / 2615 tests 全綠(設定彈窗文字扁平鍵 + 節點 popupDirection 時為 48 / 2604;更早為 47 / 2544).
 - 樣式檔由 `jest.config.js` 之 `moduleNameMapper` 換成 `test/styleMock.cjs`.
 - jsdom 20 無 `PointerEvent`:以 `MouseEvent` 補 `pointerType` / `pointerId` 模擬(見 `unit-pointer-gesture` 之 `ptr()`);監聽比對依事件型別字串,故等價.
@@ -208,7 +209,7 @@
 |---|---|
 | 後端 | 無(純前端套件) |
 | 前端 | webpack dev server(`vue-cli-service serve --host 127.0.0.1 --port <實際埠>`),**由 e2e 自行起停**(2026-11-05 起,不再依賴手動 `npm run serve`);基準埠 `8650`,被占用時整組換埠(8750…),見 R-E2E-PORT-01(§7.4) |
-| 瀏覽器 | 無頭 Chromium(headless shell,Playwright 1.64.1 之 revision),**一律經自有套件 `w-playwright`**(devDependencies;唯一啟動點 `test/tools/e2eLaunch.mjs`),本套件不直接依賴 `playwright`／`playwright-core`;規則 R-WPW-LAUNCH-01(§7.5) |
+| 瀏覽器 | 無頭 Chromium(headless shell,版本隨 `w-playwright` 所釘之 `playwright-core`),**一律經自有套件 `w-playwright`**(devDependencies;唯一啟動點 `test/tools/e2eLaunch.mjs`),本套件不直接依賴 `playwright`／`playwright-core`;規則 R-WPW-LAUNCH-01(§7.5);受管瀏覽器由 `ensureE2eBrowser()` 於開跑最前集中取得、啟動不安裝(R-WPW-INSTALL-01,§7.6);頁面不連 CDN(R-CDN-01,§7.7) |
 | e2e 執行 | 全跑 `node test/e2e-flow.test.mjs`(單檔自帶 runner,非 mocha);單案 `--names E2E-NNN[,…]` |
 | 標準圖 | `node test/e2e-flow.test.mjs --baseline --names E2E-NNN[,…]`(案例層閘門,截圖前即篩);`E2E_BASELINE_OUT_DIR=<目錄>` 導到隔離目錄(等價驗證用,不動 `test/pics`) |
 | 共用實作 | `test/e2e-setup.mjs`(`baseUrl`、`captureStable`、`assertBaselineMatch`、`startServers`、`cleanup`、`createE2eServices`、`devServerArgs`);基準埠與埠保留 `test/tools/e2ePorts.mjs` |
@@ -218,7 +219,7 @@
 
 | 契約 | 本專案實名 / 模式 | 偏離與依據 |
 |---|---|---|
-| C1 launch wrapper | 單一入口 `test/tools/e2eLaunch.mjs` 之 `launchE2eBrowser()` → `wpw.launchChromium({ autoInstall: true })`(自有套件 `w-playwright`;runner 之 per-case 迴圈;缺 Playwright 指定版本之 headless shell 時安裝一次再啟動);2026-11-13(排程第 442 項)起取代 `w-package-tools-e2e` 之 `launchChromium()` | **缺口**:啟動時未傳確定性渲染旗標(`w-package-tools-e2e` 之 `launchBrowser` 帶六旗標,但改用它會改變像素,故不採;設計 §5.1 同此裁定);現行 pixelmatch 容差下全數穩定,暫不動(動則全量重產) |
+| C1 launch wrapper | 單一入口 `test/tools/e2eLaunch.mjs` 之 `launchE2eBrowser()` → `wpw.launchChromium({ autoInstall: false })` 後經 `e2eCdn.routeE2eBrowser` 掛 CDN 本地副本路由(自有套件 `w-playwright`;runner 之 per-case 迴圈;缺 Playwright 指定版本之 headless shell 時由 `ensureE2eBrowser()` 於開跑最前安裝一次,啟動本身不安裝,2026-11-25 排程第 632 項起;原為 `autoInstall: true`);2026-11-13(排程第 442 項)起取代 `w-package-tools-e2e` 之 `launchChromium()` | **缺口**:啟動時未傳確定性渲染旗標(`w-package-tools-e2e` 之 `launchBrowser` 帶六旗標,但改用它會改變像素,故不採;設計 §5.1 同此裁定);現行 pixelmatch 容差下全數穩定,暫不動(動則全量重產) |
 | C2 server lifecycle | `createServiceManager`(`e2e-setup.mjs` 之 `createE2eServices`):e2e 自行起停 dev server,埠經 `reserveE2ePorts` 保留(R-E2E-PORT-01);cleanup 兩條觸發來源(直跑主函式結束後顯式 `cleanup()`、`registerCleanupHooks` 之 exit／SIGINT／SIGTERM 備援),只殺自己 spawn 之行程樹 | 2026-11-05 前為「不自動起停」(舊:前置手動 `npm run serve`,最易撞之 8080 又無任何偵測);改為自動起停之依據:規格 `dspec/e2e埠與多套件同跑.md` §4 盤點「唯一依賴外部手動起服務者」。無 `restartBackend`(無後端) |
 | C3 換設定重啟 | 不適用(無後端) | |
 | C4 DB 重置 | 不適用(無資料庫);每案例 `openPage` 重新載入 demo 並以 setup 重設視口 | |
@@ -255,7 +256,7 @@
 
 - `spec/流程_互動契約.md`:行為契約,各節之驗收欄指向單元測試代號.
 - `spec/流程_圖台互動.md`:E2E-001~053;〈標準圖對照〉與〈斷言〉兩表為 e2e 之真理源,新增案例四處同步(spec bullet、標準圖表與合計、斷言表、`CASES` 陣列).
-- 測試共用之 spec 抄本與配套工具放 `test/tools/`(不帶 `.test.`,jest `testMatch` 只收 `unit-*` / `api-*`):`settingsTextsSpec.mjs` 為互動契約 §12 之文字鍵與預設表;`pendingAudit.mjs` 為 `./testPending` 失敗證據之盤點(判斷哪些事件已處理完可清);`e2ePorts.mjs` 為 e2e 基準埠與埠保留(R-E2E-PORT-01);`e2eLaunch.mjs` 為 e2e 唯一啟動點(R-WPW-LAUNCH-01),`e2eLaunchChild.mjs` 為 `unit-e2eLaunch`／`api-e2eLaunch` 之子行程配套;`e2ePortsChild.mjs`、`e2eServicesChild.mjs`、`e2eFakeDevServer.mjs`、`e2ePortsOccupier.mjs` 為 `unit-e2ePorts` 之真實子行程／假服務／占用者配套.
+- 測試共用之 spec 抄本與配套工具放 `test/tools/`(不帶 `.test.`,jest `testMatch` 只收 `unit-*` / `api-*`):`settingsTextsSpec.mjs` 為互動契約 §12 之文字鍵與預設表;`pendingAudit.mjs` 為 `./testPending` 失敗證據之盤點(判斷哪些事件已處理完可清);`e2ePorts.mjs` 為 e2e 基準埠與埠保留(R-E2E-PORT-01);`e2eLaunch.mjs` 為 e2e 唯一啟動點(R-WPW-LAUNCH-01),`e2eLaunchChild.mjs` 為 `unit-e2eLaunch`／`api-e2eLaunch` 之子行程配套;`e2ePortsChild.mjs`、`e2eServicesChild.mjs`、`e2eFakeDevServer.mjs`、`e2ePortsOccupier.mjs` 為 `unit-e2ePorts` 之真實子行程／假服務／占用者配套;`e2eCdn.mjs` 為頁面不連 CDN 之橋接(R-CDN-01),`cdn.roots.json`／`cdn.manifest.json` 為其清單之根與產物,`e2eCdnChild.mjs` 為 `unit-e2eCdn`／`api-e2eCdn` 之子行程配套,`e2eEnsureChild.mjs` 為 `unit-e2eLaunch` EL-6 驗取得點之子行程配套(R-WPW-INSTALL-01).
 
 ### 7.4 R-E2E-PORT-01 e2e 埠、前端服務起停與下殺(排程第 309 項,2026-11-05 fv309)
 
@@ -283,7 +284,7 @@
 
 - **規則**:
   1. 本套件自有碼(`src`、`test`、`toolg`、`spec`、根目錄設定檔)不得以靜態匯入、動態 `import()`、`require` 引用 `playwright`／`playwright-core`;`package.json` 不宣告兩者;Chromium 系瀏覽器只經 `w-playwright`(`import wpw from 'w-playwright'`,不深層匯入其 `src/`).
-  2. 唯一啟動點 `test/tools/e2eLaunch.mjs`:`launchE2eBrowser()` → `wpw.launchChromium({ autoInstall: true })`;`test/e2e-flow.test.mjs` 經之,主檔不含任何 `.launch*(` 呼叫.不傳 `headless`／`channel`／`executablePath`(＝headless shell,與修前同種瀏覽器),**不改用** `w-package-tools-e2e` 之 `launchBrowser`(多六旗標會改變像素).
+  2. 唯一啟動點 `test/tools/e2eLaunch.mjs`:`launchE2eBrowser()` → `wpw.launchChromium({ autoInstall: false })`(2026-11-25 起,排程第 632 項,見 R-WPW-INSTALL-01〔§7.6〕;原為 `true`),再經 `routeE2eBrowser` 掛 CDN 副本路由(R-CDN-01〔§7.7〕);`test/e2e-flow.test.mjs` 經之,主檔不含任何 `.launch*(` 呼叫.不傳 `headless`／`channel`／`executablePath`(＝headless shell,與修前同種瀏覽器),**不改用** `w-package-tools-e2e` 之 `launchBrowser`(多六旗標會改變像素).
   3. `w-playwright` 為 devDependencies(只測試使用,不入 `dist`),故 `toolg/` 之 external／globals 無須列入.
   4. 日後若改為啟動真 Chrome／Edge／完整 Chromium:每檔最多啟動一次(`before` 起、`after` 關)、README 寫明須安裝 Google Chrome／Edge、跑前後以 `readBadPassword` 讀錯誤次數(增加即停)、`w-playwright` 之 `api-realChromeGuard` 須已實際通過(略過不算).
 - **單一擁有者**:`test/tools/e2eLaunch.mjs`.
@@ -294,6 +295,43 @@
 - **站點全集**:啟動點 1(`launchE2eBrowser`);呼叫端 1(`e2e-flow.test.mjs` 之 `run()` 迴圈,每案一次,共 53 案);直接 launch 0;`src` 0;`package.json` 宣告 `playwright`／`playwright-core` 0.
 - **測試**:`unit-e2eLaunch` EL-1～EL-4(盤點含正例防空集合、依賴宣告、站點全集、`setBrowserTypeForTest` 替身斷言選項含守門且替身被呼叫 1 次,不啟動瀏覽器)、`api-e2eLaunch` EL-5(替身以 `next()` 走真路徑,啟動 headless shell 一次並關閉);配套 `test/tools/e2eLaunchChild.mjs`(真實子行程,沿用 `e2ePortsChild.mjs` 之作法:啟動點與替身取自同一份真實 node 載入之 `w-playwright`,jest 有自己的模組登錄表且為 jsdom;真路徑也在乾淨 node 行程中跑.未實測過在 jest 內直接載入).變異證據(2026-11-13):①啟動點繞過 `wpw` → EL-3 站點數與 EL-4 共 5 案轉紅;②啟動點加 `channel: 'chrome'` → EL-4 形態案轉紅(皆以替身接住,未啟動任何瀏覽器).
 - **殘餘**:`node_modules` 內仍有 `playwright`,為 `w-package-tools-e2e`、`w-screenctl` 之傳遞依賴(待其遷移輪移除),非本套件宣告;`PWDEBUG` 為 inspector 值或有 `SELENIUM_REMOTE_URL` 時 `w-playwright` 拒絕啟動(`E_ENV`).
+
+### 7.6 R-WPW-INSTALL-01 受管瀏覽器集中取得、啟動不安裝(排程第 632 項,2026-11-25)
+
+背景:`wpw.launchChromium({ autoInstall: true })` 於缺檔時隱式安裝,時限未對齊安裝預算.**實查隱式安裝之站點**(2026-11-25,修前):①`test/e2e-flow.test.mjs` 之 `run()` 首個 case 之 `launchE2eBrowser()`——本檔為單檔直跑(非 mocha),無 hook 時限,w-playwright 之 `ensureChromium` 預設 `timeout: 0`(不限時),故該次安裝無明確上限且混在首個 case 內;②jest `api-e2eLaunch` EL-5 之子行程真路徑——被 150 秒測試時限與 140 秒子行程時限約束(首次下載慢即誤判為啟動失敗).
+
+- **規則**:
+  1. 受管瀏覽器由 `ensureE2eBrowser()`(`test/tools/e2eLaunch.mjs`)集中取得:呼叫 `wpw.ensureChromium({ timeout: PW_INSTALL_BUDGET_MS, funLog })`,同行程只做一次(含失敗:同一個 rejected Promise);輸出 `[e2e-browser]` 行(開始、每項真下載、完成〔耗時與項數〕、失敗〔輸出尾段〕).
+  2. `PW_INSTALL_BUDGET_MS = 900000`(15 分鐘).取值依據:Windows 上取得 headless shell＋ffmpeg＋winldd 三項,解開後約 300 MB;本機實測持鎖者約 15–17 秒、等候安裝鎖者約 17–38 秒;`w-playwright` 自身測試對同一操作給 600000 ms;多行程同時首次啟動時,等候者須先等持鎖者下載完再各做一次已安裝之檢查,故取其 1.5 倍;逾預算由 `ensureChromium` 結束安裝子行程樹並 reject.已知取捨:等候者另受 Playwright 自身安裝鎖重試上限約束(約 8 分鐘),持鎖者之下載超過此時間(極慢網路)時,等候者以離開碼 1 失敗,不會等滿預算.
+  3. 啟動(`launchE2eBrowser`)一律 `autoInstall: false`:缺檔即 `E_BROWSER_MISSING`,不在每案啟動中隱式安裝.
+  4. 凡呼叫 `launchE2eBrowser()` 之非測試檔須先 `await ensureE2eBrowser()`:站點全集 3——`test/e2e-flow.test.mjs`(`run()` 最前,早於 `startServers()`)、`test/tools/e2eLaunchChild.mjs`(真路徑)、`test/tools/e2eCdnChild.mjs`(page 模式).
+  5. jest 對真路徑子行程之時限取自 `PW_INSTALL_BUDGET_MS`(`api-e2eLaunch`、`api-e2eCdn` 自 `e2eLaunch.mjs` 原文取值,單一來源).
+- **單一擁有者**:`test/tools/e2eLaunch.mjs`.
+- **模擬未安裝之作法**:環境變數 `PLAYWRIGHT_BROWSERS_PATH=<空夾之絕對路徑>`(須於載入 `w-playwright` 前設定),**不得動全機共用之 `%LOCALAPPDATA%/ms-playwright`**.證據:輸出之 `[e2e-browser] … 真下載: …` 行(headless shell、FFmpeg、Winldd 各 1 項)與瀏覽器目錄內產物各 1 份;Playwright 於 `npm_config_loglevel` 為 `silent`／`error`／`warn` 時不印 `Downloading`,此時須以目錄產物核對.
+- **盤點**:`git grep --untracked -nE "autoInstall\s*:\s*true" -- test src toolg` 之可執行碼 0(`unit-e2eLaunch` EL-6 以去註解之原文掃描並含正例防空集合);`git grep --untracked -nE "await\s+launchE2eBrowser\(\)" -- test` 之非測試檔恰 3(同上站點全集).
+- **測試**:`unit-e2eLaunch` EL-6(預算 900000、`ensureChromium` 之 `timeout` 取預算且只呼叫 1 次〔替身子行程 `e2eEnsureChild.mjs`〕、真下載項數只計 `install-output` 之 Downloading 行、失敗被記住、`autoInstall` 全 repo 只有啟動出口之 `false`、站點全集與 e2e-flow 之順序)、`api-e2eLaunch` EL-5(真路徑子行程先 `ensureE2eBrowser()`).
+- **變異**(2026-11-25,植入→跑 5 檔→還原並比雜湊):啟動改 `autoInstall: true`、`timeout` 不取預算、預算縮為 170000、取得不記憶、失敗不被記住、真下載計數不分標籤、e2e-flow 不呼叫 `ensureE2eBrowser()`,皆被擊殺.
+- **已知限制**:靜態盤點只認字面寫法(別名、解構、不加 `await` 之呼叫會漏);修前紅在本機網路快時於真實時限下不會逾時(安裝隱式發生於首案,無時限而非逾時),故以規則面(`autoInstall: true` 之站點與無預算之呼叫)之紅替代.
+
+### 7.7 R-CDN-01 e2e 頁面不連 CDN(排程第 632 項,2026-11-25)
+
+背景:`public/index.html` 於載入時自 CDN／github.io 取 4 個外部資源(兩個釘版之 CSS〔fontawesome@6.4.2、@mdi/font@7.4.47,含其相對引用之字型〕、未釘版之 lodash、github.io 之 wsemi),使 e2e 受外網穩定度影響、測到之內容隨上游改版而飄.**只改測試端**:`public/index.html` 與 `src/` 不動,產品仍載 CDN,行為與輸出不變.
+
+- **規則**:
+  1. 以共用庫 `w-package-tools-e2e`(≥ 1.0.51)之 `createCdnLocal` 建立本行程唯一之實例 `cdn`(`test/tools/e2eCdn.mjs`);清單 `test/tools/cdn.manifest.json`(入版控:網址、sha256、大小)由 `test/tools/cdn.roots.json` 經 `node node_modules/w-package-tools-e2e/tools/genCdnManifest.mjs --roots test/tools/cdn.roots.json --out test/tools/cdn.manifest.json` 產生(需連網;`--check` 為重新下載比對、不寫檔);網址或版本改變後須重新產生並審視差異.
+  2. 快取 `test/_cache/cdn`(內容定址:檔名即 sha256;**不入版控、不入發布包**:`.gitignore` 含 `test/_cache`,本庫無 `.npmignore`):首次須能連 CDN 下載並以 sha256 與大小校驗,同內容只下載一次;之後離線可跑;環境變數 `W_CDN_OFFLINE=1` 強制離線(缺檔即 `E_CDN_OFFLINE_MISSING`).
+  3. **未釘版資源之處置**(lodash、github.io 之 wsemi,內容可變,以 sha256 釘選會於上游變動時拒收):先判斷 e2e 是否需要——**不需要**:頁面之 App 與元件皆以 ESM 匯入並打包(`src/App.vue:96-99`;`w-component-vue` 以 `src/components/*.vue`、`wsemi/src/*`、`lodash-es` 匯入;`w-jsonview-tree` 之 UMD 無全域外部依賴),無自由識別字取用全域 `_`／`wsemi`(Grep 查 `src/`、App 匯入鏈所涉套件之原始碼);並以全域存取陷阱實測:空腳本供應下,全跑 e2e(363 項)對 `window._` 與 `window.wsemi` 之讀取或寫入 0 次(陷阱經正向對照確認有效).故以**空腳本**供應(`STUB_URLS`:清單項目 size 0、sha256 為空內容之雜湊,載入時由 `seedStubs()` 預置快取檔 `<cacheDir>/<空內容 sha256>`),頁面不連外、不依賴可變內容,也不放行.**這兩個網址不得列入產生器清單**(產生器依實際下載內容釘選,與空腳本矛盾;`unit-e2eCdn` CD-2 守護).日後若元件開始使用其全域,改以本機 `node_modules` 同名檔供應(預置快取 `<cacheDir>/<sha256>`,共用函式無「依網址指定本機檔」之選項),或改釘版並重新產生清單.
+  4. **單一啟動出口**:`test/tools/e2eLaunch.mjs` 之 `launchE2eBrowser()` 於啟動後呼叫 `e2eCdn.routeE2eBrowser(browser)`(全 repo 之 `.routeBrowser(` 只在 `e2eCdn.mjs` 一處;`routeE2eBrowser(` 之呼叫只在 `e2eLaunch.mjs` 一處);不經 `wpw.setBrowserTypeForTest`(其為替換非疊放,會與 `e2eLaunchChild` 之替身互蓋).`routeBrowser` 包裝 browser 之 `newContext`／`newPage`,故其後建立之 context 與頁面(含 `openPage` 之 `browser.newPage`、`window.open` 之彈出頁)皆掛路由與 `request` 事件觀察者;`failOnClose: false`(違規不於 `browser.close()` 拋出,免中斷 runner 之 `finally` 與其後各 case).
+  5. **違規使該 case 失敗**:`run()` 於每個 case 前取 `cdn.violationMark()`(早於啟動)、`browser.close()` 之後 `cdn.assertNoViolation(mark)`,拋錯即 `record(false, …)`(不中斷其後 case).清單外之外部請求由共用庫中止並記錄.
+  6. **回送位址預設放行**(共用庫 `allowLoopback: true`):dev server 本身與 webpack HMR 之 WebSocket(`ws://127.0.0.1:<同埠>/ws`)皆走回送位址.放行範圍為任何回送位址之任何埠(頁面誤連本機其他服務不會被記為違規);頁面目前無此類請求.收斂為只放行自己之 dev server 埠之作法與陷阱見〈已知限制〉.
+  7. 啟動瀏覽器之入口須先 `await ensureE2eCdn()`(取得清單內檔案;`seedStubs` 於 `routeE2eBrowser` 亦呼叫,冪等):`e2e-flow` 之 `run()`(早於 `startServers()`)、`e2eCdnChild`(page 模式).
+- **單一擁有者**:`test/tools/e2eCdn.mjs`.
+- **盤點**:`git grep --untracked -nE "https?://" -- public/index.html` 之外部網址 4 個,皆在有效清單內(產生器清單之 roots 2 個＋`STUB_URLS` 2 個;`unit-e2eCdn` CD-1 以集合相等守護:無漏列、無多列);`git grep --untracked -nE "\.routeBrowser\(" -- test` 之非測試檔恰 1 處;`git grep --untracked -nE "w-package-tools-e2e/src/launch(Browser|Chromium)" -- test src toolg` 之非測試檔 0(共用庫之 `launchBrowser` 直接經 `w-playwright` 啟動,會繞過路由).
+- **站點全集**:啟動出口 1(`launchE2eBrowser`);路由呼叫 1(`routeE2eBrowser` 內);runner 之取標記／斷言各 1(`run()` 迴圈);外部網址 4(清單 2＋空腳本 2).
+- **測試**:`unit-e2eCdn` CD-1～CD-6(站點全集、清單檢核、空腳本項目、快取不入版控、單一出口、runner 接線之順序與失敗處置)、`api-e2eCdn` CD-7／CD-8(真瀏覽器＋本機 HTTP 伺服器提供真實 `public/index.html`:4 個外部網址皆 200 且經本地副本、字型自本地載入、全域 `_`／`wsemi` 不存在、頁面 0 違規、負向對照:清單外請求被記錄且 `assertNoViolation` 拋 `E_CDN_EXTERNAL`)、`unit-e2eLaunch` EL-4(啟動出口回傳之瀏覽器已掛路由);配套 `test/tools/e2eCdnChild.mjs`.
+- **驗收(2026-11-25)**:①清空 `test/_cache` 後全跑 e2e 363 項全綠,快取日誌 `test/_cache/cdn/downloads.jsonl` 14 列(清單 15 個網址、14 種內容,`eot` 兩網址同內容)每個內容恰 1 次、同一行程;②斷網情境(`W_CDN_OFFLINE=1`,頁面端另以 Chromium `--host-resolver-rules="MAP * ~NOTFOUND , EXCLUDE 127.0.0.1 , EXCLUDE localhost"` 使外部主機無法解析)363 項全綠;③修前同情境:HEAD 之 e2e 流程於同一斷網條件**不會轉紅**——363 項全綠,但 212 筆外部請求(`cdn.jsdelivr.net`、`yuda-lyu.github.io`)全部連線失敗而被靜默吞掉(頁面缺 CSS 與字型,語意斷言與標準圖仍在容差內:修前測試不偵測外部載入失敗);連網時修前每頁真實連線取 4 個外部資源(4 案 16 筆真實回應);修後同情境 212 筆全由本地副本回應、真實連線 0、失敗 0.故「修前紅」以新測試對 HEAD 版測試端程式碼(`e2eLaunch.mjs`、`e2e-flow.test.mjs`、`e2eLaunchChild.mjs`、`.gitignore`)計:新增／更新之 4 個 jest 檔 17 案轉紅(修後全綠);④以 `PLAYWRIGHT_BROWSERS_PATH` 指空夾模擬未安裝,安裝恰 1 次(§7.6);⑤標準圖 0 改變(`git status test/pics` 無變動、`./testPending` 無新增).
+- **變異**(2026-11-25,植入→跑 5 檔→還原並比雜湊,19 項全數擊殺):掛路由被略過、啟動出口不掛路由、少列一個空腳本網址、空腳本項目大小不為 0、回送位址不放行、runner 不取得／標記晚於啟動／不斷言無違規／違規不使 case 失敗、`.gitignore` 不含快取、根網址版本與頁面不符、啟動出口旁路匯入 `launchBrowser`;另手動驗證:`seedStubs` 不預置且空腳本快取檔不存在時,取得以 `E_SIZE_MISMATCH` 失敗(被擊殺).
+- **已知限制**:①共用庫攔不到 SharedWorker 之請求、任何 Worker 內之 WebSocket、`context.request`、Node 端 `http`／`undici` 等出口(本頁面無此類請求;`src/` 無 Worker／Service Worker／`fetch`);②放行之回送位址回 3xx 導向外部時只能記錄(請求已送出)而測試仍失敗;③靜態盤點(`unit-e2eCdn`、`unit-e2eLaunch`)只認字面寫法,真正之守門是執行期之違規斷言;④**收斂回送放行**(`allowLoopback: false` ＋ `allow: [判斷函數]` 只放行自己之 dev server 埠):`allow` 函數於請求時才求值,故埠晚於載入時才知道可行;須於 `startServers()` 之後設定該埠,且**不得**於 `e2eCdn.mjs` 載入時呼叫 `resolveE2ePort(FRONTEND_PORT)`／匯入 `e2e-setup.mjs`(`resolveE2ePort` 會登記基準埠,其後 `reserveE2ePorts` 換埠時拋錯);價值低而動兩處接線,未做,列為可選;⑤頁面載入中、`fulfill` 進行時恰逢 `browser.close()` 時,共用庫可能記一筆「本地副本不可用」之偽陽性(機率極低);⑥發布包(`npm pack`)不含 `.gitignore`,`unit-e2eCdn` CD-4 於發布包解開之目錄不驗(以 `npm pack --dry-run` 之清單核對 `test/_cache`、`tmp/`、`test/_tmp` 不入包:2026-11-25 實查 312 檔,皆不含).
 
 ---
 
@@ -328,5 +366,6 @@
 | `267426a`(2026-08-31) | `markerStartColor` / `markerEndColor` → `markerFromFaceColor` / `markerToFaceColor`;另增 `markerFromEdgeColor` / `markerToEdgeColor` | 鍵名替換,無相容層 |
 | `267426a`(2026-08-31) | 形狀 `'triangle'` → `'triangle-up'` | 值替換,無相容層 |
 | 未提交(2026-10-06 實作) | 移除 `opt.settingsColorConfirmText`(兩表單共用一句),改為 `opt.nodesSettingsColorConfirmText` / `opt.connsSettingsColorConfirmText`(節點與連線分開命名).`nodesSettingsDeleteText` / `connsSettingsDeleteText` 鍵名不變 | 鍵名替換;給了舊鍵會 `console.warn` 一次點名兩個新鍵,但值不生效(非相容層);README〈Migration〉 |
+| 未提交(2026-11-25 實作,排程第 632 項) | 無對外 API 或行為變更:僅 e2e 測試端——受管瀏覽器集中取得(`ensureE2eBrowser()`)、啟動不安裝;頁面不連 CDN(`createCdnLocal`;`devDependencies` 之 `w-package-tools-e2e` 升為 `^1.0.51`,連帶 `package-lock.json` 之 `wsemi` 由 1.9.74 升為 1.9.75〔滿足 `^1.9.74`,隨共用庫之相依帶入〕);`src`／`dist`／`public/index.html` 不動,標準圖 0 改變 | 不適用 |
 | 未提交(2026-11-13 實作,排程第 442 項) | 無對外 API 或行為變更:僅 e2e 測試啟動瀏覽器改經 `w-playwright`(`devDependencies` 新增 `w-playwright ^1.0.1`;`test/tools/e2eLaunch.mjs`),`src`／`dist` 不動 | 不適用;`w-package-tools-e2e` 之 `launchChromium` 不再被本套件引用 |
 | 未提交(2026-10-06 實作) | 連線表單 3 句寫死中文改為英文預設:轉折點 ＋ 鈕 `新增轉折點` → `Add Waypoint`、× 鈕 `移除此轉折點` → `Remove Waypoint`、空狀態 `無(自動路由)` → `None (auto-routed)` | 可見 UI 變更;要中文者設 `connsSettingsPointsAddBtnTooltip` / `PointsRemoveBtnTooltip` / `PointsTextEmpty`.標準圖僅 `flow-E2E-041-settings-groups-conn-path` 重產 |

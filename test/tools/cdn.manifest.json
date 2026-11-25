@@ -1,0 +1,72 @@
+{
+  "schema": 1,
+  "note": "由 genCdnManifest 依根網址產生; 網址或版本改變後須重新產生; sha256 為首次取得時之釘選值",
+  "roots": {
+    "fontawesome-css": "https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.2/css/all.min.css",
+    "mdi-css": "https://cdn.jsdelivr.net/npm/@mdi/font@7.4.47/css/materialdesignicons.min.css"
+  },
+  "files": {
+    "https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.2/css/all.min.css": {
+      "sha256": "0934b1fc0d3a766d41d3adf5e7a115875e66e98ebba408d965a41cf3d2cb4ab5",
+      "size": 102217
+    },
+    "https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.2/webfonts/fa-brands-400.ttf": {
+      "sha256": "003f11541856a649a6c8235c6266c8936224c5d609e51442da24dc5556d14fbf",
+      "size": 189684
+    },
+    "https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.2/webfonts/fa-brands-400.woff2": {
+      "sha256": "faae6fc0aa94cc5bde5076647c817a23206096a1cbeda10d1c6f3d89d6163ed1",
+      "size": 109808
+    },
+    "https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.2/webfonts/fa-regular-400.ttf": {
+      "sha256": "7d81a1a7cc07e1ab196e40496d3f4359e9759f79d8ec883a46675ee69912950b",
+      "size": 63348
+    },
+    "https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.2/webfonts/fa-regular-400.woff2": {
+      "sha256": "9169d8be7a8177e5a92a4d04b6de7f6504b938573bf4da5889871c4f376d3849",
+      "size": 24488
+    },
+    "https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.2/webfonts/fa-solid-900.ttf": {
+      "sha256": "cea79b345caf49d6223098b8a2b04d70273e8d7c6b9e3d03cf7f7a267793e9aa",
+      "size": 394668
+    },
+    "https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.2/webfonts/fa-solid-900.woff2": {
+      "sha256": "886c86112a804ef1ddd1cb206af4c8c40e34b73c26652ca231404aa35a6b30d9",
+      "size": 150020
+    },
+    "https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.2/webfonts/fa-v4compatibility.ttf": {
+      "sha256": "455e8e7241eece00643d05d78bfb2cee0380d7d58b030db2a5ddf6603f66220e",
+      "size": 10172
+    },
+    "https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.2/webfonts/fa-v4compatibility.woff2": {
+      "sha256": "335fd7d9af58c44df12132fc9fd760b04af779b6d8580beb74ab5672f4526e77",
+      "size": 4568
+    },
+    "https://cdn.jsdelivr.net/npm/@mdi/font@7.4.47/css/materialdesignicons.min.css": {
+      "sha256": "03fe3caba05e65b14e4035139eee89b12be87cd0bcf342ac3886770eec3a9962",
+      "size": 346626
+    },
+    "https://cdn.jsdelivr.net/npm/@mdi/font@7.4.47/fonts/materialdesignicons-webfont.eot?": {
+      "sha256": "0b183104d2fc5f26196e773c77bdaf2e05509fd4259d2d15ecedca79b87e84f9",
+      "size": 1307880,
+      "type": "application/vnd.ms-fontobject"
+    },
+    "https://cdn.jsdelivr.net/npm/@mdi/font@7.4.47/fonts/materialdesignicons-webfont.eot?v=7.4.47": {
+      "sha256": "0b183104d2fc5f26196e773c77bdaf2e05509fd4259d2d15ecedca79b87e84f9",
+      "size": 1307880,
+      "type": "application/vnd.ms-fontobject"
+    },
+    "https://cdn.jsdelivr.net/npm/@mdi/font@7.4.47/fonts/materialdesignicons-webfont.ttf?v=7.4.47": {
+      "sha256": "61e8aba5a4e981fe22cf7c8e8bcdbea00476e75c62c37f01bf7ee33361d68428",
+      "size": 1307660
+    },
+    "https://cdn.jsdelivr.net/npm/@mdi/font@7.4.47/fonts/materialdesignicons-webfont.woff2?v=7.4.47": {
+      "sha256": "662fefa8f2f8a95c18588d21774789c107c64e771cbe65a69af46291c4311afc",
+      "size": 403216
+    },
+    "https://cdn.jsdelivr.net/npm/@mdi/font@7.4.47/fonts/materialdesignicons-webfont.woff?v=7.4.47": {
+      "sha256": "a5928a0d5c2f624e46f98d9b15c2f60045377f7c594dd78a1759132ea3b463eb",
+      "size": 587984
+    }
+  }
+}

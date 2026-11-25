@@ -54,3 +54,17 @@
 - **這類遷移的「修前紅」不需要啟動瀏覽器**:修前紅用靜態盤點與「模組不存在」即可(修前 10 紅 4 綠:EL-1 三案與「package.json 不宣告」一案本來就綠,因 Playwright 只經他套件帶入);變異證據用替身接住(繞過 `wpw`、加 `channel: 'chrome'`),不讓變異版真的啟動瀏覽器.修前之 e2e 不跑,等價證據是修後對版控標準圖比對全綠.
 - **`npm install` 會把 `package-lock.json` 根節點之 `version` 同步為 `package.json` 之現值**(此次 1.1.24 → 1.1.25,是 lock 先前落後,不是改版);提交時 lock 的這兩行屬 npm 同步,非人為改版.
 - **觸控命中區**(2026-09-21):置中放大會被瀏覽器觸控吸附把「按在節點中央」判給鄰近把手,一律向節點外推(帳本 R1.7).
+
+## 4. 受管瀏覽器取得與測試不連 CDN(排程第 632 項,2026-11-25)
+
+- **隱式安裝發生在哪個 hook,要查實際碼,不照盤查表**:本套件 e2e 為單檔直跑(非 mocha),`autoInstall: true` 之安裝發生在 `run()` 首個 case 之 `launchE2eBrowser()`,沒有任何 hook 時限(`w-playwright` 之 `ensureChromium` 預設 `timeout: 0` 即不限時);另一站點是 jest `api-e2eLaunch` 之真路徑子行程(150 秒測試時限).改為開跑最前集中取得(`ensureE2eBrowser()`,預算 900000)＋啟動 `autoInstall: false` 後,凡啟動入口都要先取得——以站點全集測試(EL-6)守護,不靠記得.
+- **修前不紅時,不要硬湊紅**:HEAD 之 e2e 流程在斷網下 363 項仍全綠(212 筆外部請求全部連線失敗而被吞掉;頁面缺 CSS 與字型,語意斷言與標準圖仍在容差內),所以「修前紅」不能用「斷網跑修前」證明.做法:①以請求日誌量化(`page.on('response')` 之 `serverAddr()` 非 null 即真實連線,由路由 `fulfill` 者為 null;`requestfailed` 記連線失敗):修前連網 16 筆真實回應(4 案)、斷網 212 筆失敗;修後 0 真實連線、212 筆本地副本;②新測試對 HEAD 版測試端程式碼(暫換回後以位元組還原並比雜湊)17 案轉紅.
+- **物理斷網之驗證法**:不改 repo,以 `node --import <預載>` 於啟動瀏覽器時加 `--host-resolver-rules=MAP * ~NOTFOUND , EXCLUDE 127.0.0.1 , EXCLUDE localhost`(經 `wpw.setBrowserTypeForTest` 之 `launch(o, next)` 以 `next({ ...o, args: [...o.args, 規則] })` 重走合併,`w-playwright` 會吸收既有之 `--disable-features` 而仍只有一串).不用 `NODE_OPTIONS`(dev server 子行程也會載入);先以探測確認外部 `ERR_NAME_NOT_RESOLVED`、回送位址可達.
+- **「頁面不使用全域」要以陷阱實證,並先確認陷阱有效**:空腳本供應下,以 `Object.defineProperty(window, '_' / 'wsemi', { get, set })` 之存取器(`addInitScript`)記錄任何讀寫,全跑 e2e 363 項 0 次;陷阱本身以一個會讀 `window._` 與 `typeof wsemi` 之探測頁驗過(記到 2 筆),避免「0 次」其實是陷阱失效.
+- **`routeBrowser` 不與 `setBrowserTypeForTest` 並用**:後者是替換非疊放,與 `e2eLaunchChild` 之替身會互蓋;本庫改在 `launchE2eBrowser` 內直接於 `wpw.launchChromium` 回傳後掛路由,替身瀏覽器須具 `newContext`／`newPage`／`contexts`／`close` 之最小介面才能走真實 `routeBrowser`.`failOnClose: false`,違規由 runner 每案斷言——否則 `browser.close()` 於 `finally` 拋出會中斷其後全部 case.
+- **`unit-e2ePorts` 之 EP-S4 以 `/\.listen\(\s*(\d+)/` 抓寫死監聽埠,`listen(0, host, cb)` 也命中**(埠 0 不在允許集合):配套子行程一律以物件形式 `listen({ port: 0, host }, cb)`.只跑自己新增之測試檔會漏掉這類既有守護測試之連鎖,新增 `test/` 檔後至少把 `unit-e2ePorts` 一併跑.
+- **發布包(`npm pack`)不含 `.gitignore`**:依賴它之測試(CD-4)於發布包解開之目錄須條件式略過(無此檔時不驗,改以 `npm pack --dry-run` 清單核對 `test/_cache` 不入包).
+- **部分檔案為 CRLF(`e2e-flow.test.mjs`、`README.md`)、部分為 LF**:Edit 保留原換行;批次變異腳本之錨點若含 `\n` 於 CRLF 檔不命中(曾 3 項 ANCHOR-ERROR,依規則報錯而非略過),錨點不要含換行.
+- **Git Bash 把以 `/` 開頭之參數(`/L`、`/E`)轉成路徑**:呼叫 robocopy 前設 `MSYS_NO_PATHCONV=1`,否則得「用法」輸出與離開碼 16;`robocopy … /L` 之目的地須為實在路徑(不能是 `NUL`).
+- **升 `w-package-tools-e2e` 連帶升了 `wsemi`**(1.9.74 → 1.9.75,共用庫之相依為 `^1.9.75`,根層去重後一併升):`wsemi` 為本套件之執行期相依(`src/App.vue` 與元件匯入其 `src/*`),故升版後全跑 e2e(含像素)確認 0 漂移(363 項全過、標準圖無變動).
+- **並行首次安裝**:兩個入口(jest 之兩個 api 檔各一子行程)同時於空夾首次啟動時,Playwright 之安裝鎖使只有一個行程真下載(3 項:headless shell、FFmpeg、Winldd),另一個等候後 0 項;模擬時以 `PLAYWRIGHT_BROWSERS_PATH` 指空夾,不動使用者層之 `%LOCALAPPDATA%/ms-playwright`.
