@@ -4,7 +4,12 @@
 //  ok:   替身成功; 驗時限、只呼叫 1 次、真下載項數
 //  fail: 替身拋 E_INSTALL(逾時); 驗失敗被記住(同行程再呼叫得到同一個 rejected Promise, 不重跑整個預算)、錯誤原樣傳出
 import wpw from 'w-playwright'
-import { PW_INSTALL_BUDGET_MS, ensureE2eBrowser } from './e2eLaunch.mjs'
+
+//擾動共用常數(載入 e2eLaunch.mjs 之前, 故以動態匯入): 預算若確取自 wpw.INSTALL_BUDGET_MS, 則 e2eLaunch 匯出之預算與傳給 ensureChromium 之 timeout 皆為擾動值;
+//擾動值與真實預算(900000)不同, 使「碰巧同值之自寫數字」(如 15 * 60 * 1000)現形(賦值失敗會拋錯使測試轉紅, 不靜默略過)
+const PERTURBED = 777777
+wpw.INSTALL_BUDGET_MS = PERTURBED
+const { INSTALL_BUDGET_MS, ensureE2eBrowser } = await import('./e2eLaunch.mjs')
 
 const mode = process.argv[2] === 'fail' ? 'fail' : 'ok'
 const ESC = String.fromCharCode(27)
@@ -54,7 +59,9 @@ catch (err) {
 }
 console.log('RESULT:' + JSON.stringify({
     mode,
-    budget: PW_INSTALL_BUDGET_MS,
+    perturbed: PERTURBED,
+    budget: INSTALL_BUDGET_MS,
+    wpwBudget: wpw.INSTALL_BUDGET_MS,
     calls,
     samePromise: p1 === p2 && p2 === p3,
     sameResult: r1 === r2,

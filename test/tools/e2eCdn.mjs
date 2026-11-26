@@ -9,11 +9,15 @@
 //    故以空腳本供應(STUB_URLS: 清單項目 size 0、sha256 為空內容之雜湊, 載入時預置快取), 頁面不連外、不依賴可變內容, 也不放行;
 //  - 清單外之外部請求一律中止並記錄違規, 由 runner 於每個 case 前後以 violationMark／assertNoViolation 使該 case 失敗;
 //    回送位址(dev server 本身、webpack HMR 之 WebSocket)由共用庫預設放行。
-//單一啟動出口 test/tools/e2eLaunch.mjs 之 launchE2eBrowser 於啟動後呼叫 routeE2eBrowser(本檔), 全 repo 之 routeBrowser 呼叫只在本檔一處。
+//掛路由之接線(排程第 651 項): 本檔載入時以 w-playwright 之啟動後鉤子 wpw.onBrowserCreated 註冊(模組頂層恰一處), 鉤子套在
+//wpw.launchChromium 回傳給呼叫端之 browser 上, 故單一啟動出口 test/tools/e2eLaunch.mjs 之 launchE2eBrowser 不自行掛路由, 只斷言已掛(cdn.isRouted);
+//全 repo 之 routeBrowser 呼叫與掛路由之 onBrowserCreated 註冊都只在本檔一處(配套子行程 e2eLaunchChild.mjs 另註冊一個不掛路由之觀察用探針鉤子, 以驗路由已於鉤子階段掛上)。
+//鉤子與 wpw.setBrowserTypeForTest(替換)正交, 自設替身時仍生效。
 import fs from 'fs'
 import path from 'path'
 import crypto from 'crypto'
 import { fileURLToPath } from 'url'
+import wpw from 'w-playwright'
 import createCdnLocal from 'w-package-tools-e2e/src/createCdnLocal.mjs'
 import loadCdnManifest from 'w-package-tools-e2e/src/loadCdnManifest.mjs'
 
@@ -67,26 +71,20 @@ async function ensureE2eCdn() {
     await cdn.ensure()
 }
 
-//備註: 路由處理器於清單內網址首次被請求時亦會自行 cdn.ensure(); 空腳本之快取檔須先備妥, 故 routeE2eBrowser 亦呼叫 seedStubs(冪等),
+//備註: 路由處理器於清單內網址首次被請求時亦會自行 cdn.ensure(); 空腳本之快取檔須先備妥, 故啟動後鉤子亦呼叫 seedStubs(冪等),
 //使「啟動瀏覽器之入口未先呼叫 ensureE2eCdn」時不致因空腳本被當成缺檔下載(雜湊不符被拒收, 且失敗被記住而使其後全部本地副本請求連鎖記為違規)
 
 /**
- * 把 browser 導向本地副本(本檔為全 repo 唯一之 routeBrowser 呼叫處); 掛失敗即關閉該 browser 再拋(免瀏覽器子行程使 node 不結束)
+ * 啟動後鉤子之處理器: 把 w-playwright 啟動所得之 browser 導向本地副本(本檔為全 repo 唯一之 routeBrowser 呼叫處)
  * failOnClose 為 false: 違規不於 browser.close() 時拋出(會中斷 runner 之 finally 與其後各 case), 改由 runner 於每個 case 前後以 cdn.violationMark／cdn.assertNoViolation 斷言
+ * 掛失敗(拋錯)時由 w-playwright 先關閉該 browser(免瀏覽器子行程使 node 不結束)再以 E_LAUNCH_HOOK 拒絕啟動; 原錯誤交啟動呼叫之 funLog('hook-error')
  */
-async function routeE2eBrowser(browser) {
-    try {
-        seedStubs()
-        await cdn.routeBrowser(browser, { failOnClose: false })
-        if (!cdn.isRouted(browser)) {
-            throw new Error('瀏覽器未掛 CDN 本地副本路由(漏接)')
-        }
-    }
-    catch (err) {
-        await browser.close().catch(() => {})
-        throw err
-    }
-    return browser
+function routeCreatedBrowser(target) {
+    seedStubs()
+    return cdn.routeBrowser(target, { failOnClose: false })
 }
 
-export { cdn, ensureE2eCdn, routeE2eBrowser, buildManifest, MANIFEST_PATH, CACHE_DIR, STUB_URLS, EMPTY_SHA256 }
+//載入本檔即註冊(模組頂層恰一處, 不還原: 本行程之全部 wpw.launchChromium 啟動皆須掛路由); 啟動出口以 import 本檔之 cdn 確保註冊先於啟動
+wpw.onBrowserCreated(routeCreatedBrowser)
+
+export { cdn, ensureE2eCdn, buildManifest, MANIFEST_PATH, CACHE_DIR, STUB_URLS, EMPTY_SHA256 }

@@ -9,18 +9,19 @@
  *  CD-7  四個外部網址皆 200(經本地副本)、字型自本地載入、空腳本供應、頁面 0 違規、啟動出口已掛路由
  *  CD-8  負向對照: 清單外之外部請求被記錄為違規, assertNoViolation 拋 E_CDN_EXTERNAL(守門確實有效, 非只在共用庫內有效)
  */
-import fs from 'fs'
 import path from 'path'
 import { spawnSync } from 'child_process'
+import { readE2eBudgets } from './tools/jestBudgets.mjs'
 
 const projRoot = path.resolve(__dirname, '..')
 const CHILD = path.join(__dirname, 'tools', 'e2eCdnChild.mjs')
 
-//時限: 首次取得瀏覽器(安裝預算)與 CDN 副本皆可能發生; 安裝預算自原始碼取(單一來源); CDN 副本取得之最壞時限為共用庫建議之取得點時限
-//(cdn.hookTimeoutMs, 等候他行程至多 17.5 分、再接手下載 15 分加單檔上限 2 分、餘裕 1 分, 合計 35.5 分; 見共用庫 createCdnLocal 之 CDN_HOOK_TIMEOUT_MS)
-const BUDGET_PW = Number(/PW_INSTALL_BUDGET_MS = (\d+)/.exec(fs.readFileSync(path.join(__dirname, 'tools', 'e2eLaunch.mjs'), 'utf8'))[1])
-const HOOK_CDN = (17.5 + 15 + 2 + 1) * 60 * 1000
-const LIMIT = BUDGET_PW + HOOK_CDN + 120000
+//時限(排程第 651 項: 取自共用常數, 不自寫數字): 子行程先取得瀏覽器(首次安裝)再取得 CDN 副本, 兩段於同一子行程內串行, 最壞時間相加:
+//  瀏覽器段 = w-playwright 之 LAUNCH_HOOK_TIMEOUT_MS(內含可能遇首次安裝之啟動之建議時限, 已含安裝預算)
+//  CDN 副本段 = 共用庫 createCdnLocal 之 CDN_HOOK_TIMEOUT_MS(取得點之最壞時限, 含等候他行程與接手下載)
+//  另加載入頁面與負向對照之餘裕 120 秒
+const B = readE2eBudgets()
+const LIMIT = B.cdnHookTimeout + B.launchHookTimeout + 120000
 
 jest.setTimeout(LIMIT + 30000)
 

@@ -2600,7 +2600,7 @@ async function run() {
     console.log(isBaseline ? '產製標準圖 (spec/流程_圖台互動.md)\n' : 'E2E 圖台互動測試 (spec/流程_圖台互動.md)\n')
 
     //開跑最前集中取得外部資源(排程第 632 項; 本檔為單檔直跑、非 mocha, 無 hook 時限, 時限由各取得函數自帶之預算約束):
-    //  ①受管瀏覽器(缺檔時安裝一次, 時限對齊 PW_INSTALL_BUDGET_MS; 其後之啟動一律 autoInstall: false, 見 test/tools/e2eLaunch.mjs, R-WPW-INSTALL-01);
+    //  ①受管瀏覽器(缺檔時安裝一次, 時限為 INSTALL_BUDGET_MS(取自 w-playwright 之共用常數); 其後之啟動一律 autoInstall: false, 見 test/tools/e2eLaunch.mjs, R-WPW-INSTALL-01);
     //  ②頁面所需之 CDN 副本(首次連網下載並校驗, 其後離線可跑; 頁面不連 CDN, 見 test/tools/e2eCdn.mjs, R-CDN-01)
     await ensureE2eBrowser()
     await ensureE2eCdn()

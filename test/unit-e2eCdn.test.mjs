@@ -8,7 +8,8 @@
  *  CD-2  清單檢核:   cdn.manifest.json 之 roots 與 cdn.roots.json 一致、根網址皆在 files、每項 sha256 與大小有效、含兩個 CSS 之字型閉包; 未釘版腳本不得在產生器清單內
  *  CD-3  空腳本項目: STUB_URLS 為 index.html 內之網址、有效清單中為 size 0 且 sha256 為空內容之雜湊
  *  CD-4  快取不入版控: .gitignore 含 test/_cache(包內亦不含: 本庫無 .npmignore, 依 .gitignore)
- *  CD-5  單一出口:   routeBrowser 之呼叫全 repo 只在 e2eCdn.mjs 一處; routeE2eBrowser 之呼叫只在 e2eLaunch.mjs 一處(啟動出口)
+ *  CD-5  單一出口:   routeBrowser 之呼叫與 wpw.onBrowserCreated 之註冊(排程第 651 項: 啟動後鉤子)於非測試檔都只在 e2eCdn.mjs 一處(配套子行程 e2eLaunchChild.mjs 之觀察用探針鉤子除外, 恰 1 處), 且註冊於模組頂層;
+ *                    啟動出口 e2eLaunch.mjs 不自行掛路由、只經 import e2eCdn 之 cdn 斷言 cdn.isRouted; 舊之 routeE2eBrowser 已移除
  *  CD-6  runner 接線: e2e-flow 於開跑最前取得(ensureE2eCdn 早於 startServers)、每個 case 前取標記、關閉瀏覽器後斷言無違規
  */
 import fs from 'fs'
@@ -163,22 +164,65 @@ describe('CD-5 單一出口', () => {
         expect(hits[0].startsWith('test/tools/e2eCdn.mjs:')).toBe(true)
     })
 
-    test('routeE2eBrowser( 呼叫只在啟動出口 e2eLaunch.mjs 一處(其定義處與匯出不計)', () => {
+    test('.onBrowserCreated( 之註冊於 test 之非測試檔只在 e2eCdn.mjs 一處, 且於模組頂層(行首)、處理器內掛路由(failOnClose: false)並預置空腳本(seedStubs)', () => {
+        const hits = []
+        const probe = []
+        for (const f of FILES) {
+            if (/\.test\.mjs$/.test(f)) continue
+            code(f).split(/\r?\n/).forEach((ln, i) => {
+                if (/\.onBrowserCreated\(/.test(ln)) (rel(f) === 'test/tools/e2eLaunchChild.mjs' ? probe : hits).push(`${rel(f)}:${i + 1}`)
+            })
+        }
+        //e2eLaunchChild.mjs 內恰 1 處為驗「路由於鉤子階段已掛上」而註冊之觀察用探針鉤子(不掛路由), 另計; 其餘一切非測試檔(含其他配套子行程)皆計入註冊
+        expect(probe.length).toBe(1)
+        expect(hits.length).toBe(1)
+        expect(hits[0].startsWith('test/tools/e2eCdn.mjs:')).toBe(true)
+        const src = code(path.join(TOOLS, 'e2eCdn.mjs'))
+        //模組頂層(行首無縮排)之呼叫, 不在函數或條件內(否則 import 本檔不保證註冊)
+        expect(/^wpw\.onBrowserCreated\(\w+\)\s*$/m.test(src)).toBe(true)
+        //處理器: 以 failOnClose: false 掛路由並預置空腳本
+        const m = /function\s+(\w+)\s*\(\s*target\s*\)\s*\{([\s\S]*?)\n\}/.exec(src)
+        expect(m).not.toBeNull()
+        expect(m[2]).toMatch(/\bseedStubs\(\)/)
+        //空腳本之快取檔須先於掛路由預置(掛路由後才預置則首個請求可能先觸發下載而被拒收)
+        expect(m[2].indexOf('seedStubs()')).toBeLessThan(m[2].indexOf('cdn.routeBrowser('))
+        expect(m[2]).toMatch(/\bcdn\.routeBrowser\(\s*target\s*,\s*\{\s*failOnClose:\s*false\s*\}\s*\)/)
+        //須回傳(或 await)routeBrowser 之 Promise: 否則掛失敗成為未處理之 rejection, w-playwright 看不到失敗而啟動照常成功
+        expect(m[2]).toMatch(/\b(return|await)\s+cdn\.routeBrowser\(/)
+        expect(src).toMatch(new RegExp('^wpw\\.onBrowserCreated\\(' + m[1] + '\\)\\s*$', 'm'))
+        //正例防空集合: 行首註冊命中; 縮排在函數內者不命中
+        expect(/^wpw\.onBrowserCreated\(\w+\)\s*$/m.test('wpw.onBrowserCreated(routeCreatedBrowser)')).toBe(true)
+        expect(/^wpw\.onBrowserCreated\(\w+\)\s*$/m.test('function f() {\n    wpw.onBrowserCreated(routeCreatedBrowser)\n}')).toBe(false)
+    })
+
+    test('舊之 routeE2eBrowser 已移除: 非測試檔全無此識別字(啟動出口不再自行掛路由, 免重複)', () => {
         const hits = []
         for (const f of FILES) {
             if (/\.test\.mjs$/.test(f)) continue
             code(f).split(/\r?\n/).forEach((ln, i) => {
-                if (/\brouteE2eBrowser\(/.test(ln) && !/function\s+routeE2eBrowser/.test(ln)) hits.push(`${rel(f)}:${i + 1}`)
+                if (/\brouteE2eBrowser\b/.test(ln)) hits.push(`${rel(f)}:${i + 1}`)
             })
         }
-        expect(hits.length).toBe(1)
-        expect(hits[0].startsWith('test/tools/e2eLaunch.mjs:')).toBe(true)
+        expect(hits).toEqual([])
     })
 
-    test('e2e 主檔不繞過啟動出口: 無 .launch( 呼叫、不直接匯入 e2eCdn 之 routeE2eBrowser', () => {
+    test('啟動出口 e2eLaunch.mjs: 以 import e2eCdn 之 cdn 確保鉤子已註冊並斷言 cdn.isRouted; 不呼叫 routeBrowser、不註冊鉤子', () => {
+        const src = code(path.join(TOOLS, 'e2eLaunch.mjs'))
+        expect(/^import\s*\{\s*cdn\s*\}\s*from\s*'\.\/e2eCdn\.mjs'/m.test(src)).toBe(true)
+        expect(src).toMatch(/\bcdn\.isRouted\(\s*browser\s*\)/)
+        expect(/\brouteBrowser\b/.test(src)).toBe(false)
+        expect(/\bonBrowserCreated\b/.test(src)).toBe(false)
+        //漏接時關閉瀏覽器再拋(失敗閉鎖): isRouted 判斷之區塊內有 browser.close 與 throw
+        const m = /if\s*\(\s*!cdn\.isRouted\(browser\)\s*\)\s*\{([\s\S]*?)\n {4}\}/.exec(src)
+        expect(m).not.toBeNull()
+        expect(m[1]).toMatch(/\bawait\s+browser\.close\(\)/)
+        expect(m[1]).toMatch(/\bthrow\b/)
+    })
+
+    test('e2e 主檔不繞過啟動出口: 無 .launch( 呼叫、不自行掛路由或註冊鉤子', () => {
         const main = code(path.join(__dirname, 'e2e-flow.test.mjs'))
         expect(/\.launch\w*\(/.test(main)).toBe(false)
-        expect(/routeE2eBrowser/.test(main)).toBe(false)
+        expect(/routeE2eBrowser|\.routeBrowser\(|\.onBrowserCreated\(/.test(main)).toBe(false)
     })
 
     test('不匯入共用庫之 launchBrowser／launchChromium(其內部直接經 w-playwright 啟動, 繞過本地副本路由); 正例防空集合', () => {

@@ -8,18 +8,22 @@
  *
  * 項目:
  *  EL-1  R-PW-ONLY:  repo 內(排除 node_modules／dist／docs 等產物)之 .mjs／.js／.cjs 不得匯入 playwright／playwright-core(靜態、動態、require)
- *  EL-2  依賴:       package.json 不宣告 playwright／playwright-core; w-playwright 為 devDependencies(下限 1.0.1)、不入 dependencies
+ *  EL-2  依賴:       package.json 不宣告 playwright／playwright-core; w-playwright 為 devDependencies(下限 1.0.6: 啟動後鉤子 onBrowserCreated 與共用常數 INSTALL_BUDGET_MS 之起點)、不入 dependencies
  *  EL-3  站點全集:   e2e-flow 不再引用 w-package-tools-e2e 之 launchChromium(該套件將移除); 直接 launch 呼叫 0; wpw.launchChromium( 只在 e2eLaunch.mjs 一處
  *  EL-4  R-PW-WIRING: 啟動點送出之選項含守門(args 最後一個元素為合併之 --disable-features 且含 AutofillAiWalletPrivatePasses、全命令列恰一串),
- *                    且為 headless shell 之形態(無頭、不給通道與執行檔); 替身確被呼叫(次數 1); 啟動出口回傳之瀏覽器已掛 CDN 本地副本路由(R-CDN-01, 見 unit-e2eCdn)
- *  EL-6  R-WPW-INSTALL-01(排程第 632 項): 受管瀏覽器集中取得、啟動不安裝
- *        ①安裝預算 PW_INSTALL_BUDGET_MS ≥ 600000 且為 ensureChromium 之 timeout(替身子行程核對傳入之選項、同行程只取一次、真下載項數之計算)
+ *                    且為 headless shell 之形態(無頭、不給通道與執行檔); 替身確被呼叫(次數 1); 啟動出口回傳之瀏覽器已掛 CDN 本地副本路由
+ *                    (R-CDN-01, 排程第 651 項: 路由由啟動後鉤子於 wpw.launchChromium 回傳前掛上、恰掛 1 次; 靜態守門見 unit-e2eCdn CD-5)
+ *  EL-6  R-WPW-INSTALL-01(排程第 632 項; 第 651 項改引共用常數): 受管瀏覽器集中取得、啟動不安裝
+ *        ①安裝預算取自 w-playwright 之 INSTALL_BUDGET_MS(程式碼不自寫數字)、≥ 600000 且為 ensureChromium 之 timeout(替身子行程核對傳入之選項、同行程只取一次、真下載項數之計算)
  *        ②autoInstall 全 repo 之程式碼只有啟動出口之 false 一處, 無 true
  *        ③站點全集: 啟動瀏覽器之入口(呼叫 launchE2eBrowser 之非測試檔)皆先 await ensureE2eBrowser(); e2e-flow 之取得早於 startServers 早於首次啟動
+ *  EL-7  R-CDN-01 啟動後鉤子之失敗處置與漏接之失敗閉鎖(排程第 651 項): 掛路由失敗時啟動出口以 E_LAUNCH_HOOK 拒絕、w-playwright 已先關閉瀏覽器、原錯誤(含 code)由 funLog 印出;
+ *        漏接(isRouted 為 false)時啟動出口關閉瀏覽器並拒絕
  */
 import fs from 'fs'
 import path from 'path'
 import { spawnSync } from 'child_process'
+import { readE2eBudgets } from './tools/jestBudgets.mjs'
 
 jest.setTimeout(120000)
 
@@ -99,13 +103,13 @@ describe('EL-2 依賴宣告', () => {
         }
     })
 
-    test('w-playwright 為 devDependencies(下限 1.0.1)且不入 dependencies(僅測試使用, 不入 dist)', () => {
+    test('w-playwright 為 devDependencies(下限 1.0.6: 含 onBrowserCreated 與 INSTALL_BUDGET_MS／LAUNCH_HOOK_TIMEOUT_MS)且不入 dependencies(僅測試使用, 不入 dist)', () => {
         const range = (pkg.devDependencies || {})['w-' + PW]
         expect(typeof range).toBe('string')
         const m = /^\^(\d+)\.(\d+)\.(\d+)$/.exec(range)
         expect(m).not.toBeNull()
         const v = [Number(m[1]), Number(m[2]), Number(m[3])]
-        const min = [1, 0, 1]
+        const min = [1, 0, 6]
         const ok = v[0] > min[0] || (v[0] === min[0] && (v[1] > min[1] || (v[1] === min[1] && v[2] >= min[2])))
         expect(ok).toBe(true)
         expect((pkg.dependencies || {})['w-' + PW]).toBeUndefined()
@@ -181,8 +185,47 @@ describe('EL-4 R-PW-WIRING: 啟動點送出之選項含守門(替身接住, 不�
         expect(r.seen[0].executablePathUndefined).toBe(true)
     })
 
-    test('單一啟動出口回傳之瀏覽器已掛 CDN 本地副本路由(R-CDN-01; 替身瀏覽器走真實之 routeBrowser)', () => {
+    test('單一啟動出口回傳之瀏覽器已掛 CDN 本地副本路由(R-CDN-01; 路由由啟動後鉤子掛上, 與 setBrowserTypeForTest 之替換正交: 自設替身時仍生效)', () => {
+        expect(r.errMsg).toBe('')
         expect(r.routed).toBe(true)
+    })
+
+    test('路由於 wpw.launchChromium 回傳前之鉤子階段已掛上(於 e2eCdn 之鉤子之後註冊之探針鉤子所見已掛), 不是啟動出口回傳後才補掛', () => {
+        expect(r.routedAtProbe).toBe(true)
+    })
+
+    test('一次啟動 cdn.routeBrowser 恰被呼叫 1 次(啟動出口不另自行掛路由; 其本身冪等, 重複掛不會自行顯現)', () => {
+        expect(r.routeCalls).toBe(1)
+    })
+})
+
+describe('EL-7 R-CDN-01 啟動後鉤子之失敗處置與漏接之失敗閉鎖(替身接住, 不啟動瀏覽器; 植入 cdn.routeBrowser 回 rejected Promise／cdn.isRouted 恆 false)', () => {
+    let r
+    let u
+    beforeAll(() => {
+        r = runChild('hookfail')
+        u = runChild('unrouted')
+    })
+
+    test('漏接(鉤子未註冊或被還原: isRouted 為 false)時啟動出口失敗閉鎖: 拒絕、訊息點名漏接, 替身瀏覽器 close 恰 1 次(不回傳未掛路由之瀏覽器)', () => {
+        expect(u.routed).toBe(false)
+        expect(u.errMsg).toContain('漏接')
+        expect(u.closeCalls).toBe(1)
+    })
+
+    test('掛路由失敗時啟動出口 reject E_LAUNCH_HOOK(w-playwright 之固定詞彙), 不回傳未掛路由之瀏覽器', () => {
+        expect(r.errCode).toBe('E_LAUNCH_HOOK')
+        expect(r.errMsg).toBe('browser launch hook failed')
+        expect(r.routeCalls).toBe(1)
+    })
+
+    test('w-playwright 已先關閉該瀏覽器(免瀏覽器子行程使 node 不結束): 替身瀏覽器 close 恰 1 次, 且其後之鉤子不執行', () => {
+        expect(r.closeCalls).toBe(1)
+        expect(r.routedAtProbe).toBeNull()
+    })
+
+    test('原錯誤由啟動出口之 funLog 印出([e2e-browser] 行含原訊息), 不因固定詞彙而不可診斷', () => {
+        expect(r.logs.some((s) => s.includes('啟動後鉤子失敗') && s.includes('route failed(測試植入)'))).toBe(true)
     })
 })
 
@@ -200,18 +243,64 @@ describe('EL-6 R-WPW-INSTALL-01: 受管瀏覽器集中取得、啟動不安裝',
         return JSON.parse(line.slice('RESULT:'.length))
     }
 
-    test('安裝預算為 900000(15 分鐘), 不低於 w-playwright 自身測試對同一操作之 600000', () => {
-        const m = /const PW_INSTALL_BUDGET_MS = (\d+)/.exec(CODE_LAUNCH)
-        expect(m).not.toBeNull()
-        expect(Number(m[1])).toBe(900000)
-        expect(Number(m[1])).toBeGreaterThanOrEqual(600000)
+    test('安裝預算取自 w-playwright 之共用常數 INSTALL_BUDGET_MS: 程式碼以 `const INSTALL_BUDGET_MS = wpw.INSTALL_BUDGET_MS` 取值、無自寫之毫秒數字(正例防空集合)', () => {
+        const reFrom = /\bconst\s+INSTALL_BUDGET_MS\s*=\s*wpw\.INSTALL_BUDGET_MS\s*$/m //行尾錨定: 加偏移等變形不算「取自」
+        const reLiteral = /\b\d{5,}\b/
+        //正例: 取自共用常數者命中 reFrom、不命中 reLiteral; 自寫字面值者相反
+        expect(reFrom.test('const INSTALL_BUDGET_MS = wpw.INSTALL_BUDGET_MS')).toBe(true)
+        expect(reFrom.test('const INSTALL_BUDGET_MS = wpw.INSTALL_BUDGET_MS + 1')).toBe(false)
+        expect(reFrom.test('const INSTALL_BUDGET_MS = 900000')).toBe(false)
+        expect(reLiteral.test('const INSTALL_BUDGET_MS = 900000')).toBe(true)
+        expect(reLiteral.test('const INSTALL_BUDGET_MS = wpw.INSTALL_BUDGET_MS')).toBe(false)
+        expect(reFrom.test(CODE_LAUNCH)).toBe(true)
+        expect(reLiteral.test(CODE_LAUNCH)).toBe(false)
+        //自刻之舊名不得留存(第二份常數)
+        expect(/\bPW_INSTALL_BUDGET_MS\b/.test(CODE_LAUNCH)).toBe(false)
+    })
+
+    test('安裝預算之值: e2eLaunch 匯出者等於 w-playwright 之共用常數, 且不低於 w-playwright 自身測試對同一操作之 600000', () => {
+        const b = readE2eBudgets()
+        expect(b.installBudget).toBe(b.wpwInstallBudget)
+        expect(b.installBudget).toBeGreaterThanOrEqual(600000)
+        //建議時限已含安裝預算(LAUNCH_HOOK_TIMEOUT_MS ＝ 預算 ＋ 結束安裝子行程樹之等待 ＋ 啟動逾時 ＋ 餘裕); 本行程 cdn 實例未自給時限, 其建議時限即共用常數
+        expect(b.launchHookTimeout).toBeGreaterThan(b.installBudget)
+        expect(b.cdnInstanceHookTimeout).toBe(b.cdnHookTimeout)
+    })
+
+    test('jest 真路徑測試之時限取自共用常數: api-e2eLaunch 用 launchHookTimeout, api-e2eCdn 用 cdnHookTimeout 與 launchHookTimeout 串行相加; jest 時限與子行程時限皆取自該變數; 無自算分鐘、無舊名、除明列之餘裕外無 5 位數以上之字面值(正例防空集合)', () => {
+        //字面值只允許明列之餘裕(120000: 頁面載入與負向對照; 30000／10000: jest 時限較子行程時限多出之餘裕); 其餘 5 位數以上之字面值(含 900000、150000、140000)與科學記號／底線寫法一律不得
+        const ALLOWED = ['120000', '30000', '10000']
+        const lits = (s) => (s.match(/\b\d{5,}\b|\b\d+(?:\.\d+)?e\d+\b|\b\d{1,3}(?:_\d{3})+\b/gi) || []).filter((x) => !ALLOWED.includes(x))
+        expect(lits('const LIMIT = 900000 + 120000')).toEqual(['900000'])
+        expect(lits('timeout: BUDGET + 140000')).toEqual(['140000'])
+        expect(lits('const BUDGET = 9e5')).toEqual(['9e5'])
+        expect(lits('const BUDGET = 900_000')).toEqual(['900_000'])
+        expect(lits('jest.setTimeout(LIMIT + 30000) // 餘裕 120000')).toEqual([])
+        const lau = strip(fs.readFileSync(path.join(__dirname, 'api-e2eLaunch.test.mjs'), 'utf8'))
+        const cdn = strip(fs.readFileSync(path.join(__dirname, 'api-e2eCdn.test.mjs'), 'utf8'))
+        expect(/\bconst\s+BUDGET\s*=\s*readE2eBudgets\(\)\.launchHookTimeout\b/.test(lau)).toBe(true)
+        expect(/\bconst\s+B\s*=\s*readE2eBudgets\(\)/.test(cdn)).toBe(true)
+        expect(/\bconst\s+LIMIT\s*=\s*B\.cdnHookTimeout\s*\+\s*B\.launchHookTimeout\b/.test(cdn)).toBe(true)
+        //jest 時限與子行程之 spawnSync 時限皆取自該變數(不得改成別的數字而仍留著上面之宣告)
+        expect(/\bjest\.setTimeout\(\s*BUDGET\b/.test(lau)).toBe(true)
+        expect(/\btimeout:\s*BUDGET\b/.test(lau)).toBe(true)
+        expect(/\bjest\.setTimeout\(\s*LIMIT\b/.test(cdn)).toBe(true)
+        expect(/\btimeout:\s*LIMIT\b/.test(cdn)).toBe(true)
+        for (const s of [lau, cdn]) {
+            expect(/\*\s*60\s*\*\s*1000|\*\s*60000\b/.test(s)).toBe(false)
+            expect(/PW_INSTALL_BUDGET_MS/.test(s)).toBe(false)
+            expect(lits(s)).toEqual([])
+        }
     })
 
     test('ensureE2eBrowser 以安裝預算呼叫 ensureChromium(替身接住, 不下載): 時限為預算、有 funLog、同行程只呼叫 1 次', () => {
         const r = runEnsureChild()
         expect(r.calls.length).toBe(1)
         expect(r.calls[0].timeout).toBe(r.budget)
-        expect(r.budget).toBe(900000)
+        //預算確取自共用常數: 載入前擾動 wpw.INSTALL_BUDGET_MS(777777)後, 匯出之預算與傳給 ensureChromium 之 timeout 皆隨之(自寫之等值數字如 15 * 60 * 1000 會現形)
+        expect(r.budget).toBe(r.perturbed)
+        expect(r.calls[0].timeout).toBe(r.perturbed)
+        expect(r.budget).toBe(r.wpwBudget)
         expect(r.calls[0].hasFunLog).toBe(true)
         expect(r.samePromise).toBe(true)
         expect(r.sameResult).toBe(true)
