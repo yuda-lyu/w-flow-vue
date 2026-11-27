@@ -1,6 +1,6 @@
 {
   "name": "w-flow-vue",
-  "version": "1.1.52",
+  "version": "1.1.53",
   "main": "dist/w-flow-vue.umd.js",
   "dependencies": {
     "w-component-vue": "^2.5.78",
@@ -25,7 +25,7 @@
     "jest-environment-jsdom": "^29.7.0",
     "vue": "^2.7.16",
     "w-package-tools": "^1.1.32",
-    "w-package-tools-e2e": "^1.0.59",
+    "w-package-tools-e2e": "^1.0.60",
     "w-playwright": "^1.0.7",
     "w-screenctl": "^1.0.71"
   },
